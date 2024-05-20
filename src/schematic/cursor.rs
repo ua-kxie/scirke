@@ -1,4 +1,3 @@
-use bevy::math::vec2;
 /*
 render into clip space to keep dimensions invariant of zoom
 tessellate based on calculated clip position and size
@@ -58,7 +57,9 @@ fn update(
         let window = window.unwrap();
         let screen_coords = window.cursor_position().unwrap();
         if let Some(world_coords) = cam.viewport_to_world_2d(cgt, screen_coords) {
-            let ndc_coords = cam.world_to_ndc(cgt, world_coords.extend(c_t.translation.z)).unwrap();
+            let ndc_coords = cam
+                .world_to_ndc(cgt, world_coords.extend(c_t.translation.z))
+                .unwrap();
 
             *visibility = Visibility::Visible;
             c.coords = Some(Coords {

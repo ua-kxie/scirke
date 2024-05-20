@@ -1,14 +1,18 @@
 use crate::bevyon::ClipMaterial;
 
-use self::{camera::{CameraPlugin, SchematicCamera}, cursor::CursorPlugin, infotext::InfoPlugin};
+use self::{
+    camera::{CameraPlugin, SchematicCamera},
+    cursor::CursorPlugin,
+    infotext::InfoPlugin,
+};
 use bevy::{
-    math::{vec2, vec3},
+    math::{vec3},
     prelude::*,
     render::{
         mesh::{Indices::U16, PrimitiveTopology},
         render_asset::RenderAssetUsages,
     },
-    sprite::{Material2dPlugin, MaterialMesh2dBundle, Mesh2dHandle}, window::PrimaryWindow,
+    sprite::{Material2dPlugin, MaterialMesh2dBundle, Mesh2dHandle},
 };
 
 mod camera;
@@ -25,8 +29,14 @@ pub struct Snap {
 }
 
 impl Snap {
-    const DEFAULT_WORLD: Self = Snap { world_step: 1.0, space: Space::World };
-    const DEFAULT_CLIP: Self = Snap { world_step: 1.0, space: Space::Clip };
+    const DEFAULT_WORLD: Self = Snap {
+        world_step: 1.0,
+        space: Space::World,
+    };
+    const DEFAULT_CLIP: Self = Snap {
+        world_step: 1.0,
+        space: Space::Clip,
+    };
 }
 
 pub enum Space {
@@ -50,10 +60,7 @@ impl Plugin for SchematicPlugin {
             SnapSet.before(bevy::transform::TransformSystem::TransformPropagate),
         );
         app.add_systems(Startup, setup);
-        app.add_systems(
-            PostUpdate,
-            snap.in_set(SnapSet),
-        );
+        app.add_systems(PostUpdate, snap.in_set(SnapSet));
     }
 }
 
@@ -109,23 +116,18 @@ fn setup(
 
 /// this system snaps all applicable entities
 fn snap(
-    mut e: Query<
-    (&mut Transform, &Snap),
-    Changed<GlobalTransform>
-    >,
+    mut e: Query<(&mut Transform, &Snap), Changed<GlobalTransform>>,
     c: Query<(&Camera, &GlobalTransform), With<SchematicCamera>>,
 ) {
     let (cam, cgt) = c.single();
     for (mut t, s) in e.iter_mut() {
         match s.space {
-            Space::World => {
-                t.translation = (t.translation / s.world_step).round() * s.world_step
-            },
+            Space::World => t.translation = (t.translation / s.world_step).round() * s.world_step,
             Space::Clip => {
                 let world_coords = cam.ndc_to_world(cgt, t.translation).unwrap();
                 let world_coords = (world_coords / s.world_step).round() * s.world_step;
                 t.translation = cam.world_to_ndc(cgt, world_coords).unwrap();
-            },
+            }
         }
     }
 }

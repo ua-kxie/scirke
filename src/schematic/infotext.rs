@@ -14,9 +14,7 @@ impl Plugin for InfoPlugin {
     }
 }
 
-fn setup(
-    mut commands: Commands,
-) {
+fn setup(mut commands: Commands) {
     commands.spawn((
         TextBundle::from_section(
             "",
@@ -44,10 +42,12 @@ fn update(
     let mut text = text.single_mut();
     let text = &mut text.sections[0].value;
     *text = "".to_string();
-    
+
     text.push_str(&format!("scale: {:.2e}; ", projection.single().scale));
     if let Some(coords) = &cursor.single().coords {
-        text.push_str(&format!("x: {:+03}; y: {:+03}; ", coords.snapped_world_coords.x, coords.snapped_world_coords.y))
+        text.push_str(&format!(
+            "x: {:+03}; y: {:+03}; ",
+            coords.snapped_world_coords.x, coords.snapped_world_coords.y
+        ))
     }
-
 }
