@@ -3,4 +3,10 @@ name = "scirke"
 version = "0.1.0"
 edition = "2021"
 
+# Enable max optimizations for dependencies, but not for our code:
+[profile.dev.package."*"]
+opt-level = 3
+
 [dependencies]
+bevy = {version="0.13.2"}
+lyon_tessellation = "1"
