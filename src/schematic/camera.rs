@@ -57,8 +57,8 @@ impl Default for SchematicCamera {
             grab_buttons: vec![MouseButton::Middle],
             enabled: true,
             zoom_to_cursor: true,
-            min_scale: 0.1,
-            max_scale: Some(10.0),
+            min_scale: 0.001,
+            max_scale: Some(1.0),
             min_x: None,
             max_x: None,
             min_y: None,
@@ -82,7 +82,7 @@ fn setup(mut commands: Commands) {
             projection: OrthographicProjection {
                 near: -1.,
                 far: 1.,
-                scale: 1.0,
+                scale: 0.1,
                 ..Default::default()
             },
             ..default()

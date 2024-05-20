@@ -1,17 +1,19 @@
-use self::{camera::CameraPlugin, cursor::CursorPlugin};
+use crate::bevyon::ClipMaterial;
+
+use self::{camera::CameraPlugin, cursor::CursorPlugin, infotext::InfoPlugin};
 use bevy::{
     math::vec3,
     prelude::*,
     render::{
         mesh::{Indices::U16, PrimitiveTopology},
         render_asset::RenderAssetUsages,
-        render_resource::{AsBindGroup, ShaderRef},
     },
-    sprite::{Material2d, Material2dPlugin, MaterialMesh2dBundle, Mesh2dHandle},
+    sprite::{Material2dPlugin, MaterialMesh2dBundle, Mesh2dHandle},
 };
 
 mod camera;
 mod cursor;
+mod infotext;
 
 // Snapped marker component: system to goes around snapping transform of such entities
 #[derive(Component)]
@@ -29,7 +31,7 @@ pub struct SchematicPlugin;
 
 impl Plugin for SchematicPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((CameraPlugin, CursorPlugin));
+        app.add_plugins((CameraPlugin, CursorPlugin, InfoPlugin));
         app.add_plugins(Material2dPlugin::<ClipMaterial>::default());
         app.add_systems(Startup, setup);
         // app.add_systems(
@@ -55,7 +57,7 @@ fn setup(
     commands.spawn(MaterialMesh2dBundle {
         mesh: meshes.add(Rectangle::default()).into(),
         transform: Transform::default()
-            .with_scale(Vec3::splat(5.))
+            .with_scale(Vec3::splat(1.))
             .with_translation(Vec3 {
                 x: 0.0,
                 y: 0.0,
@@ -89,31 +91,9 @@ fn setup(
         material: clip_materials.add(ClipMaterial {
             z_depth: far_plane_depth,
             color: Color::GRAY,
-            transform: Mat4::IDENTITY,
         }),
         ..Default::default()
     };
     commands.spawn(bundle);
 }
 
-// This is the struct that will be passed to your shader
-#[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
-struct ClipMaterial {
-    z_depth: f32,
-    #[uniform(0)]
-    color: Color,
-    #[uniform(1)]
-    transform: Mat4,
-}
-
-impl Material2d for ClipMaterial {
-    fn vertex_shader() -> ShaderRef {
-        "clipspace.wgsl".into()
-    }
-    fn fragment_shader() -> ShaderRef {
-        "clipspace.wgsl".into()
-    }
-    fn depth_bias(&self) -> f32 {
-        self.z_depth
-    }
-}

@@ -21,14 +21,14 @@ impl Plugin for CursorPlugin {
 }
 
 #[derive(Component, Default)]
-struct Cursor {
-    coords: Option<Coords>,
+pub struct SchematicCursor {
+    pub coords: Option<Coords>,
 }
 
-struct Coords {
-    screen_coords: Vec2,
-    canvas_coords: Vec2,
-    clip_coords: Vec2,
+pub struct Coords {
+    pub screen_coords: Vec2,
+    pub canvas_coords: Vec2,
+    pub clip_coords: Vec2,
 }
 
 #[derive(Bundle)]
@@ -36,16 +36,15 @@ struct CursorBundle {
     tess_data: TessInData,
     mat_bundle: MaterialMesh2dBundle<super::ClipMaterial>,
     snap: Snapped,
-    cursor: Cursor,
+    cursor: SchematicCursor,
 }
 
 fn update(
-    mut clip_mats: ResMut<Assets<ClipMaterial>>,
     q_window: Query<&Window, With<PrimaryWindow>>,
     q_camera: Query<(&Camera, &GlobalTransform), With<SchematicCamera>>,
-    mut q_cursor: Query<(&mut Cursor, &mut Visibility, &Handle<ClipMaterial>)>,
+    mut q_cursor: Query<(&mut SchematicCursor, &mut Visibility, &mut Transform)>,
 ) {
-    let (mut c, mut visibility, mat) = q_cursor.single_mut();
+    let (mut c, mut visibility, mut c_t) = q_cursor.single_mut();
     let cam = q_camera.get_single();
     let window = q_window.get_single();
     if cam.is_ok() && window.as_ref().is_ok_and(|w| w.cursor_position().is_some()) {
@@ -64,9 +63,7 @@ fn update(
                 clip_coords,
             });
 
-            if let Some(m) = clip_mats.get_mut(mat) {
-                (*m).transform = Mat4::from_translation(clip_coords.extend(0.0));
-            }
+            *c_t = c_t.with_translation(clip_coords.extend(0.0));
         } else {
             *visibility = Visibility::Hidden;
             c.coords = None;
@@ -108,11 +105,10 @@ fn setup(mut commands: Commands, mut clip_materials: ResMut<Assets<ClipMaterial>
             material: clip_materials.add(ClipMaterial {
                 z_depth: 1.0,
                 color: Color::YELLOW,
-                transform: Mat4::IDENTITY,
             }),
             ..Default::default()
         },
         snap: Snapped::DEFAULT,
-        cursor: Cursor::default(),
+        cursor: SchematicCursor::default(),
     });
 }

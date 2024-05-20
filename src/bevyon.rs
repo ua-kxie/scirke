@@ -2,8 +2,8 @@
 
 use bevy::{
     prelude::*,
-    render::{mesh::PrimitiveTopology, render_asset::RenderAssetUsages},
-    sprite::Mesh2dHandle,
+    render::{mesh::PrimitiveTopology, render_asset::RenderAssetUsages, render_resource::{AsBindGroup, ShaderRef}},
+    sprite::{Material2d, Mesh2dHandle},
 };
 
 pub use lyon_tessellation::{self as tess};
@@ -12,19 +12,54 @@ use bevy::render::mesh::Indices::U32;
 
 use tess::{
     path::{
-        builder::{NoAttributes, WithSvg},
+        builder::NoAttributes,
         BuilderImpl,
     },
     BuffersBuilder, FillVertex, FillVertexConstructor, StrokeVertex, StrokeVertexConstructor,
 };
 pub use tess::{FillOptions, StrokeOptions};
 
+/* 
+helper stuff not directly tied to bevy
+*/
+/// u32: The index type of a Bevy [`Mesh`](bevy::render::mesh::Mesh).
+type VertexBuffers = tess::VertexBuffers<Vec2, u32>;
+
 pub fn path_builder() -> NoAttributes<BuilderImpl> {
-    // pub fn path_builder() -> WithSvg<BuilderImpl> {
-    // tess::path::path::Builder::new().with_svg()
     tess::path::path::Builder::new()
 }
-pub type PathBuilder = WithSvg<BuilderImpl>;
+
+/// Zero-sized type used to implement various vertex construction traits from
+/// Lyon.
+pub struct VertexConstructor;
+
+/// Enables the construction of a [`Vertex`] when using a `FillTessellator`.
+impl FillVertexConstructor<Vec2> for VertexConstructor {
+    fn new_vertex(&mut self, vertex: FillVertex) -> Vec2 {
+        Vec2 {
+            x: vertex.position().x,
+            y: vertex.position().y,
+        }
+    }
+}
+
+/// Enables the construction of a [`Vertex`] when using a `StrokeTessellator`.
+impl StrokeVertexConstructor<Vec2> for VertexConstructor {
+    fn new_vertex(&mut self, vertex: StrokeVertex) -> Vec2 {
+        Vec2 {
+            x: vertex.position().x,
+            y: vertex.position().y,
+        }
+    }
+}
+/*
+bevy tied stuff
+*/
+#[derive(Resource, Deref, DerefMut)]
+struct FillTessellator(lyon_tessellation::FillTessellator);
+
+#[derive(Resource, Deref, DerefMut)]
+struct StrokeTessellator(lyon_tessellation::StrokeTessellator);
 
 /// Tessellator Input Data
 /// queries for Changed<>
@@ -56,39 +91,6 @@ impl Plugin for BevyonPlugin {
 /// or changed shapes. Resides in [`PostUpdate`] schedule.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, SystemSet)]
 pub struct BuildShapes;
-
-#[derive(Resource, Deref, DerefMut)]
-struct FillTessellator(lyon_tessellation::FillTessellator);
-
-#[derive(Resource, Deref, DerefMut)]
-struct StrokeTessellator(lyon_tessellation::StrokeTessellator);
-
-/// u32: The index type of a Bevy [`Mesh`](bevy::render::mesh::Mesh).
-type VertexBuffers = tess::VertexBuffers<Vec2, u32>;
-
-/// Zero-sized type used to implement various vertex construction traits from
-/// Lyon.
-pub struct VertexConstructor;
-
-/// Enables the construction of a [`Vertex`] when using a `FillTessellator`.
-impl FillVertexConstructor<Vec2> for VertexConstructor {
-    fn new_vertex(&mut self, vertex: FillVertex) -> Vec2 {
-        Vec2 {
-            x: vertex.position().x,
-            y: vertex.position().y,
-        }
-    }
-}
-
-/// Enables the construction of a [`Vertex`] when using a `StrokeTessellator`.
-impl StrokeVertexConstructor<Vec2> for VertexConstructor {
-    fn new_vertex(&mut self, vertex: StrokeVertex) -> Vec2 {
-        Vec2 {
-            x: vertex.position().x,
-            y: vertex.position().y,
-        }
-    }
-}
 
 fn update_mesh(
     mut meshes: ResMut<Assets<Mesh>>,
@@ -156,4 +158,30 @@ fn build_mesh(buffers: &VertexBuffers, z_depth: f32) -> Mesh {
     );
 
     mesh
+}
+
+
+/// clip space material: vertex shader applies a custom uniform transform to vertices
+/// drawing snapped elements into clip space: 
+/// get snapped world position
+/// turn into viewport position - cam.world_to_viewport
+/// compute clip space position
+/// compute transform uniform
+#[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
+pub struct ClipMaterial {
+    pub z_depth: f32,
+    #[uniform(0)]
+    pub color: Color,
+}
+
+impl Material2d for ClipMaterial {
+    fn vertex_shader() -> ShaderRef {
+        "clipspace.wgsl".into()
+    }
+    fn fragment_shader() -> ShaderRef {
+        "clipspace.wgsl".into()
+    }
+    fn depth_bias(&self) -> f32 {
+        self.z_depth
+    }
 }
