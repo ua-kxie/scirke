@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use super::{camera::SchematicCamera, cursor::SchematicCursor};
+use super::{camera::SchematicCamera, cursor::SchematicCursor, SnapSet};
 
 #[derive(Component)]
 struct InfoTextMarker;
@@ -10,7 +10,7 @@ pub struct InfoPlugin;
 impl Plugin for InfoPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, setup);
-        app.add_systems(Update, update);
+        app.add_systems(PostUpdate, update.after(SnapSet));
     }
 }
 
@@ -47,7 +47,7 @@ fn update(
     
     text.push_str(&format!("scale: {:.2e}; ", projection.single().scale));
     if let Some(coords) = &cursor.single().coords {
-        text.push_str(&format!("x: {:+03}; y: {:+03}; ", coords.canvas_coords.x, coords.canvas_coords.y))
+        text.push_str(&format!("x: {:+03}; y: {:+03}; ", coords.snapped_world_coords.x, coords.snapped_world_coords.y))
     }
 
 }

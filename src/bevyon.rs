@@ -1,9 +1,7 @@
 /* plugin to help run lyon as tessellator */
 
 use bevy::{
-    prelude::*,
-    render::{mesh::PrimitiveTopology, render_asset::RenderAssetUsages, render_resource::{AsBindGroup, ShaderRef}},
-    sprite::{Material2d, Mesh2dHandle},
+    math::vec2, prelude::*, render::{mesh::PrimitiveTopology, render_asset::RenderAssetUsages, render_resource::{AsBindGroup, ShaderRef}}, sprite::{Material2d, Mesh2dHandle}
 };
 
 pub use lyon_tessellation::{self as tess};
@@ -167,6 +165,10 @@ fn build_mesh(buffers: &VertexBuffers, z_depth: f32) -> Mesh {
 /// turn into viewport position - cam.world_to_viewport
 /// compute clip space position
 /// compute transform uniform
+/// 
+/// has to work with snapping of in-world elements
+/// skipping vertex shader nullifies geometry scaling - desired for cursor, grid dots, and maybe others
+/// query for Option<WorldSnap> Option<ClipSnap> and run distinct snapping algos for each
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
 pub struct ClipMaterial {
     pub z_depth: f32,
