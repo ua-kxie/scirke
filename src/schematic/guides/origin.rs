@@ -1,0 +1,3 @@
+/* 
+marker that indicates the location of the origin if in view or direction if not
+*/
