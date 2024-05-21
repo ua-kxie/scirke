@@ -8,7 +8,7 @@ use lyon_tessellation::geom::euclid::{Box2D, Point2D};
 
 use crate::bevyon::{self, TessInData};
 
-use super::{camera::SchematicCamera, ClipMaterial, Snap};
+use super::{SchematicCamera, ZoomInvariant};
 
 pub struct CursorPlugin;
 
@@ -19,9 +19,16 @@ impl Plugin for CursorPlugin {
     }
 }
 
-#[derive(Component, Default)]
+#[derive(Component)]
 pub struct SchematicCursor {
     pub coords: Option<Coords>,
+    snap_step: f32,
+}
+
+impl Default for SchematicCursor {
+    fn default() -> Self {
+        Self { coords: None, snap_step: 1.0 }
+    }
 }
 
 pub struct Coords {
@@ -34,22 +41,20 @@ pub struct Coords {
 #[derive(Bundle)]
 struct CursorBundle {
     tess_data: TessInData,
-    mat_bundle: MaterialMesh2dBundle<super::ClipMaterial>,
-    snap: Snap,
+    mat_bundle: MaterialMesh2dBundle<ColorMaterial>,
     cursor: SchematicCursor,
+    zoom_invariant: ZoomInvariant,
 }
 
-const Z_DEPTH: f32 = 0.0;
+const Z_DEPTH: f32 = 0.2;
 
 /// mixing in of snapping here isn't ideal - leave for now
 fn update(
-    q_s: Query<&Snap, With<SchematicCursor>>,
     q_window: Query<&Window, With<PrimaryWindow>>,
     q_camera: Query<(&Camera, &GlobalTransform), With<SchematicCamera>>,
     mut q_cursor: Query<(&mut SchematicCursor, &mut Visibility, &mut Transform)>,
 ) {
     let (mut c, mut visibility, mut c_t) = q_cursor.single_mut();
-    let s = q_s.single();
     let cam = q_camera.get_single();
     let window = q_window.get_single();
     if cam.is_ok() && window.as_ref().is_ok_and(|w| w.cursor_position().is_some()) {
@@ -60,16 +65,16 @@ fn update(
             let ndc_coords = cam
                 .world_to_ndc(cgt, world_coords.extend(c_t.translation.z))
                 .unwrap();
-
+            let snapped_world_coords = (world_coords / c.snap_step).round() * c.snap_step;
             *visibility = Visibility::Visible;
             c.coords = Some(Coords {
                 screen_coords,
                 world_coords,
                 ndc_coords,
-                snapped_world_coords: (world_coords / s.world_step).round() * s.world_step,
+                snapped_world_coords,
             });
 
-            *c_t = c_t.with_translation(ndc_coords);
+            *c_t = c_t.with_translation(snapped_world_coords.extend(c_t.translation.z));
         } else {
             *visibility = Visibility::Hidden;
             c.coords = None;
@@ -80,40 +85,31 @@ fn update(
     }
 }
 
-fn setup(mut commands: Commands, mut clip_materials: ResMut<Assets<ClipMaterial>>) {
+fn setup(mut commands: Commands, mut materials: ResMut<Assets<ColorMaterial>>) {
     let mut path_builder = bevyon::path_builder();
+    let size = 4.0;
     path_builder.add_rectangle(
         &Box2D {
-            min: Point2D::splat(-0.01),
-            max: Point2D::splat(0.01),
+            min: Point2D::splat(-size),
+            max: Point2D::splat(size),
         },
         lyon_tessellation::path::Winding::Positive,
-    );
-    path_builder.add_rectangle(
-        &Box2D {
-            min: Point2D::splat(-0.02),
-            max: Point2D::splat(0.02),
-        },
-        lyon_tessellation::path::Winding::Negative,
     );
     let path = Some(path_builder.build());
 
     let tessellator_input_data = TessInData {
         path,
-        stroke: None,
-        // stroke: Some(bevyon::StrokeOptions::DEFAULT.with_line_width(0.01).with_tolerance(0.001)),
-        fill: Some(bevyon::FillOptions::DEFAULT),
+        stroke: Some(bevyon::StrokeOptions::DEFAULT.with_line_width(2.0).with_tolerance(1.0)),
+        fill: None,
         z_depth: Z_DEPTH,
     };
     commands.spawn(CursorBundle {
         tess_data: tessellator_input_data,
         mat_bundle: MaterialMesh2dBundle {
-            material: clip_materials.add(ClipMaterial {
-                color: Color::YELLOW,
-            }),
+            material: materials.add(Color::GREEN),
             ..Default::default()
         },
-        snap: Snap::DEFAULT_CLIP,
         cursor: SchematicCursor::default(),
+        zoom_invariant: ZoomInvariant,
     });
 }

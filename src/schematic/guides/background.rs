@@ -43,7 +43,9 @@ pub fn setup(
         MaterialMesh2dBundle {
             mesh: Mesh2dHandle(meshid),
             material: clip_materials.add(ClipMaterial { color: Color::TEAL }),
+            transform: Transform::from_translation(vec3(0.0, 0.0, -1.0)),
             ..Default::default()
+
         },
         NoFrustumCulling,
     );

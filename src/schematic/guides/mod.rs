@@ -1,14 +1,39 @@
 use bevy::prelude::*;
 
+use self::cursor::CursorPlugin;
+
+use super::camera::SchematicCamera;
+
 mod background;
 mod grid;
-mod origin;
+mod origin_marker;
+mod cursor;
+
+pub use cursor::SchematicCursor;
 
 pub struct GuidesPlugin;
 
 impl Plugin for GuidesPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, (background::setup, origin::setup));
-        app.add_systems(Update, origin::main);
+        app.add_plugins(CursorPlugin);
+        app.add_systems(Startup, (background::setup, origin_marker::setup));
+        app.add_systems(Update, (origin_marker::main, revert_zoom_scale));
+    }
+}
+
+#[derive(Component)]
+struct ZoomInvariant;
+
+/// system is used to set entity scale such that mesh always appear as same size on screen
+/// only needs to run when projection scale changes
+fn revert_zoom_scale(
+    mut qt: Query<&mut Transform, With<ZoomInvariant>>,
+    ce: Query<&OrthographicProjection, (With<SchematicCamera>, Changed<OrthographicProjection>)>,
+) {
+    // TODO consider conditioning on zoom scale changed (zoom event?)
+    if let Ok(proj) = ce.get_single() {
+        for mut t in qt.iter_mut() {
+            *t = t.with_scale(Vec3::splat(proj.scale));
+        }
     }
 }

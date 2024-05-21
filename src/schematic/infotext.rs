@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use super::{camera::SchematicCamera, cursor::SchematicCursor, SnapSet};
+use super::{camera::SchematicCamera, guides::SchematicCursor, SnapSet};
 
 #[derive(Component)]
 struct InfoTextMarker;

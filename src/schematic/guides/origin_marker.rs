@@ -14,6 +14,8 @@ use crate::{
     schematic::camera::SchematicCamera,
 };
 
+use super::ZoomInvariant;
+
 const Z_DEPTH: f32 = 0.9;
 
 #[derive(Component)]
@@ -24,6 +26,7 @@ struct OriginBundle {
     tess_data: TessInData,
     mat_bundle: MaterialMesh2dBundle<ColorMaterial>,
     origin_marker: OriginMarker,
+    zoom_invariant_marker: ZoomInvariant,
 }
 
 pub fn setup(mut commands: Commands, mut materials: ResMut<Assets<ColorMaterial>>) {
@@ -64,6 +67,7 @@ pub fn setup(mut commands: Commands, mut materials: ResMut<Assets<ColorMaterial>
             ..Default::default()
         },
         origin_marker: OriginMarker,
+        zoom_invariant_marker: ZoomInvariant,
     });
 }
 
@@ -82,8 +86,6 @@ pub fn main(
         // accumulate vector to move origin onto point if distance is negative
         translation -= hs.normal() * hs.d().clamp(-INFINITY, 0.0);
     }
-    dbg!(&translation);
     *transform = transform
-        .with_scale(Vec3::splat(proj.scale))
         .with_translation(translation.into())
 }
