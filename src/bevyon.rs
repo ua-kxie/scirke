@@ -2,12 +2,8 @@
 
 use bevy::{
     prelude::*,
-    render::{
-        mesh::PrimitiveTopology,
-        render_asset::RenderAssetUsages,
-        render_resource::{AsBindGroup, ShaderRef},
-    },
-    sprite::{Material2d, Mesh2dHandle},
+    render::{mesh::PrimitiveTopology, render_asset::RenderAssetUsages},
+    sprite::Mesh2dHandle,
 };
 
 pub use lyon_tessellation::{self as tess};
@@ -69,7 +65,6 @@ pub struct TessInData {
     pub path: Option<tess::path::Path>,
     pub stroke: Option<tess::StrokeOptions>,
     pub fill: Option<tess::FillOptions>,
-    pub z_depth: f32,
 }
 
 pub struct BevyonPlugin;
@@ -109,7 +104,7 @@ fn update_mesh(
                 stroke(&mut stroke_tess, &path, &options, &mut buffers);
             }
         }
-        mesh.0 = meshes.add(build_mesh(&buffers, data.z_depth));
+        mesh.0 = meshes.add(build_mesh(&buffers));
     }
 }
 
@@ -143,7 +138,7 @@ fn stroke(
     }
 }
 
-fn build_mesh(buffers: &VertexBuffers, z_depth: f32) -> Mesh {
+fn build_mesh(buffers: &VertexBuffers) -> Mesh {
     let mut mesh = Mesh::new(
         PrimitiveTopology::TriangleList,
         RenderAssetUsages::RENDER_WORLD,
@@ -154,29 +149,8 @@ fn build_mesh(buffers: &VertexBuffers, z_depth: f32) -> Mesh {
         buffers
             .vertices
             .iter()
-            .map(|v| [v.x, v.y, z_depth])
+            .map(|v| [v.x, v.y, 0.0])
             .collect::<Vec<[f32; 3]>>(),
     );
-
     mesh
-}
-
-/// clip space material: vertex shader applies a custom uniform transform to vertices
-///
-/// skipping vertex shader nullifies geometry scaling - desired for cursor, grid dots, and maybe others
-/// drawing relative to camera is insufficient, since scaling/fov will change apparent size of geometry.
-/// but aspect ratio becomes affected, still not ideal
-#[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
-pub struct ClipMaterial {
-    #[uniform(0)]
-    pub color: Color,
-}
-
-impl Material2d for ClipMaterial {
-    fn vertex_shader() -> ShaderRef {
-        "clipspace.wgsl".into()
-    }
-    fn fragment_shader() -> ShaderRef {
-        "clipspace.wgsl".into()
-    }
 }

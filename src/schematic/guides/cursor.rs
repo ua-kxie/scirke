@@ -3,7 +3,7 @@ render into clip space to keep dimensions invariant of zoom
 tessellate based on calculated clip position and size
 cursor - canvas - clip
 */
-use bevy::{prelude::*, sprite::MaterialMesh2dBundle, window::PrimaryWindow};
+use bevy::{math::vec3, prelude::*, sprite::MaterialMesh2dBundle, window::PrimaryWindow};
 use lyon_tessellation::geom::euclid::{Box2D, Point2D};
 
 use crate::bevyon::{self, TessInData};
@@ -27,7 +27,10 @@ pub struct SchematicCursor {
 
 impl Default for SchematicCursor {
     fn default() -> Self {
-        Self { coords: None, snap_step: 1.0 }
+        Self {
+            coords: None,
+            snap_step: 1.0,
+        }
     }
 }
 
@@ -46,7 +49,7 @@ struct CursorBundle {
     zoom_invariant: ZoomInvariant,
 }
 
-const Z_DEPTH: f32 = 0.2;
+const Z_DEPTH: f32 = 1.0;
 
 /// mixing in of snapping here isn't ideal - leave for now
 fn update(
@@ -99,14 +102,18 @@ fn setup(mut commands: Commands, mut materials: ResMut<Assets<ColorMaterial>>) {
 
     let tessellator_input_data = TessInData {
         path,
-        stroke: Some(bevyon::StrokeOptions::DEFAULT.with_line_width(2.0).with_tolerance(1.0)),
+        stroke: Some(
+            bevyon::StrokeOptions::DEFAULT
+                .with_line_width(2.0)
+                .with_tolerance(1.0),
+        ),
         fill: None,
-        z_depth: Z_DEPTH,
     };
     commands.spawn(CursorBundle {
         tess_data: tessellator_input_data,
         mat_bundle: MaterialMesh2dBundle {
             material: materials.add(Color::GREEN),
+            transform: Transform::from_translation(vec3(0.0, 0.0, Z_DEPTH)),
             ..Default::default()
         },
         cursor: SchematicCursor::default(),

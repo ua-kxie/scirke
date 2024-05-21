@@ -4,7 +4,10 @@ use std::f32::INFINITY;
 marker that indicates the location of the origin if in view or direction if not
 */
 use bevy::{
-    math::Vec3A, prelude::*, render::camera::CameraProjection, sprite::MaterialMesh2dBundle,
+    math::{vec3, Vec3A},
+    prelude::*,
+    render::camera::CameraProjection,
+    sprite::MaterialMesh2dBundle,
 };
 
 use lyon_tessellation::geom::euclid::{Box2D, Point2D};
@@ -58,12 +61,12 @@ pub fn setup(mut commands: Commands, mut materials: ResMut<Assets<ColorMaterial>
                 .with_tolerance(1.0),
         ),
         fill: None,
-        z_depth: Z_DEPTH,
     };
     commands.spawn(OriginBundle {
         tess_data: tessellator_input_data,
         mat_bundle: MaterialMesh2dBundle {
             material: materials.add(Color::WHITE),
+            transform: Transform::from_translation(vec3(0.0, 0.0, Z_DEPTH)),
             ..Default::default()
         },
         origin_marker: OriginMarker,
@@ -86,6 +89,5 @@ pub fn main(
         // accumulate vector to move origin onto point if distance is negative
         translation -= hs.normal() * hs.d().clamp(-INFINITY, 0.0);
     }
-    *transform = transform
-        .with_translation(translation.into())
+    *transform = transform.with_translation(translation.into())
 }

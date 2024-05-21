@@ -1,11 +1,5 @@
-use crate::bevyon::ClipMaterial;
-
-use self::{
-    camera::{CameraPlugin, SchematicCamera},
-    guides::GuidesPlugin,
-    infotext::InfoPlugin,
-};
-use bevy::{prelude::*, sprite::Material2dPlugin};
+use self::{camera::CameraPlugin, guides::GuidesPlugin, infotext::InfoPlugin};
+use bevy::prelude::*;
 
 mod camera;
 mod guides;
@@ -21,9 +15,7 @@ pub struct Snap {
 }
 
 impl Snap {
-    const DEFAULT: Self = Snap {
-        world_step: 1.0,
-    };
+    const DEFAULT: Self = Snap { world_step: 1.0 };
 }
 
 pub enum Space {
@@ -41,7 +33,6 @@ pub struct SchematicPlugin;
 impl Plugin for SchematicPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((CameraPlugin, InfoPlugin, GuidesPlugin));
-        app.add_plugins(Material2dPlugin::<ClipMaterial>::default());
         app.configure_sets(
             PostUpdate,
             SnapSet.before(bevy::transform::TransformSystem::TransformPropagate),
@@ -51,9 +42,7 @@ impl Plugin for SchematicPlugin {
 }
 
 /// this system snaps all applicable entities
-fn snap(
-    mut e: Query<(&mut Transform, &Snap), Changed<GlobalTransform>>,
-) {
+fn snap(mut e: Query<(&mut Transform, &Snap), Changed<GlobalTransform>>) {
     for (mut t, s) in e.iter_mut() {
         t.translation = (t.translation / s.world_step).round() * s.world_step;
     }
