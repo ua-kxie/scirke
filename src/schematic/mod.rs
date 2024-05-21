@@ -1,22 +1,17 @@
 use crate::bevyon::ClipMaterial;
 
 use self::{
-    camera::{CameraPlugin, SchematicCamera}, cursor::CursorPlugin, guides::GuidesPlugin, infotext::InfoPlugin
+    camera::{CameraPlugin, SchematicCamera},
+    cursor::CursorPlugin,
+    guides::GuidesPlugin,
+    infotext::InfoPlugin,
 };
-use bevy::{
-    math::vec3,
-    prelude::*,
-    render::{
-        mesh::{Indices::U16, PrimitiveTopology},
-        render_asset::RenderAssetUsages, view::NoFrustumCulling,
-    },
-    sprite::{Material2dPlugin, MaterialMesh2dBundle, Mesh2dHandle},
-};
+use bevy::{prelude::*, sprite::Material2dPlugin};
 
 mod camera;
 mod cursor;
-mod infotext;
 mod guides;
+mod infotext;
 
 // Snapped marker component: system to goes around snapping transform of such entities
 #[derive(Component)]

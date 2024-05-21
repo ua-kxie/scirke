@@ -109,7 +109,6 @@ fn setup(mut commands: Commands, mut clip_materials: ResMut<Assets<ClipMaterial>
         tess_data: tessellator_input_data,
         mat_bundle: MaterialMesh2dBundle {
             material: clip_materials.add(ClipMaterial {
-                z_depth: Z_DEPTH,
                 color: Color::YELLOW,
             }),
             ..Default::default()

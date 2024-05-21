@@ -165,9 +165,9 @@ fn build_mesh(buffers: &VertexBuffers, z_depth: f32) -> Mesh {
 ///
 /// skipping vertex shader nullifies geometry scaling - desired for cursor, grid dots, and maybe others
 /// drawing relative to camera is insufficient, since scaling/fov will change apparent size of geometry.
+/// but aspect ratio becomes affected, still not ideal
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
 pub struct ClipMaterial {
-    pub z_depth: f32,
     #[uniform(0)]
     pub color: Color,
 }
@@ -178,8 +178,5 @@ impl Material2d for ClipMaterial {
     }
     fn fragment_shader() -> ShaderRef {
         "clipspace.wgsl".into()
-    }
-    fn depth_bias(&self) -> f32 {
-        self.z_depth
     }
 }
