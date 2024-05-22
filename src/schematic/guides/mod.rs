@@ -1,6 +1,6 @@
 use bevy::{prelude::*, sprite::Material2dPlugin};
 
-use self::{background::ClipMaterial, cursor::CursorPlugin};
+use self::{background::ClipMaterial, cursor::CursorPlugin, grid::GridPlugin};
 
 use super::{camera::SchematicCamera, SnapSet};
 
@@ -16,6 +16,7 @@ pub struct GuidesPlugin;
 impl Plugin for GuidesPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(CursorPlugin);
+        app.add_plugins(GridPlugin);
         app.add_plugins(Material2dPlugin::<ClipMaterial>::default());
         app.add_systems(Startup, (background::setup, origin_marker::setup));
         // app.add_systems(Update, (, revert_zoom_scale));

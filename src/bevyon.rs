@@ -4,6 +4,7 @@ use bevy::{
     prelude::*,
     render::{mesh::PrimitiveTopology, render_asset::RenderAssetUsages},
     sprite::Mesh2dHandle,
+    tasks::futures_lite::io::Empty,
 };
 
 pub use lyon_tessellation::{self as tess};
@@ -52,12 +53,40 @@ impl StrokeVertexConstructor<Vec2> for VertexConstructor {
 /*
 bevy tied stuff
 */
-#[derive(Resource, Deref, DerefMut)]
-struct FillTessellator(lyon_tessellation::FillTessellator);
+#[derive(Resource)]
+pub struct EmptyMesh(pub Mesh);
+
+impl Default for EmptyMesh {
+    fn default() -> Self {
+        Self(
+            Mesh::new(
+                PrimitiveTopology::TriangleList,
+                RenderAssetUsages::RENDER_WORLD,
+            )
+            .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, Vec::<Vec3>::new())
+            .with_inserted_attribute(Mesh::ATTRIBUTE_COLOR, Vec::<Vec4>::new())
+            .with_inserted_indices(U32(vec![])),
+        )
+    }
+}
 
 #[derive(Resource, Deref, DerefMut)]
-struct StrokeTessellator(lyon_tessellation::StrokeTessellator);
+pub struct FillTessellator(lyon_tessellation::FillTessellator);
 
+impl Default for FillTessellator {
+    fn default() -> Self {
+        Self(tess::FillTessellator::new())
+    }
+}
+
+#[derive(Resource, Deref, DerefMut)]
+pub struct StrokeTessellator(lyon_tessellation::StrokeTessellator);
+
+impl Default for StrokeTessellator {
+    fn default() -> Self {
+        Self(tess::StrokeTessellator::new())
+    }
+}
 /// Tessellator Input Data
 #[derive(Default)]
 pub struct TessInData {
@@ -83,9 +112,20 @@ pub struct CompositeMeshData {
 
 impl CompositeMeshData {
     pub fn from_single(single: TessInData) -> Self {
-        Self { mesh_data: vec![
-            SubMesh{tess_data: single, color: Color::WHITE}
-        ] }
+        Self {
+            mesh_data: vec![SubMesh {
+                tess_data: single,
+                color: Color::WHITE,
+            }],
+        }
+    }
+    pub fn from_single_w_color(single: TessInData, color: Color) -> Self {
+        Self {
+            mesh_data: vec![SubMesh {
+                tess_data: single,
+                color,
+            }],
+        }
     }
 }
 
@@ -93,17 +133,30 @@ pub struct BevyonPlugin;
 
 impl Plugin for BevyonPlugin {
     fn build(&self, app: &mut App) {
-        let fill_tess = tess::FillTessellator::new();
-        let stroke_tess = tess::StrokeTessellator::new();
-        app.insert_resource(FillTessellator(fill_tess))
-            .insert_resource(StrokeTessellator(stroke_tess));
+        // let fill_tess = tess::FillTessellator::new();
+        // let stroke_tess = tess::StrokeTessellator::new();
+        app.insert_resource(FillTessellator::default())
+            .insert_resource(StrokeTessellator::default())
+            .insert_resource(EmptyMesh::default());
         app.configure_sets(
             PostUpdate,
             BuildShapes.after(bevy::transform::TransformSystem::TransformPropagate),
         )
         .add_systems(PostUpdate, update_mesh.in_set(BuildShapes));
+        // app.add_systems(PreStartup, setup);
     }
 }
+
+// fn setup(
+//     mut emptymesh: ResMut<EmptyMesh>,
+// ) {
+//     emptymesh.0 = Mesh::new(
+//             PrimitiveTopology::TriangleList,
+//             RenderAssetUsages::RENDER_WORLD,
+//         ).with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, Vec::<Vec3>::new())
+//         .with_inserted_attribute(Mesh::ATTRIBUTE_COLOR, Vec::<Vec4>::new())
+//         .with_inserted_indices(U32(vec![]));
+// }
 
 /// [`SystemSet`] for the system that builds the meshes for newly-added
 /// or changed shapes. Resides in [`PostUpdate`] schedule.
@@ -115,35 +168,32 @@ fn update_mesh(
     mut fill_tess: ResMut<FillTessellator>,
     mut stroke_tess: ResMut<StrokeTessellator>,
     mut query: Query<(&CompositeMeshData, &mut Mesh2dHandle), Changed<CompositeMeshData>>,
+    empty_mesh: Res<EmptyMesh>,
 ) {
     for (data, mut meshndl) in &mut query {
-        let mut mesh = Mesh::new(
-            PrimitiveTopology::TriangleList,
-            RenderAssetUsages::RENDER_WORLD,
-        ).with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, Vec::<Vec3>::new())
-        .with_inserted_attribute(Mesh::ATTRIBUTE_COLOR, Vec::<Vec4>::new())
-        .with_inserted_indices(U32(vec![]));
-        for submeshdata in data.iter() {
-            let mut buffers = VertexBuffers::new();
-            if let Some(path) = &submeshdata.tess_data.path {
-                if let Some(options) = submeshdata.tess_data.fill {
-                    fill(&mut fill_tess, &path, &options, &mut buffers);
-                }
-                if let Some(options) = submeshdata.tess_data.stroke {
-                    stroke(&mut stroke_tess, &path, &options, &mut buffers);
-                }
-            }
-            mesh.merge(build_mesh(&buffers).with_inserted_attribute(
-                Mesh::ATTRIBUTE_COLOR,
-                vec![submeshdata.color.rgba_to_vec4(); buffers.vertices.len()],
-            ));
-        }
+        let empty = empty_mesh.0.clone();
+        let mesh = build_mesh_im(empty, data, &mut stroke_tess, &mut fill_tess);
+        // for submeshdata in data.iter() {
+        //     let mut buffers = VertexBuffers::new();
+        //     if let Some(path) = &submeshdata.tess_data.path {
+        //         if let Some(options) = submeshdata.tess_data.fill {
+        //             fill(&mut fill_tess, &path, &options, &mut buffers);
+        //         }
+        //         if let Some(options) = submeshdata.tess_data.stroke {
+        //             stroke(&mut stroke_tess, &path, &options, &mut buffers);
+        //         }
+        //     }
+        //     mesh.merge(build_mesh(&buffers).with_inserted_attribute(
+        //         Mesh::ATTRIBUTE_COLOR,
+        //         vec![submeshdata.color.rgba_to_vec4(); buffers.vertices.len()],
+        //     ));
+        // }
         meshndl.0 = meshes.add(mesh);
     }
 }
 
 fn fill(
-    tess: &mut ResMut<FillTessellator>,
+    tess: &mut FillTessellator,
     path: &tess::path::Path,
     options: &FillOptions,
     buffers: &mut VertexBuffers,
@@ -158,7 +208,7 @@ fn fill(
 }
 
 fn stroke(
-    tess: &mut ResMut<StrokeTessellator>,
+    tess: &mut StrokeTessellator,
     path: &tess::path::Path,
     options: &StrokeOptions,
     buffers: &mut VertexBuffers,
@@ -172,7 +222,7 @@ fn stroke(
     }
 }
 
-fn build_mesh(buffers: &VertexBuffers) -> Mesh {
+pub fn build_mesh(buffers: &VertexBuffers) -> Mesh {
     let mut mesh = Mesh::new(
         PrimitiveTopology::TriangleList,
         RenderAssetUsages::RENDER_WORLD,
@@ -187,4 +237,28 @@ fn build_mesh(buffers: &VertexBuffers) -> Mesh {
             .collect::<Vec<[f32; 3]>>(),
     );
     mesh
+}
+
+pub fn build_mesh_im(
+    mut empty: Mesh,
+    data: &CompositeMeshData,
+    stroke_tess: &mut StrokeTessellator,
+    fill_tess: &mut FillTessellator,
+) -> Mesh {
+    for submeshdata in &data.mesh_data {
+        let mut buffers = VertexBuffers::new();
+        if let Some(path) = &submeshdata.tess_data.path {
+            if let Some(options) = submeshdata.tess_data.fill {
+                fill(&mut *fill_tess, &path, &options, &mut buffers);
+            }
+            if let Some(options) = submeshdata.tess_data.stroke {
+                stroke(&mut *stroke_tess, &path, &options, &mut buffers);
+            }
+        }
+        empty.merge(build_mesh(&buffers).with_inserted_attribute(
+            Mesh::ATTRIBUTE_COLOR,
+            vec![submeshdata.color.rgba_to_vec4(); buffers.vertices.len()],
+        ));
+    }
+    empty
 }

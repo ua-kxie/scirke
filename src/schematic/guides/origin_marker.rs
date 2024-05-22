@@ -19,7 +19,7 @@ use crate::{
 
 use super::ZoomInvariant;
 
-const Z_DEPTH: f32 = 0.9;
+const Z_DEPTH: f32 = 0.1;
 
 #[derive(Component)]
 pub struct OriginMarker;
