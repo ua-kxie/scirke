@@ -59,12 +59,34 @@ struct FillTessellator(lyon_tessellation::FillTessellator);
 struct StrokeTessellator(lyon_tessellation::StrokeTessellator);
 
 /// Tessellator Input Data
-/// queries for Changed<>
-#[derive(Component, Default)]
+#[derive(Default)]
 pub struct TessInData {
     pub path: Option<tess::path::Path>,
     pub stroke: Option<tess::StrokeOptions>,
     pub fill: Option<tess::FillOptions>,
+}
+
+/// data to build single colored mesh
+#[derive(Default)]
+pub struct SubMesh {
+    pub tess_data: TessInData,
+    pub color: Color,
+}
+
+/// bevyon Input Data
+/// queries for Changed<>
+/// allows for building meshes with different color attributes using mesh merge
+#[derive(Default, Component, Deref, DerefMut)]
+pub struct CompositeMeshData {
+    pub mesh_data: Vec<SubMesh>,
+}
+
+impl CompositeMeshData {
+    pub fn from_single(single: TessInData) -> Self {
+        Self { mesh_data: vec![
+            SubMesh{tess_data: single, color: Color::WHITE}
+        ] }
+    }
 }
 
 pub struct BevyonPlugin;
@@ -92,19 +114,31 @@ fn update_mesh(
     mut meshes: ResMut<Assets<Mesh>>,
     mut fill_tess: ResMut<FillTessellator>,
     mut stroke_tess: ResMut<StrokeTessellator>,
-    mut query: Query<(&TessInData, &mut Mesh2dHandle), Changed<TessInData>>,
+    mut query: Query<(&CompositeMeshData, &mut Mesh2dHandle), Changed<CompositeMeshData>>,
 ) {
-    for (data, mut mesh) in &mut query {
-        let mut buffers = VertexBuffers::new();
-        if let Some(path) = &data.path {
-            if let Some(options) = data.fill {
-                fill(&mut fill_tess, &path, &options, &mut buffers);
+    for (data, mut meshndl) in &mut query {
+        let mut mesh = Mesh::new(
+            PrimitiveTopology::TriangleList,
+            RenderAssetUsages::RENDER_WORLD,
+        ).with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, Vec::<Vec3>::new())
+        .with_inserted_attribute(Mesh::ATTRIBUTE_COLOR, Vec::<Vec4>::new())
+        .with_inserted_indices(U32(vec![]));
+        for submeshdata in data.iter() {
+            let mut buffers = VertexBuffers::new();
+            if let Some(path) = &submeshdata.tess_data.path {
+                if let Some(options) = submeshdata.tess_data.fill {
+                    fill(&mut fill_tess, &path, &options, &mut buffers);
+                }
+                if let Some(options) = submeshdata.tess_data.stroke {
+                    stroke(&mut stroke_tess, &path, &options, &mut buffers);
+                }
             }
-            if let Some(options) = data.stroke {
-                stroke(&mut stroke_tess, &path, &options, &mut buffers);
-            }
+            mesh.merge(build_mesh(&buffers).with_inserted_attribute(
+                Mesh::ATTRIBUTE_COLOR,
+                vec![submeshdata.color.rgba_to_vec4(); buffers.vertices.len()],
+            ));
         }
-        mesh.0 = meshes.add(build_mesh(&buffers));
+        meshndl.0 = meshes.add(mesh);
     }
 }
 

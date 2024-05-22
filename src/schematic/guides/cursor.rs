@@ -6,7 +6,7 @@ cursor - canvas - clip
 use bevy::{math::vec3, prelude::*, sprite::MaterialMesh2dBundle, window::PrimaryWindow};
 use lyon_tessellation::geom::euclid::{Box2D, Point2D};
 
-use crate::bevyon::{self, TessInData};
+use crate::bevyon::{self, CompositeMeshData, SubMesh, TessInData};
 
 use super::{SchematicCamera, ZoomInvariant};
 
@@ -43,7 +43,7 @@ pub struct Coords {
 
 #[derive(Bundle)]
 struct CursorBundle {
-    tess_data: TessInData,
+    tess_data: CompositeMeshData,
     mat_bundle: MaterialMesh2dBundle<ColorMaterial>,
     cursor: SchematicCursor,
     zoom_invariant: ZoomInvariant,
@@ -107,10 +107,11 @@ fn setup(mut commands: Commands, mut materials: ResMut<Assets<ColorMaterial>>) {
                 .with_line_width(2.0)
                 .with_tolerance(1.0),
         ),
+
         fill: None,
     };
     commands.spawn(CursorBundle {
-        tess_data: tessellator_input_data,
+        tess_data: CompositeMeshData::from_single(tessellator_input_data),
         mat_bundle: MaterialMesh2dBundle {
             material: materials.add(Color::GREEN),
             transform: Transform::from_translation(vec3(0.0, 0.0, Z_DEPTH)),

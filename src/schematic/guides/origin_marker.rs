@@ -13,7 +13,7 @@ use bevy::{
 use lyon_tessellation::geom::euclid::{Box2D, Point2D};
 
 use crate::{
-    bevyon::{self, TessInData},
+    bevyon::{self, CompositeMeshData, TessInData},
     schematic::camera::SchematicCamera,
 };
 
@@ -26,7 +26,7 @@ pub struct OriginMarker;
 
 #[derive(Bundle)]
 struct OriginBundle {
-    tess_data: TessInData,
+    tess_data: CompositeMeshData,
     mat_bundle: MaterialMesh2dBundle<ColorMaterial>,
     origin_marker: OriginMarker,
     zoom_invariant_marker: ZoomInvariant,
@@ -35,8 +35,8 @@ struct OriginBundle {
 pub fn setup(mut commands: Commands, mut materials: ResMut<Assets<ColorMaterial>>) {
     let mut path_builder = bevyon::path_builder();
 
-    let osize = 50.0;
-    let ssize = 10.0;
+    let osize = 20.0;
+    let ssize = 4.0;
     path_builder.begin(Point2D::new(0.0, -osize));
     path_builder.line_to(Point2D::new(0.0, osize));
     path_builder.end(false);
@@ -57,13 +57,13 @@ pub fn setup(mut commands: Commands, mut materials: ResMut<Assets<ColorMaterial>
         path,
         stroke: Some(
             bevyon::StrokeOptions::DEFAULT
-                .with_line_width(5.0)
+                .with_line_width(2.0)
                 .with_tolerance(1.0),
         ),
         fill: None,
     };
     commands.spawn(OriginBundle {
-        tess_data: tessellator_input_data,
+        tess_data: CompositeMeshData::from_single(tessellator_input_data),
         mat_bundle: MaterialMesh2dBundle {
             material: materials.add(Color::WHITE),
             transform: Transform::from_translation(vec3(0.0, 0.0, Z_DEPTH)),
