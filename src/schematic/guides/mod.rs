@@ -2,7 +2,7 @@ use bevy::{prelude::*, sprite::Material2dPlugin};
 
 use self::{background::ClipMaterial, cursor::CursorPlugin};
 
-use super::camera::SchematicCamera;
+use super::{camera::SchematicCamera, SnapSet};
 
 mod background;
 mod cursor;
@@ -18,7 +18,18 @@ impl Plugin for GuidesPlugin {
         app.add_plugins(CursorPlugin);
         app.add_plugins(Material2dPlugin::<ClipMaterial>::default());
         app.add_systems(Startup, (background::setup, origin_marker::setup));
-        app.add_systems(Update, (origin_marker::main, revert_zoom_scale));
+        // app.add_systems(Update, (, revert_zoom_scale));
+        app.configure_sets(
+            PostUpdate,
+            SnapSet.before(bevy::transform::TransformSystem::TransformPropagate),
+        );
+        app.add_systems(
+            PostUpdate,
+            (
+                origin_marker::main.in_set(SnapSet),
+                revert_zoom_scale.in_set(SnapSet),
+            ),
+        );
     }
 }
 

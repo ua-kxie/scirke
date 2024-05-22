@@ -77,17 +77,18 @@ pub fn setup(mut commands: Commands, mut materials: ResMut<Assets<ColorMaterial>
 /// this system changes origin scale so its size appear independent of camera zoom,
 /// and keeps it visible along edge of screen if origin is not in view
 pub fn main(
-    ce: Query<(&OrthographicProjection, &GlobalTransform), With<SchematicCamera>>,
-    mut om_transform: Query<&mut Transform, With<OriginMarker>>,
+    ce: Query<(Entity, &OrthographicProjection), With<SchematicCamera>>,
+    mut params: ParamSet<(TransformHelper, Query<&mut Transform, With<OriginMarker>>)>,
 ) {
-    let (proj, cgt) = ce.single();
-    let mut transform = om_transform.single_mut();
-
-    let frustum = proj.compute_frustum(cgt);
+    let (ent, proj) = ce.single();
+    let frustum = proj.compute_frustum(&params.p0().compute_global_transform(ent).unwrap());
     let mut translation = Vec3A::ZERO;
     for hs in frustum.half_spaces {
         // accumulate vector to move origin onto point if distance is negative
         translation -= hs.normal() * hs.d().clamp(-INFINITY, 0.0);
     }
-    *transform = transform.with_translation(translation.into())
+
+    let mut qt = params.p1();
+    let mut transform = qt.single_mut();
+    *transform = transform.with_translation(translation.into());
 }
