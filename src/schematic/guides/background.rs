@@ -52,10 +52,8 @@ pub fn setup(
 }
 
 /// clip space material: vertex shader applies a custom uniform transform to vertices
-///
-/// skipping vertex shader nullifies geometry scaling - desired for cursor, grid dots, and maybe others
-/// drawing relative to camera is insufficient, since scaling/fov will change apparent size of geometry.
-/// but aspect ratio becomes affected, still not ideal
+/// used to draw background - although current impl probably costs more than it saves
+/// compared to using an existing pipeline
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
 pub struct ClipMaterial {
     #[uniform(0)]

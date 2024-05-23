@@ -1,9 +1,12 @@
-use self::{camera::CameraPlugin, guides::GuidesPlugin, infotext::InfoPlugin};
-use bevy::prelude::*;
+use self::{
+    camera::CameraPlugin, guides::GuidesPlugin, infotext::InfoPlugin, material::SchematicMaterial,
+};
+use bevy::{prelude::*, sprite::Material2dPlugin};
 
 mod camera;
 mod guides;
 mod infotext;
+mod material;
 
 // Snapped marker component: system to goes around snapping transform of such entities
 #[derive(Component)]
@@ -38,6 +41,7 @@ impl Plugin for SchematicPlugin {
             SnapSet.before(bevy::transform::TransformSystem::TransformPropagate),
         );
         app.add_systems(PostUpdate, snap.in_set(SnapSet));
+        app.add_plugins(Material2dPlugin::<SchematicMaterial>::default());
     }
 }
 

@@ -1,7 +1,7 @@
 #import bevy_sprite::mesh2d_functions::get_model_matrix
 
 @group(2) @binding(0) var<uniform> color: vec4<f32>;
-@group(2) @binding(1) var<uniform> transform: mat4x4<f32>;
+// @group(2) @binding(1) var<uniform> transform: mat4x4<f32>;
 
 struct Vertex {
     @builtin(instance_index) instance_index: u32,

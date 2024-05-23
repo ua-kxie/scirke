@@ -19,7 +19,6 @@ impl Plugin for GuidesPlugin {
         app.add_plugins(GridPlugin);
         app.add_plugins(Material2dPlugin::<ClipMaterial>::default());
         app.add_systems(Startup, (background::setup, origin_marker::setup));
-        // app.add_systems(Update, (, revert_zoom_scale));
         app.configure_sets(
             PostUpdate,
             SnapSet.before(bevy::transform::TransformSystem::TransformPropagate),

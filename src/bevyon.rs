@@ -4,7 +4,6 @@ use bevy::{
     prelude::*,
     render::{mesh::PrimitiveTopology, render_asset::RenderAssetUsages},
     sprite::Mesh2dHandle,
-    tasks::futures_lite::io::Empty,
 };
 
 pub use lyon_tessellation::{self as tess};
@@ -173,21 +172,6 @@ fn update_mesh(
     for (data, mut meshndl) in &mut query {
         let empty = empty_mesh.0.clone();
         let mesh = build_mesh_im(empty, data, &mut stroke_tess, &mut fill_tess);
-        // for submeshdata in data.iter() {
-        //     let mut buffers = VertexBuffers::new();
-        //     if let Some(path) = &submeshdata.tess_data.path {
-        //         if let Some(options) = submeshdata.tess_data.fill {
-        //             fill(&mut fill_tess, &path, &options, &mut buffers);
-        //         }
-        //         if let Some(options) = submeshdata.tess_data.stroke {
-        //             stroke(&mut stroke_tess, &path, &options, &mut buffers);
-        //         }
-        //     }
-        //     mesh.merge(build_mesh(&buffers).with_inserted_attribute(
-        //         Mesh::ATTRIBUTE_COLOR,
-        //         vec![submeshdata.color.rgba_to_vec4(); buffers.vertices.len()],
-        //     ));
-        // }
         meshndl.0 = meshes.add(mesh);
     }
 }

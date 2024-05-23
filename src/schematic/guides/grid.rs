@@ -1,28 +1,22 @@
-use bevy::prelude::*;
 use bevy::{
     ecs::{component::Component, system::Query},
-    math::{vec2, vec3},
-    render::{mesh::PrimitiveTopology, render_asset::RenderAssetUsages},
+    prelude::*,
+    render::render_asset::RenderAssetUsages,
     sprite::{MaterialMesh2dBundle, Mesh2dHandle},
 };
 use lyon_tessellation::{
-    geom::{
-        euclid::{num::Ceil, Point2D, Vector2D},
-        Point, Vector,
-    },
-    path::{builder::NoAttributes, traits::PathBuilder, BuilderImpl, Path},
-    FillOptions, StrokeOptions, VertexBuffers,
+    geom::{euclid::num::Ceil, Point},
+    path::{builder::NoAttributes, traits::PathBuilder, BuilderImpl},
+    FillOptions,
 };
 
-use super::ZoomInvariant;
 use crate::{
     bevyon::{
-        self, build_mesh, build_mesh_im, path_builder, CompositeMeshData, EmptyMesh,
-        FillTessellator, StrokeTessellator, TessInData,
+        self, build_mesh_im, CompositeMeshData, EmptyMesh, FillTessellator, StrokeTessellator,
+        TessInData,
     },
-    schematic::{camera::SchematicCamera, SnapSet},
+    schematic::{camera::SchematicCamera, material::SchematicMaterial, SnapSet},
 };
-use bevy::render::mesh::Indices::U32;
 
 /*
 grid guides: major, minor, optional grid spacing / visibility
@@ -46,7 +40,7 @@ struct Grid(Vec<HomoGrid>);
 #[derive(Bundle)]
 struct GridBundle {
     // tess_data: CompositeMeshData,
-    mat_bundle: MaterialMesh2dBundle<ColorMaterial>,
+    mat_bundle: MaterialMesh2dBundle<SchematicMaterial>,
     marker: Grid,
 }
 
@@ -125,7 +119,7 @@ fn minor(
 
 fn setup(
     mut commands: Commands,
-    mut materials: ResMut<Assets<ColorMaterial>>,
+    mut materials: ResMut<Assets<SchematicMaterial>>,
     mut fill_tess: ResMut<FillTessellator>,
     mut stroke_tess: ResMut<StrokeTessellator>,
     empty_mesh: Res<EmptyMesh>,
@@ -135,13 +129,15 @@ fn setup(
 
     commands.spawn(GridBundle {
         mat_bundle: MaterialMesh2dBundle {
-            material: materials.add(Color::WHITE),
+            material: materials.add(SchematicMaterial {
+                color: Color::WHITE,
+            }),
             transform: Transform::from_translation(Vec3::Z * Z_DEPTH),
             ..Default::default()
         },
         marker: Grid(vec![
             major(empty.clone(), &mut meshes, &mut fill_tess, &mut stroke_tess),
-            minor(empty, &mut meshes, &mut fill_tess, &mut stroke_tess)
+            minor(empty, &mut meshes, &mut fill_tess, &mut stroke_tess),
         ]),
     });
 }
@@ -149,7 +145,10 @@ fn setup(
 fn build_grid(
     ce: Query<
         (&GlobalTransform, &OrthographicProjection),
-        (With<SchematicCamera>, Or<(Changed<OrthographicProjection>, Changed<GlobalTransform>)>),
+        (
+            With<SchematicCamera>,
+            Or<(Changed<OrthographicProjection>, Changed<GlobalTransform>)>,
+        ),
     >,
     mut q_grid: Query<(&mut Mesh2dHandle, &Grid)>,
     mut meshes: ResMut<Assets<Mesh>>,

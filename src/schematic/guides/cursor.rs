@@ -6,7 +6,10 @@ cursor - canvas - clip
 use bevy::{math::vec3, prelude::*, sprite::MaterialMesh2dBundle, window::PrimaryWindow};
 use lyon_tessellation::geom::euclid::{Box2D, Point2D};
 
-use crate::bevyon::{self, CompositeMeshData, SubMesh, TessInData};
+use crate::{
+    bevyon::{self, CompositeMeshData, TessInData},
+    schematic::material::SchematicMaterial,
+};
 
 use super::{SchematicCamera, ZoomInvariant};
 
@@ -44,7 +47,7 @@ pub struct Coords {
 #[derive(Bundle)]
 struct CursorBundle {
     tess_data: CompositeMeshData,
-    mat_bundle: MaterialMesh2dBundle<ColorMaterial>,
+    mat_bundle: MaterialMesh2dBundle<SchematicMaterial>,
     cursor: SchematicCursor,
     zoom_invariant: ZoomInvariant,
 }
@@ -88,7 +91,7 @@ fn update(
     }
 }
 
-fn setup(mut commands: Commands, mut materials: ResMut<Assets<ColorMaterial>>) {
+fn setup(mut commands: Commands, mut materials: ResMut<Assets<SchematicMaterial>>) {
     let mut path_builder = bevyon::path_builder();
     let size = 4.0;
     path_builder.add_rectangle(
@@ -113,7 +116,9 @@ fn setup(mut commands: Commands, mut materials: ResMut<Assets<ColorMaterial>>) {
     commands.spawn(CursorBundle {
         tess_data: CompositeMeshData::from_single(tessellator_input_data),
         mat_bundle: MaterialMesh2dBundle {
-            material: materials.add(Color::GREEN),
+            material: materials.add(SchematicMaterial {
+                color: Color::GREEN,
+            }),
             transform: Transform::from_translation(vec3(0.0, 0.0, Z_DEPTH)),
             ..Default::default()
         },
