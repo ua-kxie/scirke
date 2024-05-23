@@ -73,7 +73,7 @@ fn update(
                 .unwrap();
             let snapped_world_coords = (world_coords / c.snap_step).round() * c.snap_step;
             *visibility = Visibility::Visible;
-            c.coords = Some(Coords {
+            let new_coords = Some(Coords {
                 screen_coords,
                 world_coords,
                 ndc_coords,
