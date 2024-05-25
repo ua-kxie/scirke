@@ -5,8 +5,7 @@ tool for drawing wires
 use bevy::prelude::*;
 
 use crate::schematic::{
-    guides::{NewSnappedCursor, SchematicCursor},
-    material::WireMaterial,
+    elements::ElementsRes, guides::{NewSnappedCursor, SchematicCursor}, material::WireMaterial
 };
 
 use super::SchematicToolState;
@@ -36,11 +35,10 @@ fn main(
     mut next_wiretoolstate: ResMut<NextState<WireToolState>>,
     mut next_schematictoolstate: ResMut<NextState<SchematicToolState>>,
     commands: Commands,
-    meshes: ResMut<Assets<Mesh>>,
-    materials: ResMut<Assets<WireMaterial>>,
     qc: Query<&SchematicCursor>,
     mut qt: Query<&mut Transform>,
     mut e_newsc: EventReader<NewSnappedCursor>,
+    eres: Res<ElementsRes>,
 ) {
     // system should be set to run if schematic tool state is wiring
     // main purpose is to manage WireToolState
@@ -54,7 +52,7 @@ fn main(
         WireToolState::Ready => {
             if buttons.just_released(MouseButton::Left) {
                 // create wire entity and set next wire tool state
-                let ent = create_lineseg(commands, materials, meshes, coords.snapped_world_coords);
+                let ent = create_lineseg(commands, eres, coords.snapped_world_coords);
                 next_wiretoolstate.set(WireToolState::Drawing(ent));
                 return;
             }

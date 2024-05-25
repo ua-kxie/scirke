@@ -34,9 +34,9 @@ use bevy::{
     utils::smallvec::{smallvec, SmallVec},
 };
 
-use crate::schematic::{material::WireMaterial, tools::PickingCollider};
+use crate::schematic::{material::{SchematicMaterial, WireMaterial}, tools::PickingCollider};
 
-use super::{Pickable, SchematicElement};
+use super::{ElementsRes, Pickable, SchematicElement};
 
 /// work with a unit X mesh from (0, 0) -> (1, 0)
 #[derive(Component)]
@@ -72,10 +72,10 @@ struct VertexBundle {
 
 pub fn create_lineseg(
     mut commands: Commands,
-    mut materials: ResMut<Assets<WireMaterial>>,
-    mut meshes: ResMut<Assets<Mesh>>,
+    eres: Res<ElementsRes>,
     coords: Vec2,
 ) -> Entity {
+    dbg!("bla");
     // vertex and segments have eachothers entity as reference
     // spawn point at cursor position
     let spawn_point =
@@ -87,18 +87,10 @@ pub fn create_lineseg(
     let lineseg = commands.spawn(spawn_unitx).id();
 
     let mat_bundle = MaterialMesh2dBundle {
-        // TODO: automatic batching need instances to share the same mesh
         mesh: Mesh2dHandle(
-            meshes.add(
-                Mesh::new(PrimitiveTopology::LineList, RenderAssetUsages::RENDER_WORLD)
-                    .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, vec![Vec3::ZERO, Vec3::X])
-                    .with_inserted_attribute(Mesh::ATTRIBUTE_COLOR, vec![Vec4::ONE, Vec4::ONE])
-                    .with_inserted_indices(bevy::render::mesh::Indices::U32(vec![0, 1])),
-            ),
+            eres.unitx_mesh.clone().unwrap()
         ),
-        material: materials.add(WireMaterial {
-            color: Color::WHITE,
-        }),
+        material: eres.mat_dflt.clone().unwrap(),
         transform: Transform::from_translation(coords.extend(0.0)).with_scale(Vec3::splat(1.0)),
         ..Default::default()
     };
