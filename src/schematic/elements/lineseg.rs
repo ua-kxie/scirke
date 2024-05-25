@@ -15,8 +15,8 @@
 //!
 //! render performance: should use gpu instancing of a bunch of unit X lines with based on transform
 //! bevy does this automatically for entities which share a mesh and material instance
-//! each material type: have a default, tentative, selected, both material instance
-//! switch material instance if becomes tentative or selected or both
+//! each material type: have a default, picked, selected, both material instance
+//! switch material instance if becomes picked or selected or both
 //! this way entities are mostly batched automatically
 //!
 //! back data with petgraph and reflect contents in bevy?

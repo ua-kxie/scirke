@@ -47,7 +47,7 @@ struct SelToolRes {
 }
 
 // system should work with SchematicElement, GlobalTransform, to determine if colliding with picking collider
-// picking system: get all schematicElements, cursor snapped position, and mark tentative elements as such
+// picking system: get all schematicElements, cursor snapped position, and mark picked elements as such
 // based on event: pickingcollider changed
 fn pick(mut e_new_collider: EventReader<NewPickingCollider>) {
     let Some(NewPickingCollider(collider)) = e_new_collider.read().last() else {
@@ -134,12 +134,11 @@ fn setup(mut commands: Commands, mut materials: ResMut<Assets<SchematicMaterial>
         stroke: None,
         fill: Some(bevyon::FillOptions::DEFAULT),
     };
+    // TODO: stroke width needs to scale with projection scale so it appears zoom invariant
     let tess_stroke_data = TessInData {
         path: None,
         stroke: Some(
             bevyon::StrokeOptions::DEFAULT
-                .with_line_width(1.0)
-                .with_tolerance(1.0),
         ),
         fill: None,
     };
@@ -148,12 +147,12 @@ fn setup(mut commands: Commands, mut materials: ResMut<Assets<SchematicMaterial>
         tess_data: CompositeMeshData {
             mesh_data: vec![
                 SubMesh::new_with_color(tess_fill_data, Color::WHITE.with_a(0.1)),
-                SubMesh::new_with_color(tess_stroke_data, Color::RED.with_a(0.5)),
+                SubMesh::new_with_color(tess_stroke_data, Color::RED.with_a(1.0)),
             ],
         },
         mat_bundle: MaterialMesh2dBundle {
             material: materials.add(SchematicMaterial {
-                color: Color::GREEN,
+                color: Color::WHITE,
             }),
             transform: Transform::from_translation(Vec3::new(0.0, 0.0, Z_DEPTH)),
             ..Default::default()
