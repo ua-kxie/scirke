@@ -9,8 +9,7 @@ mod cursor;
 mod grid;
 mod origin_marker;
 
-pub use cursor::SchematicCursor;
-pub use cursor::NewSnappedCursor;
+pub use cursor::{NewSnappedCursor, SchematicCursor};
 
 pub struct GuidesPlugin;
 

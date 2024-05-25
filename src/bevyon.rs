@@ -101,6 +101,12 @@ pub struct SubMesh {
     pub color: Color,
 }
 
+impl SubMesh {
+    pub fn new_with_color(tess_data: TessInData, color: Color) -> Self {
+        SubMesh { tess_data, color }
+    }
+}
+
 /// bevyon Input Data
 /// queries for Changed<>
 /// allows for building meshes with different color attributes using mesh merge
