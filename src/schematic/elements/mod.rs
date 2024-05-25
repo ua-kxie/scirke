@@ -7,6 +7,9 @@ use bevy::prelude::*;
 use bevy::math::bounding::{Aabb2d, AabbCast2d, RayCast2d};
 
 mod lineseg;
+pub use lineseg::LineSegment;
+pub use lineseg::LineVertex;
+pub use lineseg::create_lineseg;
 
 /// marker component to mark entity as colliding with picking collider
 #[derive(Component)]
@@ -33,7 +36,7 @@ pub struct ElementsPlugin;
 impl Plugin for ElementsPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, lineseg::setup);
-        app.add_systems(Update, lineseg::test);
+        app.add_systems(Update, lineseg::transform_lineseg);
     }
 }
 
@@ -65,8 +68,9 @@ struct SchematicElement{
     behavior: Box<dyn Pickable + Send + Sync + 'static>,
 }
 
+/// Pickable trait to define how elements consider themselves "picked"
 trait Pickable {
-    fn test(&self);
+    fn collides(&self, pc: PickingCollider);
 }
 
 // entity wireseg schematicElement(TO)

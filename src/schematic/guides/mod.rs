@@ -10,6 +10,7 @@ mod grid;
 mod origin_marker;
 
 pub use cursor::SchematicCursor;
+pub use cursor::NewSnappedCursor;
 
 pub struct GuidesPlugin;
 
@@ -18,7 +19,8 @@ impl Plugin for GuidesPlugin {
         app.add_plugins(CursorPlugin);
         app.add_plugins(GridPlugin);
         app.add_plugins(Material2dPlugin::<ClipMaterial>::default());
-        app.add_systems(Startup, (background::setup, origin_marker::setup));
+        app.add_systems(Startup, origin_marker::setup);
+        // app.add_systems(Startup, (background::setup, origin_marker::setup));
         app.configure_sets(
             PostUpdate,
             SnapSet.before(bevy::transform::TransformSystem::TransformPropagate),
