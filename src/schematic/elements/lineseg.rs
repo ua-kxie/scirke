@@ -75,7 +75,6 @@ pub fn create_lineseg(
     eres: Res<ElementsRes>,
     coords: Vec2,
 ) -> Entity {
-    dbg!("bla");
     // vertex and segments have eachothers entity as reference
     // spawn point at cursor position
     let spawn_point =

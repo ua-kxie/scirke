@@ -69,7 +69,7 @@ pub fn setup(mut commands: Commands, mut materials: ResMut<Assets<SchematicMater
         ),
         mat_bundle: MaterialMesh2dBundle {
             material: materials.add(SchematicMaterial {
-                color: Color::WHITE,
+                color: Color::BLACK.with_a(0.0),
             }),
             transform: Transform::from_translation(vec3(0.0, 0.0, Z_DEPTH)),
             ..Default::default()

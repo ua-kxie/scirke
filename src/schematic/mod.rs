@@ -88,7 +88,7 @@ fn setup(
             ),
         ),
         material: materials.add(WireMaterial {
-            color: Color::WHITE,
+            color: Color::BLACK.with_a(0.0),
         }),
         transform: Transform::from_scale(Vec3::splat(1.0)),
         ..Default::default()

@@ -147,7 +147,7 @@ fn setup(mut commands: Commands, mut materials: ResMut<Assets<SchematicMaterial>
         tess_data: CompositeMeshData::from_single(tessellator_input_data),
         mat_bundle: MaterialMesh2dBundle {
             material: materials.add(SchematicMaterial {
-                color: Color::GREEN,
+                color: Color::BLACK.with_a(0.0),
             }),
             transform: Transform::from_translation(vec3(0.0, 0.0, Z_DEPTH)),
             ..Default::default()

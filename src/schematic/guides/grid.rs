@@ -130,7 +130,7 @@ fn setup(
     commands.spawn(GridBundle {
         mat_bundle: MaterialMesh2dBundle {
             material: materials.add(SchematicMaterial {
-                color: Color::WHITE,
+                color: Color::BLACK.with_a(0.0),
             }),
             transform: Transform::from_translation(Vec3::Z * Z_DEPTH),
             ..Default::default()
