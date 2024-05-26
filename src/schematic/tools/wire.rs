@@ -5,7 +5,8 @@ tool for drawing wires
 use bevy::prelude::*;
 
 use crate::schematic::{
-    elements::ElementsRes, guides::{NewSnappedCursor, SchematicCursor}, material::WireMaterial
+    elements::ElementsRes,
+    guides::{NewSnappedCursor, SchematicCursor},
 };
 
 use super::SchematicToolState;

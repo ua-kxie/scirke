@@ -139,9 +139,7 @@ fn setup(mut commands: Commands, mut materials: ResMut<Assets<SchematicMaterial>
     // TODO: stroke width needs to scale with projection scale so it appears zoom invariant
     let tess_stroke_data = TessInData {
         path: None,
-        stroke: Some(
-            bevyon::StrokeOptions::DEFAULT
-        ),
+        stroke: Some(bevyon::StrokeOptions::DEFAULT),
         fill: None,
     };
     commands.spawn(SelToolMarkerBundle {

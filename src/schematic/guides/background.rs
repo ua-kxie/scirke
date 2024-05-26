@@ -42,7 +42,9 @@ pub fn setup(
     let bundle = (
         MaterialMesh2dBundle {
             mesh: Mesh2dHandle(meshid),
-            material: clip_materials.add(ClipMaterial { color: Color::DARK_GRAY }),
+            material: clip_materials.add(ClipMaterial {
+                color: Color::DARK_GRAY,
+            }),
             transform: Transform::from_translation(vec3(0.0, 0.0, Z_DEPTH)),
             ..Default::default()
         },

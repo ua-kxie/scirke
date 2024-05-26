@@ -9,4 +9,5 @@ opt-level = 3
 
 [dependencies]
 bevy = {version="0.13.2"}
+euclid = "0.22.10"
 lyon_tessellation = "1"

@@ -3,8 +3,7 @@ use bevy::prelude::*;
 mod sel;
 mod wire;
 
-pub use sel::PickingCollider;
-pub use sel::NewPickingCollider;
+pub use sel::{NewPickingCollider, PickingCollider};
 
 const WIRE_TOOL_KEY: KeyCode = KeyCode::KeyW;
 

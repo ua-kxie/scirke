@@ -27,14 +27,15 @@
 //! but maybe something more basic like a pipeline would do just as well.
 //! on simulation command: nets can be sent into petgraph to be simplified? (net names need to be reflected back in schematic)
 
+use crate::schematic::{
+    tools::PickingCollider,
+};
 use bevy::{
     prelude::*,
-    render::{mesh::PrimitiveTopology, render_asset::RenderAssetUsages},
     sprite::{MaterialMesh2dBundle, Mesh2dHandle},
     utils::smallvec::{smallvec, SmallVec},
 };
-
-use crate::schematic::{material::{SchematicMaterial, WireMaterial}, tools::PickingCollider};
+use euclid::default::{Box2D, Point2D};
 
 use super::{ElementsRes, Pickable, SchematicElement};
 
@@ -45,13 +46,26 @@ pub struct LineSegment {
     b: Entity,
 }
 
-struct PickableLineSeg;
-impl Pickable for LineSegment {
-    fn collides(&self, pc: PickingCollider) -> bool {
+struct PickableLineSeg {
+    bounds: Box2D<f32>,
+}
+impl Default for PickableLineSeg {
+    fn default() -> Self {
+        Self {
+            bounds: Box2D::from_points([Point2D::splat(0.0), Point2D::new(1.0, 0.0)])
+                .inflate(0.1, 0.1),
+        }
+    }
+}
+impl Pickable for PickableLineSeg {
+    fn collides(&self, pc: &PickingCollider, gt: Mat4) -> bool {
         match pc {
-            PickingCollider::Point(_) => todo!(),
-            PickingCollider::AreaIntersect(_) => todo!(),
-            PickingCollider::AreaContains(_) => todo!(),
+            PickingCollider::Point(p) => {
+                let p1 = gt.transform_point3(p.extend(0.0));
+                self.bounds.contains(Point2D::new(p1.x, p1.y))
+            }
+            PickingCollider::AreaIntersect(_) => false,
+            PickingCollider::AreaContains(_) => false,
         }
     }
 }
@@ -64,8 +78,8 @@ pub struct LineVertex {
 }
 struct PickableVertex;
 impl Pickable for PickableVertex {
-    fn collides(&self, pc: PickingCollider) -> bool {
-        false  // TODO: make pickable
+    fn collides(&self, pc: &PickingCollider, t: Mat4) -> bool {
+        false // TODO: make pickable
     }
 }
 #[derive(Bundle)]
@@ -74,11 +88,7 @@ struct VertexBundle {
     schematic_element: SchematicElement,
 }
 
-pub fn create_lineseg(
-    mut commands: Commands,
-    eres: Res<ElementsRes>,
-    coords: Vec2,
-) -> Entity {
+pub fn create_lineseg(mut commands: Commands, eres: Res<ElementsRes>, coords: Vec2) -> Entity {
     // vertex and segments have eachothers entity as reference
     // spawn point at cursor position
     let spawn_point =
@@ -90,9 +100,7 @@ pub fn create_lineseg(
     let lineseg = commands.spawn(spawn_unitx).id();
 
     let mat_bundle = MaterialMesh2dBundle {
-        mesh: Mesh2dHandle(
-            eres.unitx_mesh.clone().unwrap()
-        ),
+        mesh: Mesh2dHandle(eres.unitx_mesh.clone().unwrap()),
         material: eres.mat_dflt.clone().unwrap(),
         transform: Transform::from_translation(coords.extend(0.0)).with_scale(Vec3::splat(1.0)),
         ..Default::default()
@@ -107,7 +115,13 @@ pub fn create_lineseg(
 
     commands.entity(vertex_a).insert(v.clone());
     commands.entity(vertex_a).insert(v);
-    commands.entity(lineseg).insert((ls, mat_bundle));
+    commands.entity(lineseg).insert((
+        ls,
+        mat_bundle,
+        SchematicElement {
+            behavior: Box::new(PickableLineSeg::default()),
+        },
+    ));
 
     vertex_b
 }
