@@ -8,6 +8,8 @@ use crate::{
     },
 };
 
+use super::SchematicToolState;
+
 /// struct describes the picking collider
 pub enum PickingCollider {
     Point(Vec2),
@@ -17,7 +19,7 @@ pub enum PickingCollider {
 
 /// event to be sent when the picking collider changes
 #[derive(Event)]
-pub struct NewPickingCollider(PickingCollider);
+pub struct NewPickingCollider(pub PickingCollider);
 
 impl NewPickingCollider {
     pub fn point(p: Vec2) -> NewPickingCollider {
@@ -65,7 +67,7 @@ pub struct SelToolPlugin;
 impl Plugin for SelToolPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, setup);
-        app.add_systems(Update, main);
+        app.add_systems(Update, main.run_if(in_state(SchematicToolState::Idle)));
         app.init_resource::<SelToolRes>();
         app.add_event::<NewPickingCollider>();
     }

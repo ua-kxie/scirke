@@ -3,12 +3,12 @@
 //! must support: picking by point/ray, by area intersect, by area contained
 //! picking by point/ray should only ever mark 1 entity as picked
 
-use bevy::{prelude::*, render::{mesh::PrimitiveTopology, render_asset::RenderAssetUsages}, sprite::Mesh2dHandle};
+use bevy::{ecs::query, prelude::*, render::{mesh::PrimitiveTopology, render_asset::RenderAssetUsages}, sprite::Mesh2dHandle};
 
 mod lineseg;
 pub use lineseg::create_lineseg;
 
-use super::{material::{SchematicMaterial, WireMaterial}, tools::PickingCollider};
+use super::{material::{SchematicMaterial, WireMaterial}, tools::{NewPickingCollider, PickingCollider}};
 
 
 #[derive(Resource, Default)]
@@ -42,9 +42,12 @@ struct SchematicElement {
 }
 
 /// Pickable trait to define how elements consider themselves "picked"
+/// function needs sufficient information to determine collision
+/// includes: picking collider, own hitbox
 trait Pickable {
-    fn collides(&self, pc: PickingCollider);
+    fn collides(&self, pc: PickingCollider) -> bool;
 }
+
 
 // entity wireseg schematicElement(TO)
 // entity vertex schematicElement(TO)
@@ -86,10 +89,20 @@ fn startup(
 }
 
 /// system to apply selected/picked marker components
+/// picking collision system:
+/// on new picking collider:
+/// get all schematic elements
+/// check collision thorugh pickable trait obj
 fn picking(
+    mut commands: Commands,
+    mut e_newpck: EventReader<NewPickingCollider>,
+    q_se: Query<(Entity, &GlobalTransform, &SchematicElement)>
     
 ) {
-
+    let Some(NewPickingCollider(pc)) = e_newpck.read().last() else {
+        return
+    };
+    
 }
 
 // a line seg should be picked by area intersect if either vertex is contained

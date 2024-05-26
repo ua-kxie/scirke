@@ -47,8 +47,12 @@ pub struct LineSegment {
 
 struct PickableLineSeg;
 impl Pickable for LineSegment {
-    fn collides(&self, pc: PickingCollider) {
-        todo!()
+    fn collides(&self, pc: PickingCollider) -> bool {
+        match pc {
+            PickingCollider::Point(_) => todo!(),
+            PickingCollider::AreaIntersect(_) => todo!(),
+            PickingCollider::AreaContains(_) => todo!(),
+        }
     }
 }
 
@@ -60,8 +64,8 @@ pub struct LineVertex {
 }
 struct PickableVertex;
 impl Pickable for PickableVertex {
-    fn collides(&self, pc: PickingCollider) {
-        todo!()
+    fn collides(&self, pc: PickingCollider) -> bool {
+        false  // TODO: make pickable
     }
 }
 #[derive(Bundle)]

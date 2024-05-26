@@ -4,6 +4,7 @@ mod sel;
 mod wire;
 
 pub use sel::PickingCollider;
+pub use sel::NewPickingCollider;
 
 const WIRE_TOOL_KEY: KeyCode = KeyCode::KeyW;
 
