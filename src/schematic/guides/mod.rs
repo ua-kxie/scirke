@@ -41,7 +41,10 @@ pub struct ZoomInvariant;
 /// only needs to run when projection scale changes
 fn revert_zoom_scale(
     ce: Query<(&OrthographicProjection, Ref<OrthographicProjection>), With<SchematicCamera>>,
-    mut qt: ParamSet<(Query<&mut Transform, With<ZoomInvariant>>, Query<&mut Transform, Changed<ZoomInvariant>>)>,
+    mut qt: ParamSet<(
+        Query<&mut Transform, With<ZoomInvariant>>,
+        Query<&mut Transform, Changed<ZoomInvariant>>,
+    )>,
 ) {
     let (proj, change) = ce.single();
     match change.is_changed() {
@@ -50,12 +53,12 @@ fn revert_zoom_scale(
             for mut t in qt.p0().iter_mut() {
                 *t = t.with_scale(Vec3::splat(proj.scale));
             }
-        },
+        }
         false => {
             // revert for entities newly tagged with zoom invariant
             for mut t in qt.p1().iter_mut() {
                 *t = t.with_scale(Vec3::splat(proj.scale));
             }
-        },
+        }
     }
 }

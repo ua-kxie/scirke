@@ -91,13 +91,16 @@ fn startup(
     );
 
     let hex = [
-        Vec3::new(0.0, 1.0, 0.0), 
-        Vec3::new(-0.866025, 0.5, 0.0), 
-        Vec3::new(0.866025, 0.5, 0.0), 
-        Vec3::new(-0.866025, -0.5, 0.0), 
-        Vec3::new(0.866025, -0.5, 0.0), 
-        Vec3::new(0.0, -1.0, 0.0), 
-        ].into_iter().map(|x| x * 2.0).collect::<Vec<Vec3>>();
+        Vec3::new(0.0, 1.0, 0.0),
+        Vec3::new(-0.866025, 0.5, 0.0),
+        Vec3::new(0.866025, 0.5, 0.0),
+        Vec3::new(-0.866025, -0.5, 0.0),
+        Vec3::new(0.866025, -0.5, 0.0),
+        Vec3::new(0.0, -1.0, 0.0),
+    ]
+    .into_iter()
+    .map(|x| x * 2.0)
+    .collect::<Vec<Vec3>>();
     eres.mesh_dot = Some(
         meshes.add(
             Mesh::new(
@@ -106,7 +109,9 @@ fn startup(
             )
             .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, hex)
             .with_inserted_attribute(Mesh::ATTRIBUTE_COLOR, vec![c; 6])
-            .with_inserted_indices(bevy::render::mesh::Indices::U32((0..6).collect::<Vec<u32>>())),
+            .with_inserted_indices(bevy::render::mesh::Indices::U32(
+                (0..6).collect::<Vec<u32>>(),
+            )),
         ),
     );
 

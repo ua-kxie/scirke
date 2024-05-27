@@ -62,9 +62,9 @@ impl Pickable for PickableLineSeg {
                 let p1 = gt.transform_point3(p.extend(0.0));
                 let (s, _, _) = gt.to_scale_rotation_translation();
                 Box2D::from_points([Point2D::splat(0.0), Point2D::new(1.0, 0.0)])
-                // inflate proportional to inverse transform scale so that longer lines dont get bigger hit boxes
-                .inflate(s.y * 0.5, s.y * 0.5)
-                .contains_inclusive(Point2D::new(p1.x, p1.y))
+                    // inflate proportional to inverse transform scale so that longer lines dont get bigger hit boxes
+                    .inflate(s.y * 0.5, s.y * 0.5)
+                    .contains_inclusive(Point2D::new(p1.x, p1.y))
             }
             PickingCollider::AreaIntersect(_) => false,
             PickingCollider::AreaContains(_) => false,
@@ -78,10 +78,20 @@ impl Pickable for PickableLineSeg {
 pub struct LineVertex {
     branches: SmallVec<[Entity; 8]>, // anything above a three should be circuit schematic warning
 }
+
+#[derive(Clone, Default)]
 struct PickableVertex;
 impl Pickable for PickableVertex {
-    fn collides(&self, pc: &PickingCollider, t: Mat4) -> bool {
-        false // TODO: make pickable
+    fn collides(&self, pc: &PickingCollider, gt: Mat4) -> bool {
+        match pc {
+            PickingCollider::Point(p) => {
+                let p1 = gt.transform_point3(p.extend(0.0));
+                Box2D::from_points([Point2D::splat(-0.5), Point2D::splat(0.5)])
+                    .contains_inclusive(Point2D::new(p1.x, p1.y))
+            }
+            PickingCollider::AreaIntersect(_) => false,
+            PickingCollider::AreaContains(_) => false,
+        }
     }
 }
 #[derive(Bundle)]
@@ -118,7 +128,9 @@ pub fn create_lineseg(mut commands: Commands, eres: Res<ElementsRes>, coords: Ve
         },
     );
     let v = (
-        LineVertex {branches: smallvec![lineseg]},
+        LineVertex {
+            branches: smallvec![lineseg],
+        },
         MaterialMesh2dBundle {
             mesh: Mesh2dHandle(eres.mesh_dot.clone().unwrap()),
             material: eres.mat_dflt.clone().unwrap(),
@@ -128,8 +140,18 @@ pub fn create_lineseg(mut commands: Commands, eres: Res<ElementsRes>, coords: Ve
         ZoomInvariant,
     );
 
-    commands.entity(vertex_a).insert(v.clone());
-    commands.entity(vertex_b).insert(v);
+    commands.entity(vertex_a).insert((
+        v.clone(),
+        SchematicElement {
+            behavior: Box::new(PickableVertex::default()),
+        },
+    ));
+    commands.entity(vertex_b).insert((
+        v,
+        SchematicElement {
+            behavior: Box::new(PickableVertex::default()),
+        },
+    ));
     commands.entity(lineseg).insert(ls);
 
     vertex_b
