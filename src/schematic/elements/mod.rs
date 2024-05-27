@@ -12,7 +12,7 @@ mod lineseg;
 pub use lineseg::create_lineseg;
 
 use super::{
-    material::WireMaterial,
+    material::SchematicMaterial,
     tools::{NewPickingCollider, PickingCollider},
 };
 
@@ -20,14 +20,15 @@ use super::{
 pub struct ElementsRes {
     /// unit x line mesh, transformed by scale, rotation and translation to visualize a line segment
     pub unitx_mesh: Option<Handle<Mesh>>,
+
     /// default material
-    pub mat_dflt: Option<Handle<WireMaterial>>,
+    pub mat_dflt: Option<Handle<SchematicMaterial>>,
     /// selected material
-    pub mat_seld: Option<Handle<WireMaterial>>,
+    pub mat_seld: Option<Handle<SchematicMaterial>>,
     /// picked material
-    pub mat_pckd: Option<Handle<WireMaterial>>,
+    pub mat_pckd: Option<Handle<SchematicMaterial>>,
     /// selected + picked material
-    pub mat_alld: Option<Handle<WireMaterial>>,
+    pub mat_alld: Option<Handle<SchematicMaterial>>,
 }
 
 /// marker component to mark entity as colliding with picking collider
@@ -63,6 +64,7 @@ impl Plugin for ElementsPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, (startup, lineseg::setup));
         app.add_systems(Update, (lineseg::transform_lineseg, picking));
+        app.add_systems(PostUpdate, set_mat);
         app.init_resource::<ElementsRes>();
     }
 }
@@ -71,7 +73,8 @@ impl Plugin for ElementsPlugin {
 fn startup(
     mut eres: ResMut<ElementsRes>,
     mut meshes: ResMut<Assets<Mesh>>,
-    mut mats: ResMut<Assets<WireMaterial>>,
+    // mut wmats: ResMut<Assets<WireMaterial>>,
+    mut mats: ResMut<Assets<SchematicMaterial>>,
 ) {
     let c = Color::AQUAMARINE.rgba_linear_to_vec4();
     eres.unitx_mesh = Some(
@@ -85,16 +88,17 @@ fn startup(
             .with_inserted_indices(bevy::render::mesh::Indices::U32(vec![0, 1])),
         ),
     );
-    eres.mat_dflt = Some(mats.add(WireMaterial {
+
+    eres.mat_dflt = Some(mats.add(SchematicMaterial {
         color: Color::BLACK,
     }));
-    eres.mat_pckd = Some(mats.add(WireMaterial {
+    eres.mat_pckd = Some(mats.add(SchematicMaterial {
         color: Color::WHITE,
     }));
-    eres.mat_seld = Some(mats.add(WireMaterial {
+    eres.mat_seld = Some(mats.add(SchematicMaterial {
         color: Color::YELLOW,
     }));
-    eres.mat_alld = Some(mats.add(WireMaterial {
+    eres.mat_alld = Some(mats.add(SchematicMaterial {
         color: Color::WHITE + Color::YELLOW,
     }));
 }
@@ -107,28 +111,49 @@ fn startup(
 fn picking(
     mut commands: Commands,
     mut e_newpck: EventReader<NewPickingCollider>,
-    mut q_wse: Query<(
-        Entity,
-        &GlobalTransform,
-        &SchematicElement,
-        &mut Handle<WireMaterial>,
-    )>,
-    // q_se: Query<(&GlobalTransform, &SchematicElement, &Handle<SchematicMaterial>)>,
-    element_res: Res<ElementsRes>,
+    mut q_wse: Query<(Entity, &GlobalTransform, &SchematicElement)>,
 ) {
     let Some(NewPickingCollider(pc)) = e_newpck.read().last() else {
         return;
     };
-    for (ent, sgt, se, mut wmat) in q_wse.iter_mut() {
+    for (ent, sgt, se) in q_wse.iter_mut() {
         let t = sgt.compute_matrix().inverse();
         if t.is_nan() {
             continue;
         }
-        if se.behavior.collides(pc, t) {
-            commands.entity(ent).insert(Picked);
-            *wmat = element_res.mat_pckd.clone().unwrap(); // TODO architecture needs to change once elements can be selected
-        } else {
-            *wmat = element_res.mat_dflt.clone().unwrap(); // TODO architecture needs to change once elements can be selected
+        match se.behavior.collides(pc, t) {
+            true => {
+                commands.entity(ent).insert(Picked);
+            }
+            false => {
+                commands.entity(ent).remove::<Picked>();
+            }
+        }
+    }
+}
+
+/// this system sets element material based on whether it is selected, picked, or both
+/// should run after systems which modifies the selected and picked tags
+fn set_mat(
+    element_res: Res<ElementsRes>,
+    mut q_sse: Query<(
+        &mut Handle<SchematicMaterial>,
+        Option<&Picked>,
+        Option<&Selected>,
+    )>,
+    mut e_newpck: EventReader<NewPickingCollider>,
+) {
+    let Some(_) = e_newpck.read().last() else {
+        // TODO: returns if no new picking nor selected events
+        return;
+    };
+
+    for (mut mat, pcked, seld) in q_sse.iter_mut() {
+        match (pcked, seld) {
+            (None, None) => *mat = element_res.mat_dflt.clone().unwrap(),
+            (None, Some(_)) => *mat = element_res.mat_seld.clone().unwrap(),
+            (Some(_), None) => *mat = element_res.mat_pckd.clone().unwrap(),
+            (Some(_), Some(_)) => *mat = element_res.mat_alld.clone().unwrap(),
         }
     }
 }

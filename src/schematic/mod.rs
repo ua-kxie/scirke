@@ -1,10 +1,6 @@
 use self::{
-    camera::CameraPlugin,
-    elements::ElementsPlugin,
-    guides::GuidesPlugin,
-    infotext::InfoPlugin,
-    material::{SchematicMaterial, WireMaterial},
-    tools::ToolsPlugin,
+    camera::CameraPlugin, elements::ElementsPlugin, guides::GuidesPlugin, infotext::InfoPlugin,
+    material::SchematicMaterial, tools::ToolsPlugin,
 };
 use bevy::{
     prelude::*,
@@ -60,7 +56,7 @@ impl Plugin for SchematicPlugin {
         // app.add_systems(Startup, setup);
         app.add_systems(PostUpdate, snap.in_set(SnapSet));
         app.add_plugins(Material2dPlugin::<SchematicMaterial>::default());
-        app.add_plugins(Material2dPlugin::<WireMaterial>::default());
+        // app.add_plugins(Material2dPlugin::<WireMaterial>::default());
     }
 }
 
@@ -74,7 +70,7 @@ fn snap(mut e: Query<(&mut Transform, &Snap), Changed<GlobalTransform>>) {
 /// helper system to test things quick and dirty
 fn setup(
     mut commands: Commands,
-    mut materials: ResMut<Assets<WireMaterial>>,
+    mut materials: ResMut<Assets<SchematicMaterial>>,
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
     let mat_bundle = MaterialMesh2dBundle {
@@ -87,7 +83,7 @@ fn setup(
                     .with_inserted_indices(bevy::render::mesh::Indices::U32(vec![0, 1])),
             ),
         ),
-        material: materials.add(WireMaterial {
+        material: materials.add(SchematicMaterial {
             color: Color::BLACK.with_a(0.0),
         }),
         transform: Transform::from_scale(Vec3::splat(1.0)),

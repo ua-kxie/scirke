@@ -27,9 +27,7 @@
 //! but maybe something more basic like a pipeline would do just as well.
 //! on simulation command: nets can be sent into petgraph to be simplified? (net names need to be reflected back in schematic)
 
-use crate::schematic::{
-    tools::PickingCollider,
-};
+use crate::schematic::tools::PickingCollider;
 use bevy::{
     prelude::*,
     sprite::{MaterialMesh2dBundle, Mesh2dHandle},
