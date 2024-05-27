@@ -13,7 +13,7 @@ pub use lineseg::create_lineseg;
 
 use super::{
     material::SchematicMaterial,
-    tools::{NewPickingCollider, PickingCollider},
+    tools::{NewPickingCollider, PickingCollider, SelectEvt},
 };
 
 #[derive(Resource, Default)]
@@ -33,11 +33,11 @@ pub struct ElementsRes {
 
 /// marker component to mark entity as colliding with picking collider
 #[derive(Component)]
-struct Picked;
+pub struct Picked;
 
 /// marker component to mark entity as selected
 #[derive(Component)]
-struct Selected;
+pub struct Selected;
 
 /// different components that impl a given trait T with functions to compute picking collision
 /// add different
@@ -112,42 +112,62 @@ fn picking(
     mut commands: Commands,
     mut e_newpck: EventReader<NewPickingCollider>,
     mut q_wse: Query<(Entity, &GlobalTransform, &SchematicElement)>,
+    mut e_sel: EventReader<SelectEvt>,
+
+    qes: Query<Entity, With<Selected>>,
+    qep: Query<Entity, With<Picked>>,
 ) {
-    let Some(NewPickingCollider(pc)) = e_newpck.read().last() else {
-        return;
-    };
-    for (ent, sgt, se) in q_wse.iter_mut() {
-        let t = sgt.compute_matrix().inverse();
-        if t.is_nan() {
-            continue;
+    if let Some(NewPickingCollider(pc)) = e_newpck.read().last() {
+        for (ent, sgt, se) in q_wse.iter_mut() {
+            let t = sgt.compute_matrix().inverse();
+            if t.is_nan() {
+                continue;
+            }
+            match se.behavior.collides(pc, t) {
+                true => {
+                    commands.entity(ent).insert(Picked);
+                }
+                false => {
+                    commands.entity(ent).remove::<Picked>();
+                }
+            }
         }
-        match se.behavior.collides(pc, t) {
-            true => {
-                commands.entity(ent).insert(Picked);
+    };
+
+    for selevt in e_sel.read().into_iter() {
+        match selevt {
+            SelectEvt::New => {
+                sel_clear(&mut commands, &qes);
+                sel_append(&mut commands, &qep);
             }
-            false => {
-                commands.entity(ent).remove::<Picked>();
-            }
+            SelectEvt::Append => sel_append(&mut commands, &qep),
+            SelectEvt::Clear => sel_clear(&mut commands, &qes),
         }
     }
 }
 
-/// this system sets element material based on whether it is selected, picked, or both
-/// should run after systems which modifies the selected and picked tags
+/// function to clear selected marker from all elements
+fn sel_clear(commands: &mut Commands, qes: &Query<Entity, With<Selected>>) {
+    for e in qes.iter() {
+        commands.entity(e).remove::<Selected>();
+    }
+}
+
+/// function to mark as selected all elements already marked as picked
+fn sel_append(command: &mut Commands, qep: &Query<Entity, With<Picked>>) {
+    for e in qep.iter() {
+        command.entity(e).insert(Selected);
+    }
+}
+
 fn set_mat(
-    element_res: Res<ElementsRes>,
     mut q_sse: Query<(
         &mut Handle<SchematicMaterial>,
         Option<&Picked>,
         Option<&Selected>,
     )>,
-    mut e_newpck: EventReader<NewPickingCollider>,
+    element_res: Res<ElementsRes>,
 ) {
-    let Some(_) = e_newpck.read().last() else {
-        // TODO: returns if no new picking nor selected events
-        return;
-    };
-
     for (mut mat, pcked, seld) in q_sse.iter_mut() {
         match (pcked, seld) {
             (None, None) => *mat = element_res.mat_dflt.clone().unwrap(),
@@ -161,3 +181,4 @@ fn set_mat(
 // a line seg should be picked by area intersect if either vertex is contained
 // a line seg should be picked by area contains if both vertex is contained
 // need different code to run depending on collision target
+// picking -> selected -> set mat

@@ -17,6 +17,16 @@ pub enum PickingCollider {
     AreaContains(Aabb2d),
 }
 
+/// event to be sent when elements marked picked should be marked with selected
+#[derive(Event)]
+pub enum SelectEvt {
+    New,    // replace selection with current picked set
+    Append, // append to selection with current picked set
+    // Inverse,  // invert selected entities
+    Clear, // deselect all
+           // All,  // select all valid targets
+}
+
 /// event to be sent when the picking collider changes
 #[derive(Event)]
 pub struct NewPickingCollider(pub PickingCollider);
@@ -43,23 +53,11 @@ struct SelToolMarkerBundle {
     mat_bundle: MaterialMesh2dBundle<SchematicMaterial>,
 }
 
+/// Selection tool resources
+/// stores the coordinate where left mouse button was clicked down at
 #[derive(Resource, Default)]
 struct SelToolRes {
     sel_area_origin: Vec2,
-}
-
-// system should work with SchematicElement, GlobalTransform, to determine if colliding with picking collider
-// picking system: get all schematicElements, cursor snapped position, and mark picked elements as such
-// based on event: pickingcollider changed
-fn pick(mut e_new_collider: EventReader<NewPickingCollider>) {
-    let Some(NewPickingCollider(collider)) = e_new_collider.read().last() else {
-        return;
-    };
-    match collider {
-        PickingCollider::Point(_) => todo!(),
-        PickingCollider::AreaIntersect(_) => todo!(),
-        PickingCollider::AreaContains(_) => todo!(),
-    }
 }
 
 pub struct SelToolPlugin;
@@ -70,8 +68,11 @@ impl Plugin for SelToolPlugin {
         app.add_systems(Update, main.run_if(in_state(SchematicToolState::Idle)));
         app.init_resource::<SelToolRes>();
         app.add_event::<NewPickingCollider>();
+        app.add_event::<SelectEvt>();
     }
 }
+
+/// on mouse button released: add selected marker to all schematic elements with picked marker
 
 fn main(
     mut e_newsc: EventReader<NewSnappedCursor>,
@@ -80,6 +81,11 @@ fn main(
     mut e_newpc: EventWriter<NewPickingCollider>,
     mut selres: ResMut<SelToolRes>,
     mut q_s: Query<&mut CompositeMeshData, With<SelMarker>>,
+    // mut command: Commands,
+    // q_pckd: Query<Entity, With<Picked>>,
+    // q_seld: Query<Entity, With<Selected>>,
+    keys: Res<ButtonInput<KeyCode>>,
+    mut e_sel: EventWriter<SelectEvt>,
 ) {
     // record cursor left click location
     if buttons.just_pressed(MouseButton::Left) {
@@ -99,8 +105,14 @@ fn main(
         }
     }
 
-    if !buttons.pressed(MouseButton::Left) {
+    if buttons.just_released(MouseButton::Left) {
+        // if button is not held down: remove the selection visual
         remove_path(&mut cmdata);
+        e_sel.send(SelectEvt::New);
+    }
+
+    if keys.just_released(KeyCode::Escape) {
+        e_sel.send(SelectEvt::Clear);
     }
 }
 

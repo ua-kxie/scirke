@@ -3,7 +3,7 @@ use bevy::prelude::*;
 mod sel;
 mod wire;
 
-pub use sel::{NewPickingCollider, PickingCollider};
+pub use sel::{NewPickingCollider, PickingCollider, SelectEvt};
 
 const WIRE_TOOL_KEY: KeyCode = KeyCode::KeyW;
 
@@ -33,10 +33,6 @@ fn main(
     keys: Res<ButtonInput<KeyCode>>,
     curr_toolstate: Res<State<SchematicToolState>>,
     mut next_toolstate: ResMut<NextState<SchematicToolState>>,
-    // q_selected: Query<&WireSeg, With<Selected>>,
-    commands: Commands,
-    // mut e_clonetoent: EventWriter<CloneToEnt>,
-    // q_cursor: Query<Entity, With<CursorMarker>>,
 ) {
     if keys.just_released(KeyCode::Escape) {
         next_toolstate.set(SchematicToolState::Idle);

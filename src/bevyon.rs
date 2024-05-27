@@ -152,17 +152,6 @@ impl Plugin for BevyonPlugin {
     }
 }
 
-// fn setup(
-//     mut emptymesh: ResMut<EmptyMesh>,
-// ) {
-//     emptymesh.0 = Mesh::new(
-//             PrimitiveTopology::TriangleList,
-//             RenderAssetUsages::RENDER_WORLD,
-//         ).with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, Vec::<Vec3>::new())
-//         .with_inserted_attribute(Mesh::ATTRIBUTE_COLOR, Vec::<Vec4>::new())
-//         .with_inserted_indices(U32(vec![]));
-// }
-
 /// [`SystemSet`] for the system that builds the meshes for newly-added
 /// or changed shapes. Resides in [`PostUpdate`] schedule.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, SystemSet)]

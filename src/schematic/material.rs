@@ -1,6 +1,6 @@
 use bevy::{
     prelude::*,
-    render::render_resource::{AsBindGroup, PolygonMode, ShaderRef},
+    render::render_resource::{AsBindGroup, ShaderRef},
     sprite::Material2d,
 };
 
