@@ -27,7 +27,7 @@
 //! but maybe something more basic like a pipeline would do just as well.
 //! on simulation command: nets can be sent into petgraph to be simplified? (net names need to be reflected back in schematic)
 
-use crate::schematic::tools::PickingCollider;
+use crate::schematic::{guides::ZoomInvariant, tools::PickingCollider};
 use bevy::{
     prelude::*,
     sprite::{MaterialMesh2dBundle, Mesh2dHandle},
@@ -60,7 +60,11 @@ impl Pickable for PickableLineSeg {
         match pc {
             PickingCollider::Point(p) => {
                 let p1 = gt.transform_point3(p.extend(0.0));
-                self.bounds.contains(Point2D::new(p1.x, p1.y))
+                let (s, _, _) = gt.to_scale_rotation_translation();
+                Box2D::from_points([Point2D::splat(0.0), Point2D::new(1.0, 0.0)])
+                // inflate proportional to inverse transform scale so that longer lines dont get bigger hit boxes
+                .inflate(s.y * 0.5, s.y * 0.5)
+                .contains_inclusive(Point2D::new(p1.x, p1.y))
             }
             PickingCollider::AreaIntersect(_) => false,
             PickingCollider::AreaContains(_) => false,
@@ -98,28 +102,35 @@ pub fn create_lineseg(mut commands: Commands, eres: Res<ElementsRes>, coords: Ve
     let lineseg = commands.spawn(spawn_unitx).id();
 
     let mat_bundle = MaterialMesh2dBundle {
-        mesh: Mesh2dHandle(eres.unitx_mesh.clone().unwrap()),
+        mesh: Mesh2dHandle(eres.mesh_unitx.clone().unwrap()),
         material: eres.mat_dflt.clone().unwrap(),
         transform: Transform::from_translation(coords.extend(0.0)).with_scale(Vec3::splat(1.0)),
         ..Default::default()
     };
-    let ls = LineSegment {
-        a: vertex_a,
-        b: vertex_b,
-    };
-    let v = LineVertex {
-        branches: smallvec![lineseg],
-    };
-
-    commands.entity(vertex_a).insert(v.clone());
-    commands.entity(vertex_a).insert(v);
-    commands.entity(lineseg).insert((
-        ls,
+    let ls = (
+        LineSegment {
+            a: vertex_a,
+            b: vertex_b,
+        },
         mat_bundle,
         SchematicElement {
             behavior: Box::new(PickableLineSeg::default()),
         },
-    ));
+    );
+    let v = (
+        LineVertex {branches: smallvec![lineseg]},
+        MaterialMesh2dBundle {
+            mesh: Mesh2dHandle(eres.mesh_dot.clone().unwrap()),
+            material: eres.mat_dflt.clone().unwrap(),
+            transform: Transform::from_translation(coords.extend(0.0)),
+            ..Default::default()
+        },
+        ZoomInvariant,
+    );
+
+    commands.entity(vertex_a).insert(v.clone());
+    commands.entity(vertex_b).insert(v);
+    commands.entity(lineseg).insert(ls);
 
     vertex_b
 }

@@ -19,7 +19,9 @@ use super::{
 #[derive(Resource, Default)]
 pub struct ElementsRes {
     /// unit x line mesh, transformed by scale, rotation and translation to visualize a line segment
-    pub unitx_mesh: Option<Handle<Mesh>>,
+    pub mesh_unitx: Option<Handle<Mesh>>,
+    /// circle mesh visualizing lineseg vertex
+    pub mesh_dot: Option<Handle<Mesh>>,
 
     /// default material
     pub mat_dflt: Option<Handle<SchematicMaterial>>,
@@ -73,11 +75,10 @@ impl Plugin for ElementsPlugin {
 fn startup(
     mut eres: ResMut<ElementsRes>,
     mut meshes: ResMut<Assets<Mesh>>,
-    // mut wmats: ResMut<Assets<WireMaterial>>,
     mut mats: ResMut<Assets<SchematicMaterial>>,
 ) {
     let c = Color::AQUAMARINE.rgba_linear_to_vec4();
-    eres.unitx_mesh = Some(
+    eres.mesh_unitx = Some(
         meshes.add(
             Mesh::new(
                 PrimitiveTopology::LineList,
@@ -86,6 +87,26 @@ fn startup(
             .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, vec![Vec3::ZERO, Vec3::X])
             .with_inserted_attribute(Mesh::ATTRIBUTE_COLOR, vec![c, c])
             .with_inserted_indices(bevy::render::mesh::Indices::U32(vec![0, 1])),
+        ),
+    );
+
+    let hex = [
+        Vec3::new(0.0, 1.0, 0.0), 
+        Vec3::new(-0.866025, 0.5, 0.0), 
+        Vec3::new(0.866025, 0.5, 0.0), 
+        Vec3::new(-0.866025, -0.5, 0.0), 
+        Vec3::new(0.866025, -0.5, 0.0), 
+        Vec3::new(0.0, -1.0, 0.0), 
+        ].into_iter().map(|x| x * 2.0).collect::<Vec<Vec3>>();
+    eres.mesh_dot = Some(
+        meshes.add(
+            Mesh::new(
+                PrimitiveTopology::TriangleStrip,
+                RenderAssetUsages::RENDER_WORLD | RenderAssetUsages::MAIN_WORLD,
+            )
+            .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, hex)
+            .with_inserted_attribute(Mesh::ATTRIBUTE_COLOR, vec![c; 6])
+            .with_inserted_indices(bevy::render::mesh::Indices::U32((0..6).collect::<Vec<u32>>())),
         ),
     );
 

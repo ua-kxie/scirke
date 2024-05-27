@@ -34,19 +34,28 @@ impl Plugin for GuidesPlugin {
     }
 }
 
-#[derive(Component)]
-struct ZoomInvariant;
+#[derive(Component, Clone, Copy)]
+pub struct ZoomInvariant;
 
 /// system is used to set entity scale such that mesh always appear as same size on screen
 /// only needs to run when projection scale changes
 fn revert_zoom_scale(
-    mut qt: Query<&mut Transform, With<ZoomInvariant>>,
-    ce: Query<&OrthographicProjection, (With<SchematicCamera>, Changed<OrthographicProjection>)>,
+    ce: Query<(&OrthographicProjection, Ref<OrthographicProjection>), With<SchematicCamera>>,
+    mut qt: ParamSet<(Query<&mut Transform, With<ZoomInvariant>>, Query<&mut Transform, Changed<ZoomInvariant>>)>,
 ) {
-    // TODO consider conditioning on zoom scale changed (zoom event?)
-    if let Ok(proj) = ce.get_single() {
-        for mut t in qt.iter_mut() {
-            *t = t.with_scale(Vec3::splat(proj.scale));
-        }
+    let (proj, change) = ce.single();
+    match change.is_changed() {
+        true => {
+            // revert for all tagged entities if projection changed
+            for mut t in qt.p0().iter_mut() {
+                *t = t.with_scale(Vec3::splat(proj.scale));
+            }
+        },
+        false => {
+            // revert for entities newly tagged with zoom invariant
+            for mut t in qt.p1().iter_mut() {
+                *t = t.with_scale(Vec3::splat(proj.scale));
+            }
+        },
     }
 }

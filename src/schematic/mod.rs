@@ -56,7 +56,6 @@ impl Plugin for SchematicPlugin {
         // app.add_systems(Startup, setup);
         app.add_systems(PostUpdate, snap.in_set(SnapSet));
         app.add_plugins(Material2dPlugin::<SchematicMaterial>::default());
-        // app.add_plugins(Material2dPlugin::<WireMaterial>::default());
     }
 }
 
@@ -74,7 +73,6 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
     let mat_bundle = MaterialMesh2dBundle {
-        // TODO: automatic batching need instances to share the same mesh
         mesh: Mesh2dHandle(
             meshes.add(
                 Mesh::new(PrimitiveTopology::LineList, RenderAssetUsages::RENDER_WORLD)
