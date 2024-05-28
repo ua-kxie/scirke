@@ -65,7 +65,10 @@ pub struct ElementsPlugin;
 impl Plugin for ElementsPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, (startup, lineseg::setup));
-        app.add_systems(Update, (lineseg::transform_lineseg, picking));
+        app.add_systems(
+            Update,
+            (lineseg::transform_lineseg, picking, lineseg::prune),
+        );
         app.add_systems(PostUpdate, set_mat);
         app.init_resource::<ElementsRes>();
     }

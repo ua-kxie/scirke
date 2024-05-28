@@ -63,7 +63,7 @@ impl Pickable for PickableLineSeg {
                 let (s, _, _) = gt.to_scale_rotation_translation();
                 Box2D::from_points([Point2D::splat(0.0), Point2D::new(1.0, 0.0)])
                     // inflate proportional to inverse transform scale so that longer lines dont get bigger hit boxes
-                    .inflate(s.y * 0.5, s.y * 0.5)
+                    .inflate(-s.y * 0.5, s.y * 0.5)
                     .contains_inclusive(Point2D::new(p1.x, p1.y))
             }
             PickingCollider::AreaIntersect(_) => false,
@@ -195,10 +195,34 @@ pub fn setup(mut commands: Commands) {
     commands.spawn(b);
 }
 
-pub fn test(q: Query<&SchematicElement, With<LineVertex>>) {
-    // for v in q.iter(){
-    //     v.behavior.test();
-    // }
+/// system to prune line segs and vertices
+/// deletes vertices with no branches or segments missing a vertex
+pub fn prune(
+    mut commands: Commands,
+    qls: Query<(Entity, &LineSegment)>,
+    mut qlv: Query<(Entity, &mut LineVertex)>,
+) {
+    for (e, ls) in qls.iter() {
+        if commands.get_entity(ls.a).is_none() || commands.get_entity(ls.b).is_none() {
+            commands.entity(e).despawn();
+        }
+    }
+    for (e, mut lv) in qlv.iter_mut() {
+        lv.branches = lv
+            .branches
+            .iter()
+            .filter_map(|ls| {
+                if commands.get_entity(*ls).is_some() {
+                    Some(*ls)
+                } else {
+                    None
+                }
+            })
+            .collect();
+        if lv.branches.is_empty() {
+            commands.entity(e).despawn();
+        }
+    }
 }
 
 /// system to merge vertices if they overlap - seems expensive

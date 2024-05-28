@@ -3,6 +3,7 @@ use bevy::{math::bounding::Aabb2d, prelude::*, sprite::MaterialMesh2dBundle};
 use crate::{
     bevyon::{self, CompositeMeshData, SubMesh, TessInData},
     schematic::{
+        elements::Selected,
         guides::{NewSnappedCursor, SchematicCursor},
         material::SchematicMaterial,
     },
@@ -65,15 +66,30 @@ pub struct SelToolPlugin;
 impl Plugin for SelToolPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, setup);
-        app.add_systems(Update, main.run_if(in_state(SchematicToolState::Idle)));
+        app.add_systems(
+            Update,
+            (main, listener).run_if(in_state(SchematicToolState::Idle)),
+        );
         app.init_resource::<SelToolRes>();
         app.add_event::<NewPickingCollider>();
         app.add_event::<SelectEvt>();
     }
 }
 
-/// on mouse button released: add selected marker to all schematic elements with picked marker
+/// this system listens to user inputs valid during idle
+fn listener(
+    keys: Res<ButtonInput<KeyCode>>,
+    qc: Query<Entity, With<Selected>>,
+    mut commands: Commands,
+) {
+    if keys.just_released(KeyCode::Delete) {
+        for e in qc.iter() {
+            commands.entity(e).despawn();
+        }
+    }
+}
 
+/// on mouse button released: add selected marker to all schematic elements with picked marker
 fn main(
     mut e_newsc: EventReader<NewSnappedCursor>,
     qc: Query<&SchematicCursor>,
@@ -81,9 +97,6 @@ fn main(
     mut e_newpc: EventWriter<NewPickingCollider>,
     mut selres: ResMut<SelToolRes>,
     mut q_s: Query<&mut CompositeMeshData, With<SelMarker>>,
-    // mut command: Commands,
-    // q_pckd: Query<Entity, With<Picked>>,
-    // q_seld: Query<Entity, With<Selected>>,
     keys: Res<ButtonInput<KeyCode>>,
     mut e_sel: EventWriter<SelectEvt>,
 ) {
