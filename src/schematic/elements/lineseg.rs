@@ -38,7 +38,8 @@ use euclid::default::{Box2D, Point2D};
 use super::{ElementsRes, Pickable, SchematicElement, Selected};
 
 /// work with a unit X mesh from (0, 0) -> (1, 0)
-#[derive(Component)]
+#[derive(Component, Reflect)]
+#[reflect(Component)]
 pub struct LineSegment {
     a: Entity,
     b: Entity,
@@ -74,7 +75,8 @@ impl Pickable for PickableLineSeg {
 
 /// defines the end points of schematic lines
 /// global transform should only ever be translated.
-#[derive(Component, Clone)]
+#[derive(Component, Clone, Reflect)]
+#[reflect(Component)]
 pub struct LineVertex {
     branches: SmallVec<[Entity; 8]>, // anything above a three should be circuit schematic warning
 }

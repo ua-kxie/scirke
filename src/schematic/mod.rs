@@ -3,10 +3,9 @@ use self::{
     material::SchematicMaterial, tools::ToolsPlugin,
 };
 use bevy::{
-    prelude::*,
-    render::{mesh::PrimitiveTopology, render_asset::RenderAssetUsages},
-    sprite::{Material2dPlugin, MaterialMesh2dBundle, Mesh2dHandle},
+    asset::StrongHandle, input::common_conditions::input_just_pressed, prelude::*, render::{mesh::PrimitiveTopology, render_asset::RenderAssetUsages}, sprite::{Material2dPlugin, MaterialMesh2dBundle, Mesh2d, Mesh2dHandle}
 };
+use elements::SchematicElement;
 
 mod camera;
 mod elements;
@@ -55,6 +54,8 @@ impl Plugin for SchematicPlugin {
         );
         // app.add_systems(Startup, setup);
         app.add_systems(PostUpdate, snap.in_set(SnapSet));
+        app.add_systems(Update, save.run_if(input_just_pressed(KeyCode::KeyS)));
+        app.add_systems(Update, load.run_if(input_just_pressed(KeyCode::KeyL)));
         app.add_plugins(Material2dPlugin::<SchematicMaterial>::default());
     }
 }
@@ -88,4 +89,49 @@ fn setup(
         ..Default::default()
     };
     commands.spawn(mat_bundle);
+}
+
+fn save(
+    world: &mut World,
+    // keys: Res<ButtonInput<KeyCode>>,
+) {
+    let mut binding = world.query_filtered::<Entity, With<SchematicElement>>();
+    let ents = binding.iter(world);
+    let dsb = DynamicSceneBuilder::from_world(world)
+    .deny::<Mesh2dHandle>()
+    .deny::<Handle<SchematicMaterial>>()
+    .allow::<elements::LineVertex>()
+    .allow::<elements::LineSegment>()
+    .extract_entities(ents);
+    let reg = world.resource::<AppTypeRegistry>().clone();
+
+    let data;
+    let a = dsb.build();
+    // for e in &a.entities {
+    //     dbg!(e.entity);
+    //     for c in &e.components {
+    //         dbg!(c);
+    //     }
+    // }
+    match a.serialize_ron(&reg) {
+        Ok(data1) => {
+            data = data1;
+        },
+        Err(err) => {
+            eprintln!("Application error: {err}");
+            return
+        },
+    }
+    std::fs::write("out/foo.ron", data).expect("Unable to write file");
+}
+
+fn load(
+    world: &mut World,
+    // asset_server: Res<AssetServer>,
+) {
+    let scene = world.resource::<AssetServer>().load("out/foo.ron");
+    world.spawn(DynamicSceneBundle {
+        scene,
+        ..default()
+    });
 }

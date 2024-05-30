@@ -9,7 +9,7 @@ use bevy::{
 };
 
 mod lineseg;
-pub use lineseg::{create_lineseg, LineSegment};
+pub use lineseg::{create_lineseg, LineSegment, LineVertex};
 
 use super::{
     material::SchematicMaterial,
@@ -45,7 +45,7 @@ pub struct Selected;
 /// add different
 
 #[derive(Component)]
-struct SchematicElement {
+pub struct SchematicElement {
     behavior: Box<dyn Pickable + Send + Sync + 'static>,
 }
 
@@ -76,6 +76,8 @@ impl Plugin for ElementsPlugin {
         );
         app.add_systems(PostUpdate, set_mat);
         app.init_resource::<ElementsRes>();
+        app.register_type::<LineSegment>();
+        app.register_type::<LineVertex>();
     }
 }
 
