@@ -35,7 +35,7 @@ use bevy::{
 };
 use euclid::default::{Box2D, Point2D};
 
-use super::{ElementsRes, Pickable, SchematicElement};
+use super::{ElementsRes, Pickable, SchematicElement, Selected};
 
 /// work with a unit X mesh from (0, 0) -> (1, 0)
 #[derive(Component)]
@@ -225,5 +225,10 @@ pub fn prune(
     }
 }
 
-/// system to merge vertices if they overlap - seems expensive
-fn merge_vertices() {}
+/// extend selection too line segs to connected vertices
+pub fn extend_selection(q: Query<&LineSegment, Changed<Selected>>, mut commands: Commands) {
+    for ls in q.iter() {
+        commands.entity(ls.a).insert(Selected);
+        commands.entity(ls.b).insert(Selected);
+    }
+}

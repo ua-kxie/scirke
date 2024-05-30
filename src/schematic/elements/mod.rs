@@ -9,7 +9,7 @@ use bevy::{
 };
 
 mod lineseg;
-pub use lineseg::create_lineseg;
+pub use lineseg::{create_lineseg, LineSegment};
 
 use super::{
     material::SchematicMaterial,
@@ -67,7 +67,12 @@ impl Plugin for ElementsPlugin {
         app.add_systems(Startup, (startup, lineseg::setup));
         app.add_systems(
             Update,
-            (lineseg::transform_lineseg, picking, lineseg::prune),
+            (
+                lineseg::transform_lineseg,
+                picking,
+                lineseg::prune,
+                lineseg::extend_selection,
+            ),
         );
         app.add_systems(PostUpdate, set_mat);
         app.init_resource::<ElementsRes>();
