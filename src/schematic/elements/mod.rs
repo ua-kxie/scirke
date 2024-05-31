@@ -70,7 +70,7 @@ impl Plugin for ElementsPlugin {
             (
                 lineseg::transform_lineseg,
                 picking,
-                lineseg::prune,
+                // lineseg::prune,
                 lineseg::extend_selection,
             ),
         );

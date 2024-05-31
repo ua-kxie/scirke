@@ -1,11 +1,19 @@
+
+
+use bevy::{ecs::entity::EntityHashMap, scene::{ron, serde::SceneDeserializer}};
+use serde::de::DeserializeSeed;
+
 use self::{
     camera::CameraPlugin, elements::ElementsPlugin, guides::GuidesPlugin, infotext::InfoPlugin,
     material::SchematicMaterial, tools::ToolsPlugin,
 };
 use bevy::{
-    asset::StrongHandle, input::common_conditions::input_just_pressed, prelude::*, render::{mesh::PrimitiveTopology, render_asset::RenderAssetUsages}, sprite::{Material2dPlugin, MaterialMesh2dBundle, Mesh2d, Mesh2dHandle}
+    input::common_conditions::input_just_pressed,
+    prelude::*,
+    render::{mesh::PrimitiveTopology, render_asset::RenderAssetUsages},
+    sprite::{Material2dPlugin, MaterialMesh2dBundle, Mesh2dHandle},
 };
-use elements::SchematicElement;
+use elements::{ElementsRes, LineSegment, LineVertex, SchematicElement};
 
 mod camera;
 mod elements;
@@ -98,40 +106,117 @@ fn save(
     let mut binding = world.query_filtered::<Entity, With<SchematicElement>>();
     let ents = binding.iter(world);
     let dsb = DynamicSceneBuilder::from_world(world)
-    .deny::<Mesh2dHandle>()
-    .deny::<Handle<SchematicMaterial>>()
-    .allow::<elements::LineVertex>()
-    .allow::<elements::LineSegment>()
-    .extract_entities(ents);
+        .deny::<Mesh2dHandle>()
+        .deny::<Handle<SchematicMaterial>>()
+        .allow::<elements::LineVertex>()
+        .allow::<elements::LineSegment>()
+        .extract_entities(ents);
     let reg = world.resource::<AppTypeRegistry>().clone();
 
     let data;
     let a = dsb.build();
-    // for e in &a.entities {
+    for e in &a.entities {
+        dbg!(e.entity);
+        for c in &e.components {
+            dbg!(c);
+        }
+    }
+    match a.serialize_ron(&reg) {
+        Ok(data1) => {
+            data = data1;
+        }
+        Err(err) => {
+            eprintln!("Application error: {err}");
+            return;
+        }
+    }
+    std::fs::write("out/foo1.ron", data).expect("Unable to write file");
+}
+
+fn load(
+    world: &mut World,
+) {
+    // cant seem to get loading through assetserver as shown in bevy example to work
+    // looking a this instead
+    // https://github.com/UmbraLuminosa/Proof-of-Concept-Editor-in-Bevy/blob/main/src/ui_plugin/undo_plugin.rs
+    // let type_registry = world.resource::<AppTypeRegistry>().clone();
+    // let scene = world.resource::<AssetServer>().load("../out/foo.ron");
+    // world.spawn(DynamicSceneBundle { scene, ..default() });
+    let s = std::fs::read_to_string("out/foo.ron").unwrap();
+    let mut deserializer = ron::de::Deserializer::from_str(&s).unwrap();
+    let type_registry = world.resource::<AppTypeRegistry>().clone();
+    let scene_deserializer = SceneDeserializer {
+        type_registry: &type_registry.read(),
+    };
+    let result = scene_deserializer.deserialize(&mut deserializer).unwrap();
+    // for e in &result.entities {
     //     dbg!(e.entity);
     //     for c in &e.components {
     //         dbg!(c);
     //     }
     // }
-    match a.serialize_ron(&reg) {
-        Ok(data1) => {
-            data = data1;
-        },
-        Err(err) => {
-            eprintln!("Application error: {err}");
-            return
-        },
+    let mut entity_map: EntityHashMap<Entity> = EntityHashMap::default();
+    if let Err(e) = result.write_to_world_with(world, &mut entity_map, &type_registry) {
+        println!("Error updating world: {}", e);
     }
-    std::fs::write("out/foo.ron", data).expect("Unable to write file");
+
+    let mut q = world.query_filtered::<Entity, With<LineVertex>>();
+    let es = q.iter(&world).collect::<Vec<Entity>>();
+    let lv_meshes = vec![
+        (
+            Mesh2dHandle(world.resource::<ElementsRes>().mesh_dot.clone().unwrap()),
+            world.resource::<ElementsRes>().mat_dflt.clone().unwrap()
+        );
+        es.len()
+    ];
+    let elvs = es.into_iter().zip(lv_meshes);
+
+    let mut q = world.query_filtered::<Entity, With<LineSegment>>();
+    let es = q.iter(&world).collect::<Vec<Entity>>();
+    let ls_meshes: Vec<(_, Handle<SchematicMaterial>)> = vec![
+        (
+            Mesh2dHandle(world.resource::<ElementsRes>().mesh_unitx.clone().unwrap()),
+            world.resource::<ElementsRes>().mat_dflt.clone().unwrap()
+        );
+        es.len()
+    ];
+    let elss = es.into_iter().zip(ls_meshes);
+    let _ = world.insert_or_spawn_batch(elvs.chain(elss));
 }
 
-fn load(
-    world: &mut World,
-    // asset_server: Res<AssetServer>,
-) {
-    let scene = world.resource::<AssetServer>().load("out/foo.ron");
-    world.spawn(DynamicSceneBundle {
-        scene,
-        ..default()
-    });
-}
+// fn load(
+//     mut commands: Commands, asset_server: Res<AssetServer>,
+//     q: Query<Entity, With<LineVertex>>,
+//     q1: Query<Entity, With<LineSegment>>,
+//     r: Res<ElementsRes>,
+// ) {
+//     // "Spawning" a scene bundle creates a new entity and spawns new instances
+//     // of the given scene's entities as children of that entity.
+//     commands.spawn(DynamicSceneBundle {
+//         // Scenes are loaded just like any other asset.
+//         scene: asset_server.load("../out/foo.ron"),
+//         ..default()
+//     });
+    
+//     let es = q.iter().collect::<Vec<Entity>>();
+//     let lv_meshes = vec![
+//         (
+//             Mesh2dHandle(r.mesh_dot.clone().unwrap()),
+//             r.mat_dflt.clone().unwrap()
+//         );
+//         es.len()
+//     ];
+//     let elvs = es.into_iter().zip(lv_meshes);
+
+//     let es = q1.iter().collect::<Vec<Entity>>();
+//     let ls_meshes = vec![
+//         (
+//             Mesh2dHandle(r.mesh_unitx.clone().unwrap()),
+//             r.mat_dflt.clone().unwrap()
+//         );
+//         es.len()
+//     ];
+//     let elss = es.into_iter().zip(ls_meshes);
+//     dbg!(&elss);
+//     commands.insert_or_spawn_batch(elvs.chain(elss));
+// }

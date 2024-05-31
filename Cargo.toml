@@ -11,3 +11,4 @@ opt-level = 3
 bevy = {version="0.13.2"}
 euclid = "0.22.10"
 lyon_tessellation = "1"
+serde = "1.0.203"
