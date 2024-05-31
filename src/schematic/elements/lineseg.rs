@@ -96,6 +96,14 @@ impl Pickable for PickableVertex {
         }
     }
 }
+
+pub fn lsse() -> SchematicElement {
+    SchematicElement { behavior: Box::new(PickableLineSeg::default()) }
+}
+
+pub fn lvse() -> SchematicElement {
+    SchematicElement { behavior: Box::new(PickableVertex::default()) }
+}
 #[derive(Bundle)]
 struct VertexBundle {
     vertex: LineVertex,

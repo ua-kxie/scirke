@@ -2,7 +2,7 @@
 
 use bevy::{ecs::entity::EntityHashMap, scene::{ron, serde::SceneDeserializer}};
 use serde::de::DeserializeSeed;
-
+use bevy_save::prelude::*;
 use self::{
     camera::CameraPlugin, elements::ElementsPlugin, guides::GuidesPlugin, infotext::InfoPlugin,
     material::SchematicMaterial, tools::ToolsPlugin,
@@ -13,7 +13,7 @@ use bevy::{
     render::{mesh::PrimitiveTopology, render_asset::RenderAssetUsages},
     sprite::{Material2dPlugin, MaterialMesh2dBundle, Mesh2dHandle},
 };
-use elements::{ElementsRes, LineSegment, LineVertex, SchematicElement};
+use elements::{lsse, lvse, ElementsRes, LineSegment, LineVertex, SchematicElement};
 
 mod camera;
 mod elements;
@@ -62,9 +62,15 @@ impl Plugin for SchematicPlugin {
         );
         // app.add_systems(Startup, setup);
         app.add_systems(PostUpdate, snap.in_set(SnapSet));
+        app.add_systems(Update, handle_save_input);
         app.add_systems(Update, save.run_if(input_just_pressed(KeyCode::KeyS)));
-        app.add_systems(Update, load.run_if(input_just_pressed(KeyCode::KeyL)));
+        // app.add_systems(Update, load.run_if(input_just_pressed(KeyCode::KeyL)));
         app.add_plugins(Material2dPlugin::<SchematicMaterial>::default());
+        app.add_plugins((
+            // Bevy Save
+            SavePlugins,
+        ));
+
     }
 }
 
@@ -112,7 +118,7 @@ fn save(
         .allow::<elements::LineSegment>()
         .extract_entities(ents);
     let reg = world.resource::<AppTypeRegistry>().clone();
-
+    dbg!("kek");
     let data;
     let a = dsb.build();
     for e in &a.entities {
@@ -184,39 +190,74 @@ fn load(
     let _ = world.insert_or_spawn_batch(elvs.chain(elss));
 }
 
-// fn load(
-//     mut commands: Commands, asset_server: Res<AssetServer>,
-//     q: Query<Entity, With<LineVertex>>,
-//     q1: Query<Entity, With<LineSegment>>,
-//     r: Res<ElementsRes>,
-// ) {
-//     // "Spawning" a scene bundle creates a new entity and spawns new instances
-//     // of the given scene's entities as children of that entity.
-//     commands.spawn(DynamicSceneBundle {
-//         // Scenes are loaded just like any other asset.
-//         scene: asset_server.load("../out/foo.ron"),
-//         ..default()
-//     });
-    
-//     let es = q.iter().collect::<Vec<Entity>>();
-//     let lv_meshes = vec![
-//         (
-//             Mesh2dHandle(r.mesh_dot.clone().unwrap()),
-//             r.mat_dflt.clone().unwrap()
-//         );
-//         es.len()
-//     ];
-//     let elvs = es.into_iter().zip(lv_meshes);
+struct SavePipeline;
 
-//     let es = q1.iter().collect::<Vec<Entity>>();
-//     let ls_meshes = vec![
-//         (
-//             Mesh2dHandle(r.mesh_unitx.clone().unwrap()),
-//             r.mat_dflt.clone().unwrap()
-//         );
-//         es.len()
-//     ];
-//     let elss = es.into_iter().zip(ls_meshes);
-//     dbg!(&elss);
-//     commands.insert_or_spawn_batch(elvs.chain(elss));
-// }
+impl Pipeline for SavePipeline {
+    type Backend = DefaultDebugBackend;
+    type Format = DefaultDebugFormat;
+
+    type Key<'a> = &'a str;
+
+    fn key(&self) -> Self::Key<'_> {
+        "out/saves"
+    }
+
+    fn capture(builder: SnapshotBuilder) -> Snapshot {
+        builder
+            .deny::<Mesh2dHandle>()
+            .deny::<Handle<SchematicMaterial>>()
+            .allow::<elements::LineVertex>()
+            .allow::<elements::LineSegment>()
+            .extract_entities_matching(|e| {
+                e.contains::<SchematicElement>()
+            })
+            .extract_rollbacks()
+            .build()
+    }
+
+    fn apply(world: &mut World, snapshot: &Snapshot) -> Result<(), bevy_save::Error> {
+        let mesh_dot = Mesh2dHandle(world.resource::<ElementsRes>().mesh_dot.clone().unwrap());
+        let mesh_unitx = Mesh2dHandle(world.resource::<ElementsRes>().mesh_unitx.clone().unwrap());
+        let mat = world.resource::<ElementsRes>().mat_dflt.clone().unwrap();
+        snapshot
+            .applier(world)
+            .despawn::<With<SchematicElement>>()
+            .hook(move |entity, cmd| {
+                if entity.contains::<LineVertex>() {
+                    cmd.insert((
+                        mesh_dot.clone(), 
+                        mat.clone(),
+                        lvse()
+                    ));
+                }
+                if entity.contains::<LineSegment>() {
+                    cmd.insert((
+                        mesh_unitx.clone(), 
+                        mat.clone(),
+                        lsse()
+                    ));
+                }
+            })
+            .apply()
+    }
+}
+
+fn handle_save_input(world: &mut World) {
+    let keys = world.resource::<ButtonInput<KeyCode>>();
+
+    if keys.just_released(KeyCode::Space) {
+        world.checkpoint::<SavePipeline>();
+    } else if keys.just_released(KeyCode::Enter) {
+        world.save(SavePipeline).expect("Failed to save");
+    } else if keys.just_released(KeyCode::Backspace) {
+        world.load(SavePipeline).expect("Failed to load");
+    } else if keys.just_released(KeyCode::KeyA) {
+        world
+            .rollback::<SavePipeline>(1)
+            .expect("Failed to rollback");
+    } else if keys.just_released(KeyCode::KeyD) {
+        world
+            .rollback::<SavePipeline>(-1)
+            .expect("Failed to rollforward");
+    }
+}

@@ -9,7 +9,7 @@ use bevy::{
 };
 
 mod lineseg;
-pub use lineseg::{create_lineseg, LineSegment, LineVertex};
+pub use lineseg::{create_lineseg, LineSegment, LineVertex, lsse, lvse};
 
 use super::{
     material::SchematicMaterial,
@@ -56,6 +56,7 @@ pub struct SchematicElement {
 trait Pickable {
     fn collides(&self, pc: &PickingCollider, transform: Mat4) -> bool;
 }
+
 
 // entity wireseg schematicElement(TO)
 // entity vertex schematicElement(TO)
