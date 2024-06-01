@@ -27,16 +27,18 @@
 //! but maybe something more basic like a pipeline would do just as well.
 //! on simulation command: nets can be sent into petgraph to be simplified? (net names need to be reflected back in schematic)
 
+use super::{ElementsRes, Pickable, SchematicElement, Selected};
 use crate::schematic::{guides::ZoomInvariant, tools::PickingCollider};
 use bevy::{
-    prelude::*, sprite::{MaterialMesh2dBundle, Mesh2dHandle}, utils::smallvec::{smallvec, SmallVec}
+    ecs::{
+        entity::{Entity, EntityMapper, MapEntities},
+        reflect::{ReflectComponent, ReflectMapEntities},
+    },
+    prelude::*,
+    sprite::{MaterialMesh2dBundle, Mesh2dHandle},
+    utils::smallvec::{smallvec, SmallVec},
 };
 use euclid::default::{Box2D, Point2D};
-use bevy::ecs::{
-    entity::{Entity, EntityMapper, MapEntities},
-    reflect::{ReflectComponent, ReflectMapEntities},
-};
-use super::{ElementsRes, Pickable, SchematicElement, Selected};
 
 /// work with a unit X mesh from (0, 0) -> (1, 0)
 #[derive(Component, Reflect)]
@@ -51,15 +53,6 @@ impl MapEntities for LineSegment {
         self.b = entity_mapper.map_entity(self.b);
     }
 }
-
-// impl FromWorld for LineSegment {
-//     fn from_world(_world: &mut World) -> Self {
-//         Self{
-//             a: Entity::PLACEHOLDER,
-//             b: Entity::PLACEHOLDER,
-//         }
-//     }
-// }
 
 struct PickableLineSeg {
     bounds: Box2D<f32>,

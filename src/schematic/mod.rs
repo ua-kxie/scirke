@@ -8,7 +8,7 @@ use bevy::{
     prelude::*,
     render::{mesh::PrimitiveTopology, render_asset::RenderAssetUsages},
     scene::{ron, serde::SceneDeserializer},
-    sprite::{Material2dPlugin, MaterialMesh2dBundle, Mesh2dHandle}, utils::hashbrown::HashMap,
+    sprite::{Material2dPlugin, MaterialMesh2dBundle, Mesh2dHandle},
 };
 use bevy_save::prelude::*;
 use elements::{lsse, lvse, ElementsRes, LineSegment, LineVertex, SchematicElement};

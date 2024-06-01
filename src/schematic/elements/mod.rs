@@ -70,7 +70,7 @@ impl Plugin for ElementsPlugin {
             (
                 lineseg::transform_lineseg,
                 picking,
-                // lineseg::prune,
+                lineseg::prune,
                 lineseg::extend_selection,
             ),
         );
@@ -216,5 +216,3 @@ fn set_mat(
 
 // a line seg should be picked by area intersect if either vertex is contained
 // a line seg should be picked by area contains if both vertex is contained
-// need different code to run depending on collision target
-// picking -> selected -> set mat

@@ -5,8 +5,8 @@ use bevy::{
     sprite::{MaterialMesh2dBundle, Mesh2dHandle},
 };
 use lyon_tessellation::{
-    geom::{euclid::num::Ceil, Point},
-    path::{builder::NoAttributes, traits::PathBuilder, BuilderImpl},
+    geom::Point,
+    path::{builder::NoAttributes, BuilderImpl},
     FillOptions,
 };
 
