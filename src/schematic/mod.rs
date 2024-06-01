@@ -1,19 +1,18 @@
-
-
-use bevy::{ecs::entity::EntityHashMap, scene::{ron, serde::SceneDeserializer}};
-use serde::de::DeserializeSeed;
-use bevy_save::prelude::*;
 use self::{
     camera::CameraPlugin, elements::ElementsPlugin, guides::GuidesPlugin, infotext::InfoPlugin,
     material::SchematicMaterial, tools::ToolsPlugin,
 };
 use bevy::{
+    ecs::entity::EntityHashMap,
     input::common_conditions::input_just_pressed,
     prelude::*,
     render::{mesh::PrimitiveTopology, render_asset::RenderAssetUsages},
+    scene::{ron, serde::SceneDeserializer},
     sprite::{Material2dPlugin, MaterialMesh2dBundle, Mesh2dHandle},
 };
+use bevy_save::prelude::*;
 use elements::{lsse, lvse, ElementsRes, LineSegment, LineVertex, SchematicElement};
+use serde::de::DeserializeSeed;
 
 mod camera;
 mod elements;
@@ -70,7 +69,6 @@ impl Plugin for SchematicPlugin {
             // Bevy Save
             SavePlugins,
         ));
-
     }
 }
 
@@ -139,9 +137,7 @@ fn save(
     std::fs::write("out/foo1.ron", data).expect("Unable to write file");
 }
 
-fn load(
-    world: &mut World,
-) {
+fn load(world: &mut World) {
     // cant seem to get loading through assetserver as shown in bevy example to work
     // looking a this instead
     // https://github.com/UmbraLuminosa/Proof-of-Concept-Editor-in-Bevy/blob/main/src/ui_plugin/undo_plugin.rs
@@ -208,9 +204,7 @@ impl Pipeline for SavePipeline {
             .deny::<Handle<SchematicMaterial>>()
             .allow::<elements::LineVertex>()
             .allow::<elements::LineSegment>()
-            .extract_entities_matching(|e| {
-                e.contains::<SchematicElement>()
-            })
+            .extract_entities_matching(|e| e.contains::<SchematicElement>())
             .extract_rollbacks()
             .build()
     }
@@ -224,18 +218,10 @@ impl Pipeline for SavePipeline {
             .despawn::<With<SchematicElement>>()
             .hook(move |entity, cmd| {
                 if entity.contains::<LineVertex>() {
-                    cmd.insert((
-                        mesh_dot.clone(), 
-                        mat.clone(),
-                        lvse()
-                    ));
+                    cmd.insert((mesh_dot.clone(), mat.clone(), lvse()));
                 }
                 if entity.contains::<LineSegment>() {
-                    cmd.insert((
-                        mesh_unitx.clone(), 
-                        mat.clone(),
-                        lsse()
-                    ));
+                    cmd.insert((mesh_unitx.clone(), mat.clone(), lsse()));
                 }
             })
             .apply()

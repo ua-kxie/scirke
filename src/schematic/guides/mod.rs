@@ -31,10 +31,12 @@ impl Plugin for GuidesPlugin {
                 revert_zoom_scale.in_set(SnapSet),
             ),
         );
+        app.register_type::<ZoomInvariant>();
     }
 }
 
-#[derive(Component, Clone, Copy)]
+#[derive(Component, Clone, Copy, Reflect)]
+#[reflect(Component)]
 pub struct ZoomInvariant;
 
 /// system is used to set entity scale such that mesh always appear as same size on screen
