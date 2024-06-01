@@ -29,21 +29,37 @@
 
 use crate::schematic::{guides::ZoomInvariant, tools::PickingCollider};
 use bevy::{
-    prelude::*,
-    sprite::{MaterialMesh2dBundle, Mesh2dHandle},
-    utils::smallvec::{smallvec, SmallVec},
+    prelude::*, sprite::{MaterialMesh2dBundle, Mesh2dHandle}, utils::smallvec::{smallvec, SmallVec}
 };
 use euclid::default::{Box2D, Point2D};
-
+use bevy::ecs::{
+    entity::{Entity, EntityMapper, MapEntities},
+    reflect::{ReflectComponent, ReflectMapEntities},
+};
 use super::{ElementsRes, Pickable, SchematicElement, Selected};
 
 /// work with a unit X mesh from (0, 0) -> (1, 0)
 #[derive(Component, Reflect)]
-#[reflect(Component)]
+#[reflect(Component, MapEntities)]
 pub struct LineSegment {
     a: Entity,
     b: Entity,
 }
+impl MapEntities for LineSegment {
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
+        self.a = entity_mapper.map_entity(self.a);
+        self.b = entity_mapper.map_entity(self.b);
+    }
+}
+
+// impl FromWorld for LineSegment {
+//     fn from_world(_world: &mut World) -> Self {
+//         Self{
+//             a: Entity::PLACEHOLDER,
+//             b: Entity::PLACEHOLDER,
+//         }
+//     }
+// }
 
 struct PickableLineSeg {
     bounds: Box2D<f32>,
@@ -75,10 +91,18 @@ impl Pickable for PickableLineSeg {
 
 /// defines the end points of schematic lines
 /// global transform should only ever be translated.
-#[derive(Component, Clone, Reflect)]
-#[reflect(Component)]
+#[derive(Component, Clone, Reflect, Default)]
+#[reflect(Component, MapEntities)]
 pub struct LineVertex {
     branches: SmallVec<[Entity; 8]>, // anything above a three should be circuit schematic warning
+}
+
+impl MapEntities for LineVertex {
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
+        for entity in &mut self.branches {
+            *entity = entity_mapper.map_entity(*entity);
+        }
+    }
 }
 
 #[derive(Clone, Default)]
