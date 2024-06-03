@@ -3,6 +3,7 @@ use bevy::{math::bounding::Aabb2d, prelude::*, sprite::MaterialMesh2dBundle};
 use crate::{
     bevyon::{self, CompositeMeshData, SubMesh, TessInData},
     schematic::{
+        camera::SchematicCamera,
         elements::Selected,
         guides::{NewSnappedCursor, SchematicCursor},
         material::SchematicMaterial,
@@ -99,6 +100,7 @@ fn main(
     mut q_s: Query<&mut CompositeMeshData, With<SelMarker>>,
     keys: Res<ButtonInput<KeyCode>>,
     mut e_sel: EventWriter<SelectEvt>,
+    qcam: Query<&OrthographicProjection, (With<SchematicCamera>, Changed<OrthographicProjection>)>,
 ) {
     // record cursor left click location
     if buttons.just_pressed(MouseButton::Left) {
@@ -117,6 +119,11 @@ fn main(
             e_newpc.send(NewPickingCollider::point(*coords));
         }
     }
+    if let Ok(p) = qcam.get_single() {
+        // p.scale
+        dbg!("keker");
+        new_stroke(&mut cmdata, p.scale);
+    }
 
     if buttons.just_released(MouseButton::Left) {
         // if button is not held down: remove the selection visual
@@ -129,7 +136,7 @@ fn main(
     }
 }
 
-/// udpates the path in TessInData of the area selection entity to get visual
+/// updates the path in TessInData of the area selection entity to get visual
 fn new_valid_path(cmdata: &mut CompositeMeshData, og_coords: Vec2, coords: Vec2) {
     let mut path_builder = bevyon::path_builder();
     path_builder.add_rectangle(
@@ -143,6 +150,16 @@ fn new_valid_path(cmdata: &mut CompositeMeshData, og_coords: Vec2, coords: Vec2)
 
     for submesh in cmdata.iter_mut() {
         submesh.tess_data.path = path.clone();
+    }
+}
+const WIDTH: f32 = 1.0;
+/// updates the stroke options in TessInData of the area selection entity
+fn new_stroke(cmdata: &mut CompositeMeshData, pscale: f32) {
+    for submesh in cmdata.iter_mut() {
+        submesh.tess_data.stroke = submesh.tess_data.stroke.map(|mut so| {
+            so.line_width = WIDTH * pscale;
+            so
+        });
     }
 }
 
@@ -159,9 +176,9 @@ fn setup(mut commands: Commands, mut materials: ResMut<Assets<SchematicMaterial>
     let tess_fill_data = TessInData {
         path: None,
         stroke: None,
-        fill: Some(bevyon::FillOptions::DEFAULT),
+        fill: None,
+        // fill: Some(bevyon::FillOptions::DEFAULT),  // TODO renable fill once transparency is working
     };
-    // TODO: stroke width needs to scale with projection scale so it appears zoom invariant
     let tess_stroke_data = TessInData {
         path: None,
         stroke: Some(bevyon::StrokeOptions::DEFAULT),
