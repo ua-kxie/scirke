@@ -135,63 +135,6 @@ struct VertexBundle {
     schematic_element: SchematicElement,
 }
 
-pub fn create_lineseg_dep(mut commands: Commands, eres: Res<ElementsRes>, coords: Vec2) -> Entity {
-    // vertex and segments have eachothers entity as reference
-    // spawn point at cursor position
-    let spawn_point =
-        SpatialBundle::from_transform(Transform::from_translation(coords.extend(0.0)));
-    // segment transform with scale zero since start and end are both at same point
-    let spawn_unitx = SpatialBundle::from_transform(Transform::from_scale(Vec3::splat(0.0)));
-    let vertex_a = commands.spawn(spawn_point.clone()).id();
-    let vertex_b = commands.spawn(spawn_point).id();
-    let lineseg = commands.spawn(spawn_unitx).id();
-
-    let mat_bundle = MaterialMesh2dBundle {
-        mesh: Mesh2dHandle(eres.mesh_unitx.clone().unwrap()),
-        material: eres.mat_dflt.clone().unwrap(),
-        transform: Transform::from_translation(coords.extend(0.0)).with_scale(Vec3::splat(1.0)),
-        ..Default::default()
-    };
-    let ls = (
-        LineSegment {
-            a: vertex_a,
-            b: vertex_b,
-        },
-        mat_bundle,
-        SchematicElement {
-            behavior: Box::new(PickableLineSeg::default()),
-        },
-    );
-    let v = (
-        LineVertex {
-            branches: smallvec![lineseg],
-        },
-        MaterialMesh2dBundle {
-            mesh: Mesh2dHandle(eres.mesh_dot.clone().unwrap()),
-            material: eres.mat_dflt.clone().unwrap(),
-            transform: Transform::from_translation(coords.extend(0.0)),
-            ..Default::default()
-        },
-        ZoomInvariant,
-    );
-
-    commands.entity(vertex_a).insert((
-        v.clone(),
-        SchematicElement {
-            behavior: Box::new(PickableVertex::default()),
-        },
-    ));
-    commands.entity(vertex_b).insert((
-        v,
-        SchematicElement {
-            behavior: Box::new(PickableVertex::default()),
-        },
-    ));
-    commands.entity(lineseg).insert(ls);
-
-    vertex_b
-}
-
 #[derive(Bundle)]
 struct LineSegBundle {
     ls: LineSegment,
@@ -200,13 +143,19 @@ struct LineSegBundle {
 }
 
 impl LineSegBundle {
-    fn new(eres: &ElementsRes, a: Entity, b: Entity) -> Self {
+    fn new(eres: &ElementsRes, a: (Entity, Vec3), b: (Entity, Vec3)) -> Self {
+        let m10 = b.1 - a.1;
+        let transform = Transform::from_translation(a.1)
+            .with_rotation(Quat::from_rotation_z(Vec2::X.angle_between(m10.truncate())))
+            .with_scale(Vec3::splat(m10.length()));
+
         let mat = MaterialMesh2dBundle {
             mesh: Mesh2dHandle(eres.mesh_unitx.clone().unwrap()),
             material: eres.mat_dflt.clone().unwrap(),
+            transform: transform,
             ..Default::default()
         };
-        let ls = LineSegment { a, b };
+        let ls = LineSegment { a: a.0, b: b.0 };
         let se = SchematicElement {
             behavior: Box::new(PickableLineSeg::default()),
         };
@@ -224,7 +173,6 @@ pub fn create_preview_lineseg(
 ) {
     // vertex and segments have eachothers entity as reference
     // segment transform with scale zero since start and end are both at same point
-    let spawn_unitx = SpatialBundle::from_transform(Transform::from_scale(Vec3::splat(0.0)));
     let vertex_a = commands
         .spawn(SpatialBundle::from_transform(Transform::from_translation(
             src,
@@ -235,21 +183,9 @@ pub fn create_preview_lineseg(
             dst,
         )))
         .id();
-    let lineseg = commands.spawn(spawn_unitx).id();
+    let ls = LineSegBundle::new(eres, (vertex_a, src), (vertex_b, dst));
+    let lineseg = commands.spawn(ls).id();
 
-    let mat_bundle = MaterialMesh2dBundle {
-        mesh: Mesh2dHandle(eres.mesh_unitx.clone().unwrap()),
-        material: eres.mat_dflt.clone().unwrap(),
-        transform: Transform::from_translation(src).with_scale(Vec3::splat(1.0)),
-        ..Default::default()
-    };
-    let ls = (
-        LineSegment {
-            a: vertex_a,
-            b: vertex_b,
-        },
-        mat_bundle,
-    );
     let vsrc = (
         LineVertex {
             branches: smallvec![lineseg],
@@ -289,18 +225,11 @@ pub fn create_preview_lineseg(
         },
         Preview,
     ));
-    commands.entity(lineseg).insert((
-        ls,
-        SchematicElement {
-            behavior: Box::new(PickableLineSeg::default()),
-        },
-        Preview,
-    ));
+    commands.entity(lineseg).insert((Preview,));
 }
 
 /// this system updates the transforms of all linesegments so that its unitx mesh reflects the position of its defining vertices
 /// TODO: for performance, this should only run at specific times
-/// TODO: this system may be causing blinking while using wiring tool
 pub fn transform_lineseg(
     gt: Query<&Transform, Without<LineSegment>>,
     mut lines: Query<(Entity, &LineSegment, &mut Transform)>,
@@ -451,18 +380,10 @@ fn bisect_merge(world: &mut World) {
         for (e, a, b) in ses {
             world.despawn(e);
             let ac = world
-                .spawn(LineSegBundle::new(
-                    world.resource::<ElementsRes>(),
-                    a.0,
-                    c.0,
-                ))
+                .spawn(LineSegBundle::new(world.resource::<ElementsRes>(), a, *c))
                 .id();
             let cb = world
-                .spawn(LineSegBundle::new(
-                    world.resource::<ElementsRes>(),
-                    c.0,
-                    b.0,
-                ))
+                .spawn(LineSegBundle::new(world.resource::<ElementsRes>(), *c, b))
                 .id();
             world
                 .entity_mut(a.0)

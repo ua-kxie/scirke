@@ -36,7 +36,6 @@ fn main(
     mut next_schematictoolstate: ResMut<NextState<SchematicToolState>>,
     mut commands: Commands,
     qc: Query<&SchematicCursor>,
-    qt: Query<&mut Transform>,
     mut e_newsc: EventReader<NewSnappedCursor>,
     eres: Res<ElementsRes>,
     eqsp: Query<Entity, (With<SchematicElement>, With<Preview>)>,
@@ -61,7 +60,6 @@ fn main(
         }
         WireToolState::Drawing(src) => {
             if buttons.just_released(MouseButton::Left) {
-                // todo: persist preview elements
                 elements::persist_preview(&mut commands, eqsp);
                 next_wiretoolstate.set(WireToolState::Ready);
                 return;
