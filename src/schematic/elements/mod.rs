@@ -89,7 +89,7 @@ pub struct ElementsPlugin;
 
 impl Plugin for ElementsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, (startup, lineseg::setup));
+        app.add_systems(Startup, startup);
         app.add_systems(
             Update,
             (

@@ -137,55 +137,6 @@ fn save(
     std::fs::write("out/foo1.ron", data).expect("Unable to write file");
 }
 
-fn load(world: &mut World) {
-    // cant seem to get loading through assetserver as shown in bevy example to work
-    // looking a this instead
-    // https://github.com/UmbraLuminosa/Proof-of-Concept-Editor-in-Bevy/blob/main/src/ui_plugin/undo_plugin.rs
-    // let type_registry = world.resource::<AppTypeRegistry>().clone();
-    // let scene = world.resource::<AssetServer>().load("../out/foo.ron");
-    // world.spawn(DynamicSceneBundle { scene, ..default() });
-    let s = std::fs::read_to_string("out/foo.ron").unwrap();
-    let mut deserializer = ron::de::Deserializer::from_str(&s).unwrap();
-    let type_registry = world.resource::<AppTypeRegistry>().clone();
-    let scene_deserializer = SceneDeserializer {
-        type_registry: &type_registry.read(),
-    };
-    let result = scene_deserializer.deserialize(&mut deserializer).unwrap();
-    // for e in &result.entities {
-    //     dbg!(e.entity);
-    //     for c in &e.components {
-    //         dbg!(c);
-    //     }
-    // }
-    let mut entity_map: EntityHashMap<Entity> = EntityHashMap::default();
-    if let Err(e) = result.write_to_world_with(world, &mut entity_map, &type_registry) {
-        println!("Error updating world: {}", e);
-    }
-
-    let mut q = world.query_filtered::<Entity, With<LineVertex>>();
-    let es = q.iter(&world).collect::<Vec<Entity>>();
-    let lv_meshes = vec![
-        (
-            Mesh2dHandle(world.resource::<ElementsRes>().mesh_dot.clone().unwrap()),
-            world.resource::<ElementsRes>().mat_dflt.clone().unwrap()
-        );
-        es.len()
-    ];
-    let elvs = es.into_iter().zip(lv_meshes);
-
-    let mut q = world.query_filtered::<Entity, With<LineSegment>>();
-    let es = q.iter(&world).collect::<Vec<Entity>>();
-    let ls_meshes: Vec<(_, Handle<SchematicMaterial>)> = vec![
-        (
-            Mesh2dHandle(world.resource::<ElementsRes>().mesh_unitx.clone().unwrap()),
-            world.resource::<ElementsRes>().mat_dflt.clone().unwrap()
-        );
-        es.len()
-    ];
-    let elss = es.into_iter().zip(ls_meshes);
-    let _ = world.insert_or_spawn_batch(elvs.chain(elss));
-}
-
 struct SavePipeline;
 
 impl Pipeline for SavePipeline {

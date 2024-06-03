@@ -1,31 +1,14 @@
-//! Schematic Element defining a line segment
+//! Schematic Element defining a line
 //! A Line element is comprised of 3 entities: vertex (x2) and lineseg (x1)
 //! vertex can be shared between linesegs
 //!
-//! isolated vertex are deleted
-//! vertex connecting two parallel lineseg are deleted and the linesegs merged
-//! lineseg bisected by a vertex gets split in two
+//! lines are planned to represent either nets in circuits or visual lines in device designer
 //!
-//! a vertex can be moved, which should by extension change the way connected linesegs appear
-//! a line can be moved, which will also move the connected vertices
-//!
-//! selection and transforms:
-//! transforming a selection of lineseg and its vertices will modify lineseg and vertices transforms both,
-//! after which the lineseg would be updated to track the vertices (no change)
-//!
-//! render performance: should use gpu instancing of a bunch of unit X lines with based on transform
+//! render performance: should use gpu instancing
 //! bevy does this automatically for entities which share a mesh and material instance
-//! each material type: have a default, picked, selected, both material instance
-//! switch material instance if becomes picked or selected or both
-//! this way entities are mostly batched automatically
-//!
-//! back data with petgraph and reflect contents in bevy?
-//! - or -
-//! put data in bevy, and put into petgraph when its algos are required?
-//!
-//! simulation should be done in subapp, similar to render, so that app doesn't freeze.
-//! but maybe something more basic like a pipeline would do just as well.
-//! on simulation command: nets can be sent into petgraph to be simplified? (net names need to be reflected back in schematic)
+//! hence, all line segments are rendered from the same unit-X mesh transformed to arbitrary location
+//! all elements share a material instance, except those picked, selected, or both
+//! (in which case all picked, selected, or both elements share a material instance)
 
 use std::collections::{HashMap, HashSet};
 
@@ -44,7 +27,7 @@ use bevy::{
 };
 use euclid::default::{Box2D, Point2D};
 
-/// work with a unit X mesh from (0, 0) -> (1, 0)
+/// LineSegment component containing references to defining ['LineVertex'] Entities
 #[derive(Component, Reflect, PartialEq, Eq, Hash, Clone)]
 #[reflect(Component, MapEntities)]
 pub struct LineSegment {
@@ -58,17 +41,10 @@ impl MapEntities for LineSegment {
     }
 }
 
-struct PickableLineSeg {
-    bounds: Box2D<f32>,
-}
-impl Default for PickableLineSeg {
-    fn default() -> Self {
-        Self {
-            bounds: Box2D::from_points([Point2D::splat(0.0), Point2D::new(1.0, 0.0)])
-                .inflate(0.1, 0.1),
-        }
-    }
-}
+/// A struct to define picking behavior specific to line segments
+#[derive(Default)]
+struct PickableLineSeg;
+
 impl Pickable for PickableLineSeg {
     fn collides(&self, pc: &PickingCollider, gt: Mat4) -> bool {
         match pc {
@@ -86,8 +62,7 @@ impl Pickable for PickableLineSeg {
     }
 }
 
-/// defines the end points of schematic lines
-/// global transform should only ever be translated.
+/// defines the end points of a line
 #[derive(Component, Clone, Reflect, Default)]
 #[reflect(Component, MapEntities)]
 pub struct LineVertex {
@@ -102,6 +77,7 @@ impl MapEntities for LineVertex {
     }
 }
 
+/// A struct defining picking behavior specific to line vertices
 #[derive(Clone, Default)]
 struct PickableVertex;
 impl Pickable for PickableVertex {
@@ -118,23 +94,47 @@ impl Pickable for PickableVertex {
     }
 }
 
+/// helper function to return SchematicElement containing lineseg picking behavior
 pub fn lsse() -> SchematicElement {
     SchematicElement {
         behavior: Box::new(PickableLineSeg::default()),
     }
 }
 
+/// helper function to return SchematicElement containing vertex picking behavior
 pub fn lvse() -> SchematicElement {
     SchematicElement {
         behavior: Box::new(PickableVertex::default()),
     }
 }
+
+/// line vertex partial bundle (missing )
 #[derive(Bundle)]
 struct VertexBundle {
     vertex: LineVertex,
     schematic_element: SchematicElement,
+    mat: MaterialMesh2dBundle<SchematicMaterial>,
+    zi: ZoomInvariant,
+}
+impl VertexBundle {
+    fn new(branch: Entity, eres: &Res<ElementsRes>, pt: Vec3) -> Self {
+        Self {
+            vertex: LineVertex {
+                branches: smallvec![branch],
+            },
+            schematic_element: lvse(),
+            mat: MaterialMesh2dBundle {
+                mesh: Mesh2dHandle(eres.mesh_dot.clone().unwrap()),
+                material: eres.mat_dflt.clone().unwrap(),
+                transform: Transform::from_translation(pt),
+                ..Default::default()
+            },
+            zi: ZoomInvariant,
+        }
+    }
 }
 
+/// bundle defining a basic line segment
 #[derive(Bundle)]
 struct LineSegBundle {
     ls: LineSegment,
@@ -168,64 +168,29 @@ impl LineSegBundle {
 pub fn create_preview_lineseg(
     commands: &mut Commands,
     eres: &Res<ElementsRes>,
-    src: Vec3,
-    dst: Vec3,
+    src_pt: Vec3,
+    dst_pt: Vec3,
 ) {
+    fn spawn_vertex(
+        commands: &mut Commands,
+        eres: &Res<ElementsRes>,
+        lineseg_entity: Entity,
+        vertex_entity: Entity,
+        pt: Vec3,
+    ) {
+        commands
+            .entity(vertex_entity)
+            .insert((VertexBundle::new(lineseg_entity, eres, pt), Preview));
+    }
     // vertex and segments have eachothers entity as reference
     // segment transform with scale zero since start and end are both at same point
-    let vertex_a = commands
-        .spawn(SpatialBundle::from_transform(Transform::from_translation(
-            src,
-        )))
-        .id();
-    let vertex_b = commands
-        .spawn(SpatialBundle::from_transform(Transform::from_translation(
-            dst,
-        )))
-        .id();
-    let ls = LineSegBundle::new(eres, (vertex_a, src), (vertex_b, dst));
-    let lineseg = commands.spawn(ls).id();
+    let src_entity = commands.spawn_empty().id();
+    let dst_entity = commands.spawn_empty().id();
+    let ls = LineSegBundle::new(eres, (src_entity, src_pt), (dst_entity, dst_pt));
+    let lineseg_entity = commands.spawn((ls, Preview)).id();
 
-    let vsrc = (
-        LineVertex {
-            branches: smallvec![lineseg],
-        },
-        MaterialMesh2dBundle {
-            mesh: Mesh2dHandle(eres.mesh_dot.clone().unwrap()),
-            material: eres.mat_dflt.clone().unwrap(),
-            transform: Transform::from_translation(src),
-            ..Default::default()
-        },
-        ZoomInvariant,
-    );
-    let vdst = (
-        LineVertex {
-            branches: smallvec![lineseg],
-        },
-        MaterialMesh2dBundle {
-            mesh: Mesh2dHandle(eres.mesh_dot.clone().unwrap()),
-            material: eres.mat_dflt.clone().unwrap(),
-            transform: Transform::from_translation(dst),
-            ..Default::default()
-        },
-        ZoomInvariant,
-    );
-
-    commands.entity(vertex_a).insert((
-        vsrc,
-        SchematicElement {
-            behavior: Box::new(PickableVertex::default()),
-        },
-        Preview,
-    ));
-    commands.entity(vertex_b).insert((
-        vdst,
-        SchematicElement {
-            behavior: Box::new(PickableVertex::default()),
-        },
-        Preview,
-    ));
-    commands.entity(lineseg).insert((Preview,));
+    spawn_vertex(commands, eres, lineseg_entity, src_entity, src_pt);
+    spawn_vertex(commands, eres, lineseg_entity, dst_entity, dst_pt);
 }
 
 /// this system updates the transforms of all linesegments so that its unitx mesh reflects the position of its defining vertices
@@ -254,18 +219,6 @@ pub fn transform_lineseg(
     }
 }
 
-pub fn setup(mut commands: Commands) {
-    let b = VertexBundle {
-        vertex: LineVertex {
-            branches: SmallVec::new(),
-        },
-        schematic_element: SchematicElement {
-            behavior: Box::new(PickableVertex {}),
-        },
-    };
-    commands.spawn(b);
-}
-
 /// extend selection too line segs to connected vertices
 pub fn extend_selection(q: Query<&LineSegment, Changed<Selected>>, mut commands: Commands) {
     for ls in q.iter() {
@@ -286,6 +239,7 @@ pub fn extend_selection(q: Query<&LineSegment, Changed<Selected>>, mut commands:
 /// step 1: bisect
 /// for all vertices: bisect any line seg going over it
 /// then merge any overlapping segments
+/// TODO: then merge any parallel segments sharing a vertex
 ///
 /// step 2: cull
 /// delete any segments missing one or both end point(s)
@@ -301,14 +255,10 @@ pub fn prune(world: &mut World) {
 }
 
 /// this function merges vertices occupying the same coordinate
-fn merge_overlapped_vertex(
-    world: &mut World,
-    // mut cehm: Local<HashMap<IVec2, Entity>>,
-) {
-    // for every vertex v:
-    // get from hashmap with IVec2 coord as key:
-    //  get existing and merge into existing if existing is valid
-    //  else put new into hashmap
+fn merge_overlapped_vertex(world: &mut World) {
+    // for every vertex v at coord:
+    // get existing at coord and merge into existing if existing is valid
+    // else put new into hashmap with coord as key
     let mut cehm: HashMap<IVec2, Entity> = HashMap::new();
     let mut q =
         world.query_filtered::<(Entity, &GlobalTransform), (With<LineVertex>, Without<Preview>)>();
