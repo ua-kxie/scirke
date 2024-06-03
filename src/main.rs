@@ -3,6 +3,7 @@ use bevyon::BevyonPlugin;
 use schematic::SchematicPlugin;
 
 mod bevyon;
+mod readable_idgen;
 mod schematic;
 
 pub use bevyon::{FillOptions, StrokeOptions};
