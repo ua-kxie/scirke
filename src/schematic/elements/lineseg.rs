@@ -27,7 +27,7 @@
 //! but maybe something more basic like a pipeline would do just as well.
 //! on simulation command: nets can be sent into petgraph to be simplified? (net names need to be reflected back in schematic)
 
-use super::{ElementsRes, Pickable, SchematicElement, Selected};
+use super::{ElementsRes, Pickable, Preview, SchematicElement, Selected};
 use crate::schematic::{guides::ZoomInvariant, tools::PickingCollider};
 use bevy::{
     ecs::{
@@ -131,7 +131,7 @@ struct VertexBundle {
     schematic_element: SchematicElement,
 }
 
-pub fn create_lineseg(mut commands: Commands, eres: Res<ElementsRes>, coords: Vec2) -> Entity {
+pub fn create_lineseg_dep(mut commands: Commands, eres: Res<ElementsRes>, coords: Vec2) -> Entity {
     // vertex and segments have eachothers entity as reference
     // spawn point at cursor position
     let spawn_point =
@@ -186,6 +186,90 @@ pub fn create_lineseg(mut commands: Commands, eres: Res<ElementsRes>, coords: Ve
     commands.entity(lineseg).insert(ls);
 
     vertex_b
+}
+
+/// creates a preview (missing schematicElement marker) lineseg from src to dst
+/// a lineseg consists of 3 entities: 2 vertices and 1 segment.
+pub fn create_preview_lineseg(
+    commands: &mut Commands,
+    eres: &Res<ElementsRes>,
+    src: Vec3,
+    dst: Vec3,
+) {
+    // vertex and segments have eachothers entity as reference
+    // segment transform with scale zero since start and end are both at same point
+    let spawn_unitx = SpatialBundle::from_transform(Transform::from_scale(Vec3::splat(0.0)));
+    let vertex_a = commands
+        .spawn(SpatialBundle::from_transform(Transform::from_translation(
+            src,
+        )))
+        .id();
+    let vertex_b = commands
+        .spawn(SpatialBundle::from_transform(Transform::from_translation(
+            dst,
+        )))
+        .id();
+    let lineseg = commands.spawn(spawn_unitx).id();
+
+    let mat_bundle = MaterialMesh2dBundle {
+        mesh: Mesh2dHandle(eres.mesh_unitx.clone().unwrap()),
+        material: eres.mat_dflt.clone().unwrap(),
+        transform: Transform::from_translation(src).with_scale(Vec3::splat(1.0)),
+        ..Default::default()
+    };
+    let ls = (
+        LineSegment {
+            a: vertex_a,
+            b: vertex_b,
+        },
+        mat_bundle,
+    );
+    let vsrc = (
+        LineVertex {
+            branches: smallvec![lineseg],
+        },
+        MaterialMesh2dBundle {
+            mesh: Mesh2dHandle(eres.mesh_dot.clone().unwrap()),
+            material: eres.mat_dflt.clone().unwrap(),
+            transform: Transform::from_translation(src),
+            ..Default::default()
+        },
+        ZoomInvariant,
+    );
+    let vdst = (
+        LineVertex {
+            branches: smallvec![lineseg],
+        },
+        MaterialMesh2dBundle {
+            mesh: Mesh2dHandle(eres.mesh_dot.clone().unwrap()),
+            material: eres.mat_dflt.clone().unwrap(),
+            transform: Transform::from_translation(dst),
+            ..Default::default()
+        },
+        ZoomInvariant,
+    );
+
+    commands.entity(vertex_a).insert((
+        vsrc,
+        SchematicElement {
+            behavior: Box::new(PickableVertex::default()),
+        },
+        Preview,
+    ));
+    commands.entity(vertex_b).insert((
+        vdst,
+        SchematicElement {
+            behavior: Box::new(PickableVertex::default()),
+        },
+        Preview,
+    ));
+    commands.entity(lineseg).insert((
+        ls,
+        SchematicElement {
+            behavior: Box::new(PickableLineSeg::default()),
+        },
+        Preview,
+    ));
 }
 
 /// this system updates the transforms of all linesegments so that its unitx mesh reflects the position of its defining vertices

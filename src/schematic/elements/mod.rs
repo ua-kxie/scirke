@@ -9,12 +9,37 @@ use bevy::{
 };
 
 mod lineseg;
-pub use lineseg::{create_lineseg, lsse, lvse, LineSegment, LineVertex};
+pub use lineseg::{create_preview_lineseg, lsse, lvse, LineSegment, LineVertex};
 
 use super::{
     material::SchematicMaterial,
     tools::{NewPickingCollider, PickingCollider, SelectEvt},
 };
+
+/// marker component to mark entity as being previewed (constructed by an active tool)
+/// entities marked [`SchematicElement`] but without this marker is persistent
+#[derive(Component)]
+pub struct Preview;
+
+/// this systetm despawns all SchematicElements marked as Preview
+pub fn despawn_preview(
+    commands: &mut Commands,
+    q: Query<Entity, (With<SchematicElement>, With<Preview>)>,
+) {
+    for e in q.iter() {
+        commands.entity(e).despawn();
+    }
+}
+
+/// this systetm clears all preview marker compoenents from SchematicElements
+pub fn persist_preview(
+    commands: &mut Commands,
+    q: Query<Entity, (With<SchematicElement>, With<Preview>)>,
+) {
+    for e in q.iter() {
+        commands.entity(e).remove::<Preview>();
+    }
+}
 
 #[derive(Resource, Default)]
 pub struct ElementsRes {
