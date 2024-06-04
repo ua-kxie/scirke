@@ -67,8 +67,6 @@ pub struct Picked;
 pub struct Selected;
 
 /// different components that impl a given trait T with functions to compute picking collision
-/// add different
-
 #[derive(Component)]
 pub struct SchematicElement {
     behavior: Box<dyn Pickable + Send + Sync + 'static>,
@@ -82,9 +80,6 @@ trait Pickable {
     fn collides(&self, pc: &PickingCollider, transform: Mat4) -> bool;
 }
 
-// entity wireseg schematicElement(TO)
-// entity vertex schematicElement(TO)
-
 pub struct ElementsPlugin;
 
 impl Plugin for ElementsPlugin {
@@ -96,7 +91,6 @@ impl Plugin for ElementsPlugin {
                 lineseg::transform_lineseg,
                 picking,
                 lineseg::prune,
-                lineseg::extend_selection,
             ),
         );
         app.add_systems(PostUpdate, set_mat);
@@ -221,6 +215,7 @@ fn sel_append(command: &mut Commands, qep: &Query<Entity, With<Picked>>) {
     }
 }
 
+/// this sets the material of elements to visualize which are picked and/or selected
 fn set_mat(
     mut q_sse: Query<(
         &mut Handle<SchematicMaterial>,
@@ -238,6 +233,3 @@ fn set_mat(
         }
     }
 }
-
-// a line seg should be picked by area intersect if either vertex is contained
-// a line seg should be picked by area contains if both vertex is contained

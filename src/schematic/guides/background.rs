@@ -1,5 +1,7 @@
 /*
 schematic background
+use of single triangle justified here:
+https://stackoverflow.com/questions/2588875/whats-the-best-way-to-draw-a-fullscreen-quad-in-opengl-3-2
 */
 
 use bevy::{

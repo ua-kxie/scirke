@@ -6,7 +6,6 @@ use bevy::{
 };
 use lyon_tessellation::{
     geom::Point,
-    path::{builder::NoAttributes, BuilderImpl},
     FillOptions,
 };
 
@@ -26,12 +25,6 @@ grid guides: major, minor, optional grid spacing / visibility
 struct HomoGrid {
     step: f32,
     mesh_hndl: Mesh2dHandle,
-}
-
-impl HomoGrid {
-    fn circle(p: Point<f32>, radius: f32, path_builder: &mut NoAttributes<BuilderImpl>) {
-        path_builder.add_circle(p, radius, lyon_tessellation::path::Winding::Positive);
-    }
 }
 
 #[derive(Component, Deref, DerefMut)]

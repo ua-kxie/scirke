@@ -219,13 +219,13 @@ pub fn transform_lineseg(
     }
 }
 
-/// extend selection too line segs to connected vertices
-pub fn extend_selection(q: Query<&LineSegment, Changed<Selected>>, mut commands: Commands) {
-    for ls in q.iter() {
-        commands.entity(ls.a).insert(Selected);
-        commands.entity(ls.b).insert(Selected);
-    }
-}
+// /// extend selection too line segs to connected vertices
+// pub fn extend_selection(q: Query<&LineSegment, Changed<Selected>>, mut commands: Commands) {
+//     for ls in q.iter() {
+//         commands.entity(ls.a).insert(Selected);
+//         commands.entity(ls.b).insert(Selected);
+//     }
+// }
 
 /// full functionality:
 /// this function is called whenever schematic is changed. Ensures all connected nets have the same net name, overlapping segments are merged, etc.

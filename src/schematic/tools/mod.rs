@@ -5,7 +5,6 @@ mod transform;
 mod wire;
 
 pub use sel::{NewPickingCollider, PickingCollider, SelectEvt};
-
 use super::guides::SchematicCursor;
 
 const WIRE_TOOL_KEY: KeyCode = KeyCode::KeyW;
@@ -31,8 +30,6 @@ impl Plugin for ToolsPlugin {
             transform::TransformToolPlugin,
         ));
         app.add_systems(Update, main);
-        // app.add_systems(OnEnter(SchematicToolState::Idle), reset);
-
         app.init_state::<SchematicToolState>();
     }
 }
@@ -55,8 +52,7 @@ fn main(
                         coords.snapped_world_coords.as_ivec2(),
                     ));
                 }
-            }
-            if keys.just_released(WIRE_TOOL_KEY) {
+            } else if keys.just_released(WIRE_TOOL_KEY) {
                 next_toolstate.set(SchematicToolState::Wiring);
             }
         }

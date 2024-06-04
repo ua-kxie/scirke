@@ -3,16 +3,12 @@ use self::{
     material::SchematicMaterial, tools::ToolsPlugin,
 };
 use bevy::{
-    ecs::entity::EntityHashMap,
-    input::common_conditions::input_just_pressed,
     prelude::*,
     render::{mesh::PrimitiveTopology, render_asset::RenderAssetUsages},
-    scene::{ron, serde::SceneDeserializer},
     sprite::{Material2dPlugin, MaterialMesh2dBundle, Mesh2dHandle},
 };
 use bevy_save::prelude::*;
 use elements::{lsse, lvse, ElementsRes, LineSegment, LineVertex, SchematicElement};
-use serde::de::DeserializeSeed;
 
 mod camera;
 mod elements;
@@ -24,19 +20,11 @@ mod tools;
 // Snapped marker component: system to goes around snapping transform of such entities
 #[derive(Component)]
 pub struct Snap {
-    /// snap step size, coords are snapped as:
-    /// (coord/step).round() * step
     pub world_step: f32,
-    // pub space: Space,
 }
 
 impl Snap {
     const DEFAULT: Self = Snap { world_step: 1.0 };
-}
-
-pub enum Space {
-    World,
-    Clip,
 }
 
 /// [`SystemSet`] for system which performs snapping.
@@ -59,11 +47,8 @@ impl Plugin for SchematicPlugin {
             PostUpdate,
             SnapSet.before(bevy::transform::TransformSystem::TransformPropagate),
         );
-        // app.add_systems(Startup, setup);
         app.add_systems(PostUpdate, snap.in_set(SnapSet));
         app.add_systems(Update, handle_save_input);
-        app.add_systems(Update, save.run_if(input_just_pressed(KeyCode::KeyS)));
-        // app.add_systems(Update, load.run_if(input_just_pressed(KeyCode::KeyL)));
         app.add_plugins(Material2dPlugin::<SchematicMaterial>::default());
         app.add_plugins((
             // Bevy Save
@@ -103,40 +88,6 @@ fn setup(
     commands.spawn(mat_bundle);
 }
 
-fn save(
-    world: &mut World,
-    // keys: Res<ButtonInput<KeyCode>>,
-) {
-    let mut binding = world.query_filtered::<Entity, With<SchematicElement>>();
-    let ents = binding.iter(world);
-    let dsb = DynamicSceneBuilder::from_world(world)
-        .deny::<Mesh2dHandle>()
-        .deny::<Handle<SchematicMaterial>>()
-        .allow::<elements::LineVertex>()
-        .allow::<elements::LineSegment>()
-        .extract_entities(ents);
-    let reg = world.resource::<AppTypeRegistry>().clone();
-    dbg!("kek");
-    let data;
-    let a = dsb.build();
-    for e in &a.entities {
-        dbg!(e.entity);
-        for c in &e.components {
-            dbg!(c);
-        }
-    }
-    match a.serialize_ron(&reg) {
-        Ok(data1) => {
-            data = data1;
-        }
-        Err(err) => {
-            eprintln!("Application error: {err}");
-            return;
-        }
-    }
-    std::fs::write("out/foo1.ron", data).expect("Unable to write file");
-}
-
 struct SavePipeline;
 
 impl Pipeline for SavePipeline {
@@ -153,8 +104,6 @@ impl Pipeline for SavePipeline {
         builder
             .deny::<Mesh2dHandle>()
             .deny::<Handle<SchematicMaterial>>()
-            .allow::<elements::LineVertex>()
-            .allow::<elements::LineSegment>()
             .extract_entities_matching(|e| e.contains::<SchematicElement>())
             .extract_rollbacks()
             .build()
@@ -198,3 +147,5 @@ fn handle_save_input(world: &mut World) {
             .expect("Failed to rollforward");
     }
 }
+
+

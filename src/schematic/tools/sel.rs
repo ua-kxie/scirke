@@ -120,8 +120,6 @@ fn main(
         }
     }
     if let Ok(p) = qcam.get_single() {
-        // p.scale
-        dbg!("keker");
         new_stroke(&mut cmdata, p.scale);
     }
 
