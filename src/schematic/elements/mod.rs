@@ -77,7 +77,7 @@ pub struct SchematicElement {
 /// includes: picking collider, own hitbox
 /// transform argument is the element transform's inverse (apply to cursor, see if it is over un-transformed element)
 trait Pickable {
-    fn collides(&self, pc: &PickingCollider, transform: Mat4) -> bool;
+    fn collides(&self, pc: &PickingCollider, transform: Transform) -> bool;
 }
 
 pub struct ElementsPlugin;
@@ -170,11 +170,7 @@ fn picking(
 ) {
     if let Some(NewPickingCollider(pc)) = e_newpck.read().last() {
         for (ent, sgt, se) in q_wse.iter_mut() {
-            let t = sgt.compute_matrix().inverse();
-            if t.is_nan() {
-                continue;
-            }
-            match se.behavior.collides(pc, t) {
+            match se.behavior.collides(pc, sgt.compute_transform()) {
                 true => {
                     commands.entity(ent).insert(Picked);
                 }

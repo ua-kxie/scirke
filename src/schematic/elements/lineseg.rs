@@ -15,7 +15,7 @@ use std::{
     f32::consts::PI,
 };
 
-use super::{ElementsRes, Pickable, Preview, SchematicElement, Selected};
+use super::{ElementsRes, Pickable, Preview, SchematicElement};
 use crate::schematic::{
     guides::ZoomInvariant, material::SchematicMaterial, tools::PickingCollider,
 };
@@ -24,6 +24,7 @@ use bevy::{
         entity::{Entity, EntityMapper, MapEntities},
         reflect::{ReflectComponent, ReflectMapEntities},
     },
+    math::bounding::{Aabb2d, BoundingVolume, IntersectsVolume},
     prelude::*,
     sprite::{MaterialMesh2dBundle, Mesh2dHandle},
     utils::smallvec::{smallvec, SmallVec},
@@ -63,23 +64,46 @@ impl LineSegment {
     }
 }
 
+const LINESEG_POINTS: [Vec3; 2] = [Vec3::splat(0.0), Vec3::new(1.0, 0.0, 0.0)];
 /// A struct to define picking behavior specific to line segments
 #[derive(Default)]
 struct PickableLineSeg;
 
 impl Pickable for PickableLineSeg {
-    fn collides(&self, pc: &PickingCollider, gt: Mat4) -> bool {
+    fn collides(&self, pc: &PickingCollider, gt: Transform) -> bool {
         match pc {
             PickingCollider::Point(p) => {
-                let p1 = gt.transform_point3(p.extend(0.0));
-                let (s, _, _) = gt.to_scale_rotation_translation();
+                let t = gt.compute_matrix().inverse();
+                if t.is_nan() {
+                    return false;
+                }
+                let p1 = t.transform_point(p.extend(0.0));
+                let (s, _, _) = t.to_scale_rotation_translation();
                 Box2D::from_points([Point2D::splat(0.0), Point2D::new(1.0, 0.0)])
                     // inflate proportional to inverse transform scale so that longer lines dont get bigger hit boxes
                     .inflate(-s.y * 0.5, s.y * 0.1)
                     .contains_inclusive(Point2D::new(p1.x, p1.y))
             }
-            PickingCollider::AreaIntersect(_) => false,
-            PickingCollider::AreaContains(_) => false,
+            PickingCollider::AreaIntersect(pc) => {
+                // true if pc intersects aabb of lineseg
+                // TODO: improve this such that returns true if lineseg visually intersects pc
+                pc.intersects(&Aabb2d::from_point_cloud(
+                    Vec2::splat(0.0),
+                    0.0,
+                    &[
+                        gt.transform_point(LINESEG_POINTS[0]).truncate(),
+                        gt.transform_point(LINESEG_POINTS[1]).truncate(),
+                    ],
+                ))
+            }
+            PickingCollider::AreaContains(pc) => pc.contains(&Aabb2d::from_point_cloud(
+                Vec2::splat(0.0),
+                0.0,
+                &[
+                    gt.transform_point(LINESEG_POINTS[0]).truncate(),
+                    gt.transform_point(LINESEG_POINTS[1]).truncate(),
+                ],
+            )),
         }
     }
 }
@@ -103,15 +127,27 @@ impl MapEntities for LineVertex {
 #[derive(Clone, Default)]
 struct PickableVertex;
 impl Pickable for PickableVertex {
-    fn collides(&self, pc: &PickingCollider, gt: Mat4) -> bool {
+    fn collides(&self, pc: &PickingCollider, gt: Transform) -> bool {
         match pc {
             PickingCollider::Point(p) => {
-                let p1 = gt.transform_point3(p.extend(0.0));
+                let t = gt.compute_matrix().inverse();
+                if t.is_nan() {
+                    return false;
+                }
+                let p1 = t.transform_point(p.extend(0.0));
                 Box2D::from_points([Point2D::splat(-0.5), Point2D::splat(0.5)])
                     .contains_inclusive(Point2D::new(p1.x, p1.y))
             }
-            PickingCollider::AreaIntersect(_) => false,
-            PickingCollider::AreaContains(_) => false,
+            PickingCollider::AreaIntersect(pc) => pc.intersects(&Aabb2d::from_point_cloud(
+                Vec2::splat(0.0),
+                0.0,
+                &[gt.transform_point(Vec3::splat(0.0)).truncate()],
+            )),
+            PickingCollider::AreaContains(pc) => pc.contains(&Aabb2d::from_point_cloud(
+                Vec2::splat(0.0),
+                0.0,
+                &[gt.transform_point(Vec3::splat(0.0)).truncate()],
+            )),
         }
     }
 }
@@ -346,10 +382,10 @@ fn bisect(world: &mut World) {
         for (lse, seg, sgt, se) in qls.iter(&world) {
             if se.behavior.collides(
                 &PickingCollider::Point(vertex_coords.1.truncate()),
-                sgt.compute_matrix().inverse(),
+                sgt.compute_transform(),
             ) {
                 colliding_segments.push((
-                    lse, // line segment entity
+                    lse,                                                    // line segment entity
                     (seg.a, sgt.translation()), // vertex a entity and translation
                     (seg.b, sgt.transform_point(Vec3::new(1.0, 0.0, 0.0))), // vertex a entity and translation
                 ));
@@ -399,9 +435,7 @@ fn bisect(world: &mut World) {
     }
 }
 
-fn combine_parallel(
-    world: &mut World,
-) {
+fn combine_parallel(world: &mut World) {
     // remove vertices bisecting two parallel lines
     let mut qlv = world.query_filtered::<Entity, (With<LineVertex>, Without<Preview>)>();
     let all_vertices: Box<[Entity]> = qlv.iter(&world).collect();
@@ -425,11 +459,14 @@ fn cull(world: &mut World) {
     }
     // delete lonesome vertices
     let mut qlv = world.query_filtered::<Entity, (With<LineVertex>, Without<Preview>)>();
-    let mut lves: Box<[Entity]> = qlv
-        .iter(&world)
-        .collect();
+    let mut lves: Box<[Entity]> = qlv.iter(&world).collect();
     for vertex_entity in lves.iter_mut() {
-        let cleaned_branches: SmallVec<[Entity; 8]> = world.entity(*vertex_entity).get::<LineVertex>().unwrap().branches.iter()
+        let cleaned_branches: SmallVec<[Entity; 8]> = world
+            .entity(*vertex_entity)
+            .get::<LineVertex>()
+            .unwrap()
+            .branches
+            .iter()
             .filter_map(|ls| {
                 if world.get_entity(*ls).is_some() {
                     Some(*ls)
@@ -441,12 +478,14 @@ fn cull(world: &mut World) {
         if cleaned_branches.is_empty() {
             world.despawn(*vertex_entity);
         } else {
-            world.entity_mut(*vertex_entity).get_mut::<LineVertex>().unwrap().branches = cleaned_branches;
+            world
+                .entity_mut(*vertex_entity)
+                .get_mut::<LineVertex>()
+                .unwrap()
+                .branches = cleaned_branches;
         }
     }
 }
-
-
 
 /// removes line segments in world that share the same end points
 /// for every removed line, go to vertices and remove references to self
@@ -461,7 +500,7 @@ fn cull_redundant_segments(world: &mut World) {
         .collect();
     for (segment_entity, ls) in all_linesegs.into_iter() {
         if !hs.insert(ls.clone()) {
-           remove_lineseg(world, *segment_entity);
+            remove_lineseg(world, *segment_entity);
         }
     }
 }
@@ -511,11 +550,7 @@ fn merge_parallel(world: &mut World, vertex: Entity) {
 }
 
 /// adds a branch connecting a and b
-fn add_lineseg(
-    world: &mut World,
-    a: Entity,
-    b: Entity,
-) {
+fn add_lineseg(world: &mut World, a: Entity, b: Entity) {
     // create lineseg bundle
     let lsb = LineSegBundle::new(
         world.resource::<ElementsRes>(),
@@ -537,17 +572,34 @@ fn add_lineseg(
         ),
     );
     let new_branch_id = world.spawn(lsb).id();
-    world.entity_mut(a).get_mut::<LineVertex>().unwrap().branches.push(new_branch_id);
-    world.entity_mut(b).get_mut::<LineVertex>().unwrap().branches.push(new_branch_id);
+    world
+        .entity_mut(a)
+        .get_mut::<LineVertex>()
+        .unwrap()
+        .branches
+        .push(new_branch_id);
+    world
+        .entity_mut(b)
+        .get_mut::<LineVertex>()
+        .unwrap()
+        .branches
+        .push(new_branch_id);
 }
 
 /// removes a lineseg from the world and also removes references to it in its end point vertices
-fn remove_lineseg(
-    world: &mut World,
-    lineseg: Entity,
-) {
+fn remove_lineseg(world: &mut World, lineseg: Entity) {
     let ls = world.entity(lineseg).get::<LineSegment>().unwrap().clone();
     world.despawn(lineseg);
-    world.entity_mut(ls.a).get_mut::<LineVertex>().unwrap().branches.retain(|x| *x != lineseg);
-    world.entity_mut(ls.b).get_mut::<LineVertex>().unwrap().branches.retain(|x| *x != lineseg);
+    world
+        .entity_mut(ls.a)
+        .get_mut::<LineVertex>()
+        .unwrap()
+        .branches
+        .retain(|x| *x != lineseg);
+    world
+        .entity_mut(ls.b)
+        .get_mut::<LineVertex>()
+        .unwrap()
+        .branches
+        .retain(|x| *x != lineseg);
 }

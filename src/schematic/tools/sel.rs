@@ -40,8 +40,16 @@ impl NewPickingCollider {
     pub fn min_max(min: Vec2, max: Vec2) -> NewPickingCollider {
         let a = max - min;
         match (a.x * a.y).is_sign_positive() {
-            true => NewPickingCollider(PickingCollider::AreaContains(Aabb2d { min, max })),
-            false => NewPickingCollider(PickingCollider::AreaIntersect(Aabb2d { min, max })),
+            true => NewPickingCollider(PickingCollider::AreaContains(Aabb2d::from_point_cloud(
+                Vec2::splat(0.0),
+                0.0,
+                &[min, max],
+            ))),
+            false => NewPickingCollider(PickingCollider::AreaIntersect(Aabb2d::from_point_cloud(
+                Vec2::splat(0.0),
+                0.0,
+                &[min, max],
+            ))),
         }
     }
 }
