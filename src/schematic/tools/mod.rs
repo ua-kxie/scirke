@@ -4,8 +4,8 @@ mod sel;
 mod transform;
 mod wire;
 
-pub use sel::{NewPickingCollider, PickingCollider, SelectEvt};
 use super::guides::SchematicCursor;
+pub use sel::{NewPickingCollider, PickingCollider, SelectEvt};
 
 const WIRE_TOOL_KEY: KeyCode = KeyCode::KeyW;
 const MOVE_KEY: KeyCode = KeyCode::KeyM;

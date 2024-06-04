@@ -87,11 +87,7 @@ impl Plugin for ElementsPlugin {
         app.add_systems(Startup, startup);
         app.add_systems(
             Update,
-            (
-                lineseg::transform_lineseg,
-                picking,
-                lineseg::prune,
-            ),
+            (lineseg::transform_lineseg, picking, lineseg::prune),
         );
         app.add_systems(PostUpdate, set_mat);
         app.init_resource::<ElementsRes>();

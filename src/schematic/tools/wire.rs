@@ -73,25 +73,6 @@ fn main(
     }
 }
 
-// fn tool_cleanup(
-//     mut next_wiretoolstate: ResMut<NextState<WireToolState>>,
-//     wiretoolstate: ResMut<State<WireToolState>>,
-//     mut commands: Commands,
-// ) {
-//     // this system is designed to be run everytime the tool is deactivated
-//     match wiretoolstate.get() {
-//         WireToolState::Ready => {}
-//         WireToolState::Drawing(ent) => {
-//             commands.entity(*ent).despawn();
-//             next_wiretoolstate.set(WireToolState::Ready);
-//         }
-//     }
-// }
-
-// wire routing: basic routing make wire go along x and y axis aligned
-// variable entity count
-// make marker component? preview marker component
-
 /// this function pathfinds the optimal route from src to dst with a traversal cost function
 /// TODO: add pathfinding; right now this function just forces wires to horz/vert.
 fn route(
@@ -127,10 +108,3 @@ fn compute_preview(mut commands: Commands, eres: Res<ElementsRes>, src: IVec2, d
         )
     }
 }
-
-// schematicToolSt
-// WireToolSt
-// on rdy: nothing
-// during draw: just save src coordinate, call route
-// delete preview, add new segments as preview
-// on exit draw state: run pruning/assign id

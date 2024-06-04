@@ -4,10 +4,7 @@ use bevy::{
     render::render_asset::RenderAssetUsages,
     sprite::{MaterialMesh2dBundle, Mesh2dHandle},
 };
-use lyon_tessellation::{
-    geom::Point,
-    FillOptions,
-};
+use lyon_tessellation::{geom::Point, FillOptions};
 
 use crate::{
     bevyon::{

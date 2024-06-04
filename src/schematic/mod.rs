@@ -147,5 +147,3 @@ fn handle_save_input(world: &mut World) {
             .expect("Failed to rollforward");
     }
 }
-
-
