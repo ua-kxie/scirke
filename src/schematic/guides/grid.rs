@@ -165,8 +165,8 @@ fn build_grid(
 
     let (mut meshhndl, grid) = q_grid.single_mut();
     for homogrid in &grid.0 {
-        let cols_count = (screen_patch.width() / homogrid.step).ceil() as u8;
-        let rows_count = (screen_patch.height() / homogrid.step).ceil() as u8;
+        let cols_count = ((screen_patch.width() / homogrid.step).ceil() + 1.0) as u8;
+        let rows_count = ((screen_patch.height() / homogrid.step).ceil() + 1.0) as u8;
         // if row / column exceed 100 - don't bother
         // (would be better to make this based on screen space density)
         if cols_count > 100 || rows_count > 100 {
