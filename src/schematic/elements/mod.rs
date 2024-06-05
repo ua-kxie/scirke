@@ -87,7 +87,12 @@ impl Plugin for ElementsPlugin {
         app.add_systems(Startup, startup);
         app.add_systems(
             Update,
-            (lineseg::transform_lineseg, picking, lineseg::prune),
+            (
+                lineseg::transform_lineseg,
+                picking,
+                selection,
+                lineseg::prune,
+            ),
         );
         app.add_systems(PostUpdate, set_mat);
         app.init_resource::<ElementsRes>();
@@ -163,24 +168,56 @@ fn picking(
     mut commands: Commands,
     mut e_newpck: EventReader<NewPickingCollider>,
     mut q_wse: Query<(Entity, &GlobalTransform, &SchematicElement)>,
-    mut e_sel: EventReader<SelectEvt>,
-
-    qes: Query<Entity, With<Selected>>,
-    qep: Query<Entity, With<Picked>>,
+    mut colliding: Local<Vec<Entity>>,
+    mut idx: Local<usize>,
+    keys: Res<ButtonInput<KeyCode>>,
 ) {
+    // colliding: vector of colliding entities under current point picking collider
+    // should be empty if picking collider is not a point
+    // idx: current index of colliding, such that collding[idx] is the picked element
+
+    // process any new picking collider event
     if let Some(NewPickingCollider(pc)) = e_newpck.read().last() {
-        for (ent, sgt, se) in q_wse.iter_mut() {
-            match se.behavior.collides(pc, sgt.compute_transform()) {
-                true => {
-                    commands.entity(ent).insert(Picked);
+        if let PickingCollider::Point(p) = pc {
+            // update `colliding`, and unset any Picked
+            colliding.clear();
+            for (ent, sgt, se) in q_wse.iter_mut() {
+                commands.entity(ent).remove::<Picked>();
+                if se.behavior.collides(pc, sgt.compute_transform()) {
+                    colliding.push(ent);
                 }
-                false => {
+            }
+            // set one, if any, entity as picked
+            if let Some(&ent) = colliding.first() {
+                commands.entity(ent).insert(Picked);
+                *idx = 0;
+            }
+        } else {
+            // area selection: reset Picked, then mark any colliding as Picked
+            colliding.clear();
+            for (ent, sgt, se) in q_wse.iter_mut() {
+                if se.behavior.collides(pc, sgt.compute_transform()) {
+                    commands.entity(ent).insert(Picked);
+                } else {
                     commands.entity(ent).remove::<Picked>();
                 }
             }
         }
-    };
+    }
+    // if cycle command is pressed and colliding vector is not empty
+    if !colliding.is_empty() && keys.just_pressed(KeyCode::KeyC) {
+        commands.entity(colliding[*idx]).remove::<Picked>();
+        *idx = (*idx + 1) % colliding.len();
+        commands.entity(colliding[*idx]).insert(Picked);
+    }
+}
 
+fn selection(
+    mut commands: Commands,
+    mut e_sel: EventReader<SelectEvt>,
+    qes: Query<Entity, With<Selected>>,
+    qep: Query<Entity, With<Picked>>,
+) {
     for selevt in e_sel.read().into_iter() {
         match selevt {
             SelectEvt::New => {
