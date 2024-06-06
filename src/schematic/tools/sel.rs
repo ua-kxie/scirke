@@ -202,6 +202,7 @@ fn setup(mut commands: Commands, mut materials: ResMut<Assets<SchematicMaterial>
             material: materials.add(SchematicMaterial {
                 color: Color::BLACK.with_a(0.0),
             }),
+            //            material: eres.mat_dflt.clone().unwrap(),
             transform: Transform::from_translation(Vec3::new(0.0, 0.0, Z_DEPTH)),
             ..Default::default()
         },

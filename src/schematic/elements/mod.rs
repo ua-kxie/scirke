@@ -101,6 +101,9 @@ impl Plugin for ElementsPlugin {
     }
 }
 
+const MAT_SEL_COLOR: Color = Color::YELLOW;
+const MAT_PCK_COLOR: Color = Color::WHITE;
+
 /// startup system to initialize element resource
 fn startup(
     mut eres: ResMut<ElementsRes>,
@@ -149,13 +152,13 @@ fn startup(
         color: Color::BLACK,
     }));
     eres.mat_pckd = Some(mats.add(SchematicMaterial {
-        color: Color::WHITE,
+        color: MAT_PCK_COLOR,
     }));
     eres.mat_seld = Some(mats.add(SchematicMaterial {
-        color: Color::YELLOW,
+        color: MAT_SEL_COLOR,
     }));
     eres.mat_alld = Some(mats.add(SchematicMaterial {
-        color: Color::WHITE + Color::YELLOW,
+        color: MAT_SEL_COLOR + MAT_PCK_COLOR,
     }));
 }
 
