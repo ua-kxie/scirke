@@ -5,8 +5,10 @@ use schematic::SchematicPlugin;
 mod bevyon;
 mod readable_idgen;
 mod schematic;
+mod spmanager;
 
 pub use bevyon::{FillOptions, StrokeOptions};
+use spmanager::SPManagerPlugin;
 
 fn main() {
     App::new()
@@ -17,6 +19,7 @@ fn main() {
             }),
             ..default()
         }))
+        .add_plugins(SPManagerPlugin)
         .add_plugins(BevyonPlugin)
         .add_plugins(SchematicPlugin)
         .add_systems(Startup, hide_cursor)
