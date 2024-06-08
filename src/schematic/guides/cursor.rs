@@ -11,7 +11,7 @@ use crate::{
     schematic::material::SchematicMaterial,
 };
 
-use super::{SchematicCamera, ZoomInvariant};
+use super::SchematicCamera;
 
 /// event indicating a new cursor position. None indicates that the cursor moved off-window
 #[derive(Event, Deref, PartialEq)]
@@ -65,10 +65,10 @@ struct CursorBundle {
     tess_data: CompositeMeshData,
     mat_bundle: MaterialMesh2dBundle<SchematicMaterial>,
     cursor: SchematicCursor,
-    zoom_invariant: ZoomInvariant,
+    // zoom_invariant: ZoomInvariant,
 }
 
-const Z_DEPTH: f32 = 1.0;
+const Z_DEPTH: f32 = 0.0;
 
 /// mixing in of snapping here isn't ideal - leave for now
 fn update(
@@ -123,7 +123,7 @@ fn update(
 
 fn setup(mut commands: Commands, mut materials: ResMut<Assets<SchematicMaterial>>) {
     let mut path_builder = bevyon::path_builder();
-    let size = 4.0;
+    let size = 0.4;
     path_builder.add_rectangle(
         &Box2D {
             min: Point2D::splat(-size),
@@ -137,10 +137,9 @@ fn setup(mut commands: Commands, mut materials: ResMut<Assets<SchematicMaterial>
         path,
         stroke: Some(
             bevyon::StrokeOptions::DEFAULT
-                .with_line_width(2.0)
-                .with_tolerance(1.0),
+                .with_line_width(0.1)
+                .with_tolerance(0.1),
         ),
-
         fill: None,
     };
     commands.spawn(CursorBundle {
@@ -153,6 +152,6 @@ fn setup(mut commands: Commands, mut materials: ResMut<Assets<SchematicMaterial>
             ..Default::default()
         },
         cursor: SchematicCursor::default(),
-        zoom_invariant: ZoomInvariant,
+        // zoom_invariant: ZoomInvariant,
     });
 }

@@ -9,7 +9,8 @@ use bevy::{
 };
 use bevy_egui::{
     egui::{
-        self, epaint::text::cursor::CCursor, text::LayoutJob, text_selection::CCursorRange, Align, Color32, Context, FontId, Id, ScrollArea, TextEdit, TextFormat
+        self, epaint::text::cursor::CCursor, text::LayoutJob, text_selection::CCursorRange, Align,
+        Color32, Context, FontId, Id, ScrollArea, TextEdit, TextFormat,
     },
     EguiContexts,
 };
@@ -93,12 +94,12 @@ impl Default for ConsoleConfiguration {
             moveable: true,
             show_title_bar: true,
             background_color: Color32::from_black_alpha(102),
-            dtf: TextFormat { 
-                font_id: FontId::monospace(14f32), 
-                color: Color32::LIGHT_GRAY, 
-                background: Color32::from_black_alpha(102), 
+            dtf: TextFormat {
+                font_id: FontId::monospace(14f32),
+                color: Color32::LIGHT_GRAY,
+                background: Color32::from_black_alpha(102),
                 ..default()
-            }
+            },
         }
     }
 }
@@ -214,16 +215,12 @@ pub(crate) fn console_ui(
                         && ui.input(|i| i.key_pressed(egui::Key::Enter))
                     {
                         if state.buf.trim().is_empty() {
-                            state.scrollback.push(
-                                LayoutJob::default()
-                            );
+                            state.scrollback.push(LayoutJob::default());
                         } else {
                             let msg = format!("{}{}", config.symbol, state.buf);
                             let mut lj = LayoutJob::default();
                             lj.append(&msg, 0f32, config.dtf.clone());
-                            state.scrollback.push(
-                                lj
-                            );
+                            state.scrollback.push(lj);
                             let cmd_string = state.buf.clone();
                             state.history.insert(1, cmd_string.into());
                             if state.history.len() > config.history_size + 1 {
@@ -287,10 +284,14 @@ pub(crate) fn receive_console_line(
     for event in events.read() {
         let event: &PrintConsoleLine = event;
         let mut lj = LayoutJob::default();
-        lj.append(&event.line, 0f32, TextFormat{
-            color: event.color,
-            ..default()
-        });
+        lj.append(
+            &event.line,
+            0f32,
+            TextFormat {
+                color: event.color,
+                ..default()
+            },
+        );
         console_state.scrollback.push(lj);
     }
 }

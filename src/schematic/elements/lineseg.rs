@@ -112,7 +112,7 @@ impl Pickable for PickableLineSeg {
 #[derive(Component, Clone, Reflect, Default)]
 #[reflect(Component, MapEntities)]
 pub struct LineVertex {
-    branches: SmallVec<[Entity; 8]>, // anything above a three should be circuit schematic warning
+    pub branches: SmallVec<[Entity; 8]>, // anything above a three should be circuit schematic warning
 }
 
 impl MapEntities for LineVertex {

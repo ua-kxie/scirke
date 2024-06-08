@@ -112,12 +112,15 @@ impl SubMesh {
 /// allows for building meshes with different color attributes using mesh merge
 #[derive(Default, Component, Deref, DerefMut)]
 pub struct CompositeMeshData {
+    pub zoom_invariant: bool,
+    #[deref]
     pub mesh_data: Vec<SubMesh>,
 }
 
 impl CompositeMeshData {
     pub fn from_single(single: TessInData) -> Self {
         Self {
+            zoom_invariant: false,
             mesh_data: vec![SubMesh {
                 tess_data: single,
                 color: Color::WHITE,
@@ -126,6 +129,7 @@ impl CompositeMeshData {
     }
     pub fn from_single_w_color(single: TessInData, color: Color) -> Self {
         Self {
+            zoom_invariant: false,
             mesh_data: vec![SubMesh {
                 tess_data: single,
                 color,

@@ -4,11 +4,11 @@
 use bevy::prelude::*;
 use bevy_egui::EguiPlugin;
 
+use crate::console::{console_ui, receive_console_line, ConsoleState};
 pub use crate::console::{
     ConsoleCommandEntered, ConsoleConfiguration, ConsoleOpen, PrintConsoleLine,
 };
 pub use bevy_egui::egui::epaint::Color32;
-use crate::console::{console_ui, receive_console_line, ConsoleState};
 
 mod console;
 

@@ -9,16 +9,17 @@ opt-level = 3
 
 [dependencies]
 bevy = {version="0.13.2"}
-bevy_save = "0.14.0"
 euclid = "0.22.10"
 lyon_tessellation = "1"
 serde = "1.0.203"
 paprika = { path = "./paprika", features = ["serde"] }
 bevy_console = { path = "./bevy_console" }
+bevy_save = { path = "./bevy_save" }
 colored = "2.0"
 
 [workspace]
 members = [
     "paprika",
     "bevy_console",
+    "bevy_save",
 ]

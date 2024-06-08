@@ -193,6 +193,7 @@ fn setup(mut commands: Commands, mut materials: ResMut<Assets<SchematicMaterial>
     commands.spawn(SelToolMarkerBundle {
         marker: SelMarker,
         tess_data: CompositeMeshData {
+            zoom_invariant: false,
             mesh_data: vec![
                 SubMesh::new_with_color(tess_fill_data, Color::WHITE.with_a(0.1)),
                 SubMesh::new_with_color(tess_stroke_data, Color::RED.with_a(1.0)),

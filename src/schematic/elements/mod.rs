@@ -63,7 +63,8 @@ pub struct ElementsRes {
 pub struct Picked;
 
 /// marker component to mark entity as selected
-#[derive(Component)]
+#[derive(Component, Reflect)]
+#[reflect(Component)]
 pub struct Selected;
 
 /// different components that impl a given trait T with functions to compute picking collision
@@ -98,6 +99,7 @@ impl Plugin for ElementsPlugin {
         app.init_resource::<ElementsRes>();
         app.register_type::<LineSegment>();
         app.register_type::<LineVertex>();
+        app.register_type::<Selected>();
     }
 }
 
@@ -170,7 +172,7 @@ fn startup(
 fn picking(
     mut commands: Commands,
     mut e_newpck: EventReader<NewPickingCollider>,
-    mut q_wse: Query<(Entity, &GlobalTransform, &SchematicElement)>,
+    mut q_wse: Query<(Entity, &GlobalTransform, &SchematicElement), Without<Preview>>,
     mut colliding: Local<Vec<Entity>>,
     mut idx: Local<usize>,
     keys: Res<ButtonInput<KeyCode>>,
@@ -181,7 +183,7 @@ fn picking(
 
     // process any new picking collider event
     if let Some(NewPickingCollider(pc)) = e_newpck.read().last() {
-        if let PickingCollider::Point(p) = pc {
+        if let PickingCollider::Point(_) = pc {
             // update `colliding`, and unset any Picked
             colliding.clear();
             for (ent, sgt, se) in q_wse.iter_mut() {
