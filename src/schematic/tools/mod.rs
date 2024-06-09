@@ -15,7 +15,7 @@ pub use sel::{NewPickingCollider, PickingCollider, SelectEvt};
 const WIRE_TOOL_KEY: KeyCode = KeyCode::KeyW;
 const MOVE_KEY: KeyCode = KeyCode::KeyM;
 
-#[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash, Reflect)]
 pub enum SchematicToolState {
     #[default]
     Idle, // also select
