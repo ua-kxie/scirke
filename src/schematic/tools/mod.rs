@@ -1,5 +1,6 @@
-use bevy::{prelude::*, sprite::Mesh2dHandle};
+use bevy::{input::common_conditions::input_just_released, prelude::*, sprite::Mesh2dHandle};
 use bevy_save::prelude::*;
+use transform::TransformType;
 
 mod sel;
 mod transform;
@@ -14,6 +15,7 @@ pub use sel::{NewPickingCollider, PickingCollider, SelectEvt};
 
 const WIRE_TOOL_KEY: KeyCode = KeyCode::KeyW;
 const MOVE_KEY: KeyCode = KeyCode::KeyM;
+const COPY_KEY: KeyCode = KeyCode::KeyC;
 
 #[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash, Reflect)]
 pub enum SchematicToolState {
@@ -53,34 +55,6 @@ fn clear_cursor_children(
     }
 }
 
-/// delegate tools related commands
-fn main(
-    keys: Res<ButtonInput<KeyCode>>,
-    curr_toolstate: Res<State<SchematicToolState>>,
-    mut next_toolstate: ResMut<NextState<SchematicToolState>>,
-    c: Query<&SchematicCursor>,
-) {
-    if keys.just_released(KeyCode::Escape) {
-        next_toolstate.set(SchematicToolState::Idle);
-        return;
-    }
-    match curr_toolstate.get() {
-        SchematicToolState::Idle => {
-            if keys.just_released(MOVE_KEY) {
-                // if let Some(coords) = &c.single().coords {
-                //     next_toolstate.set(SchematicToolState::Transform(
-                //         coords.snapped_world_coords.as_ivec2(),
-                //     ));
-                // }
-            } else if keys.just_released(WIRE_TOOL_KEY) {
-                next_toolstate.set(SchematicToolState::Wiring);
-            }
-        }
-        SchematicToolState::Wiring => {}
-        SchematicToolState::Transform => {}
-    }
-}
-
 fn exclusive_main(world: &mut World) {
     let keys = world.resource::<ButtonInput<KeyCode>>();
     let curr_toolst = world.resource::<State<SchematicToolState>>();
@@ -92,7 +66,9 @@ fn exclusive_main(world: &mut World) {
     }
     match curr_toolst.get() {
         SchematicToolState::Idle => {
-            if keys.just_released(MOVE_KEY) {
+            let is_move = keys.just_pressed(MOVE_KEY);
+            let is_copy = keys.just_pressed(COPY_KEY);
+            if is_move || is_copy {
                 world
                     .save(ToolsPreviewPipeline)
                     .expect("Failed to save copy");
@@ -120,6 +96,9 @@ fn exclusive_main(world: &mut World) {
 
                 let mut next_toolst = world.resource_mut::<NextState<SchematicToolState>>();
                 next_toolst.set(SchematicToolState::Transform);
+                let mut next_transst = world.resource_mut::<NextState<TransformType>>();
+                next_transst.set(if is_move {TransformType::Move} else {TransformType::Copy});
+
             } else if keys.just_released(WIRE_TOOL_KEY) {
                 let mut next_toolst = world.resource_mut::<NextState<SchematicToolState>>();
                 next_toolst.set(SchematicToolState::Wiring);

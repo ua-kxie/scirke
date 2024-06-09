@@ -7,10 +7,18 @@ use crate::schematic::{
 
 use super::SchematicToolState;
 
+#[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
+pub enum TransformType {
+    #[default]
+    Copy,  // do nothing after persisting preview
+    Move,  // delete source after persisting preview
+}
+
 pub struct TransformToolPlugin;
 
 impl Plugin for TransformToolPlugin {
     fn build(&self, app: &mut App) {
+        app.init_state::<TransformType>();
         // app.add_systems(Startup, setup);
         app.add_systems(
             Update,
@@ -19,6 +27,10 @@ impl Plugin for TransformToolPlugin {
         app.add_systems(
             OnEnter(SchematicToolState::Transform),
             (prep, post_prep).chain(),
+        );
+        app.add_systems(
+            OnExit(SchematicToolState::Transform),
+            cleanup,
         );
     }
 }
@@ -77,6 +89,22 @@ fn post_prep(
     }
     // find entities to despawn
     // despawn line vertices without valid branches
+}
+
+fn cleanup(
+    mut commands: Commands,
+    st: Res<State<TransformType>>,
+    q: Query<Entity, With<Selected>>,
+) {
+    match st.get() {
+        TransformType::Copy => {},
+        TransformType::Move => {
+            // delete all entities marked as selected
+            for e in q.iter() {
+                commands.entity(e).despawn();
+            }
+        },
+    }
 }
 
 // this tool should be activated more generally through: moving, copying, placing, etc.
