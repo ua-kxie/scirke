@@ -46,9 +46,9 @@ fn prep(
 fn post_prep(
     mut commands: Commands,
     mut q: Query<(Entity, &mut LineVertex, &Parent), (Without<Selected>, With<Preview>)>,
-    qc: Query<Entity, With<SchematicCursor>>,
+    qc: Query<(Entity, &Children), With<SchematicCursor>>,
 ) {
-    let cursor = qc.single();
+    let (cursor, cursor_children) = qc.single();
     for (e, mut lv, parent) in q.iter_mut() {
         if parent.get() == cursor {
             (*lv).branches = lv
@@ -62,15 +62,20 @@ fn post_prep(
                     }
                 })
                 .collect();
-            commands.entity(cursor).remove_children(&[e]);
+
             if lv.branches.is_empty() {
+                commands.entity(cursor).remove_children(&[e]);
                 commands.entity(e).despawn();
             }
         }
     }
-
+    for c in cursor_children {
+        let Some(mut entc) = commands.get_entity(*c) else {
+            continue;
+        };
+        entc.remove::<Selected>();
+    }
     // find entities to despawn
-
     // despawn line vertices without valid branches
 }
 
