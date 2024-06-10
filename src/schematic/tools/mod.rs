@@ -1,4 +1,4 @@
-use bevy::{input::common_conditions::input_just_released, prelude::*, sprite::Mesh2dHandle};
+use bevy::{prelude::*, sprite::Mesh2dHandle};
 use bevy_save::prelude::*;
 use transform::TransformType;
 
@@ -7,7 +7,9 @@ mod transform;
 mod wire;
 
 use super::{
-    elements::{lsse, lvse, ElementsRes, LineSegment, LineVertex, Preview, SchematicElement},
+    elements::{
+        lsse, lvse, DeviceBundle, ElementsRes, LineSegment, LineVertex, Preview, SchematicElement,
+    },
     guides::SchematicCursor,
     material::SchematicMaterial,
 };
@@ -97,11 +99,31 @@ fn exclusive_main(world: &mut World) {
                 let mut next_toolst = world.resource_mut::<NextState<SchematicToolState>>();
                 next_toolst.set(SchematicToolState::Transform);
                 let mut next_transst = world.resource_mut::<NextState<TransformType>>();
-                next_transst.set(if is_move {TransformType::Move} else {TransformType::Copy});
-
+                next_transst.set(if is_move {
+                    TransformType::Move
+                } else {
+                    TransformType::Copy
+                });
             } else if keys.just_released(WIRE_TOOL_KEY) {
                 let mut next_toolst = world.resource_mut::<NextState<SchematicToolState>>();
                 next_toolst.set(SchematicToolState::Wiring);
+            } else if keys.just_released(KeyCode::KeyR) {
+                // spawn a resistor device as child of cursor
+
+                let new = world
+                    .spawn(DeviceBundle::new_resistor(
+                        world.resource_ref::<ElementsRes>(),
+                    ))
+                    .id();
+
+                let mut q_cursor = world.query_filtered::<Entity, With<SchematicCursor>>();
+                let ent = q_cursor.single(&world);
+                world.entity_mut(ent).add_child(new);
+
+                let mut next_toolst = world.resource_mut::<NextState<SchematicToolState>>();
+                next_toolst.set(SchematicToolState::Transform);
+                let mut next_transst = world.resource_mut::<NextState<TransformType>>();
+                next_transst.set(TransformType::Copy);
             }
         }
         SchematicToolState::Wiring => {}

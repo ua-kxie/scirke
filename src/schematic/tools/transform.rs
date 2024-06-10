@@ -10,8 +10,8 @@ use super::SchematicToolState;
 #[derive(States, Default, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum TransformType {
     #[default]
-    Copy,  // do nothing after persisting preview
-    Move,  // delete source after persisting preview
+    Copy, // do nothing after persisting preview
+    Move, // delete source after persisting preview
 }
 
 pub struct TransformToolPlugin;
@@ -28,10 +28,7 @@ impl Plugin for TransformToolPlugin {
             OnEnter(SchematicToolState::Transform),
             (prep, post_prep).chain(),
         );
-        app.add_systems(
-            OnExit(SchematicToolState::Transform),
-            cleanup,
-        );
+        app.add_systems(OnExit(SchematicToolState::Transform), cleanup);
     }
 }
 
@@ -97,13 +94,13 @@ fn cleanup(
     q: Query<Entity, With<Selected>>,
 ) {
     match st.get() {
-        TransformType::Copy => {},
+        TransformType::Copy => {}
         TransformType::Move => {
             // delete all entities marked as selected
             for e in q.iter() {
                 commands.entity(e).despawn();
             }
-        },
+        }
     }
 }
 

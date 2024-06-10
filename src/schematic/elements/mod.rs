@@ -8,7 +8,9 @@ use bevy::{
     render::{mesh::PrimitiveTopology, render_asset::RenderAssetUsages},
 };
 
+mod devices;
 mod lineseg;
+pub use devices::DeviceBundle;
 pub use lineseg::{create_preview_lineseg, lsse, lvse, LineSegment, LineVertex};
 
 use super::{
