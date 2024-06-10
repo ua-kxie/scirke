@@ -11,9 +11,7 @@
 //! (in which case all picked, selected, or both elements share a material instance)
 
 use std::{
-    collections::{HashMap, HashSet},
-    f32::consts::PI,
-    sync::Arc,
+    collections::{HashMap, HashSet}, f32::consts::PI, hash::Hasher, sync::Arc
 };
 
 use super::{ElementsRes, Pickable, Preview, SchematicElement};
@@ -36,7 +34,7 @@ use euclid::{
 };
 
 /// LineSegment component containing references to defining ['LineVertex'] Entities
-#[derive(Component, Reflect, Eq, Hash, Clone)]
+#[derive(Component, Reflect, Eq, Clone)]
 #[reflect(Component, MapEntities)]
 pub struct LineSegment {
     a: Entity,
@@ -51,6 +49,17 @@ impl MapEntities for LineSegment {
 impl PartialEq for LineSegment {
     fn eq(&self, other: &Self) -> bool {
         (self.a == other.a && self.b == other.b) || (self.a == other.b && self.b == other.a)
+    }
+}
+impl std::hash::Hash for LineSegment {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        if self.a <= self.b {
+            self.a.hash(state);
+            self.b.hash(state);
+        } else {
+            self.b.hash(state);
+            self.a.hash(state);
+        }
     }
 }
 impl LineSegment {
