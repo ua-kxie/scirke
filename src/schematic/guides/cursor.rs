@@ -23,6 +23,7 @@ impl Plugin for CursorPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, setup);
         app.add_systems(Update, update.run_if(cursor_moved));
+        app.add_systems(Update, redraw);
         app.add_event::<NewSnappedCursor>();
     }
 }
@@ -121,9 +122,38 @@ fn update(
     c.coords = new_coords;
 }
 
+/// system to redraw cursor mesh as needed
+fn redraw(
+    q_projection: Query<&OrthographicProjection, Changed<OrthographicProjection>>,
+    mut q_cursor: Query<&mut CompositeMeshData, With<SchematicCursor>>,
+) {
+    let Ok(projection) = q_projection.get_single() else {
+        return;
+    };
+    let scale = projection.scale;
+    let mut mesh_data = q_cursor.single_mut();
+    *mesh_data = create_mesh_data(scale);
+}
+
 fn setup(mut commands: Commands, mut materials: ResMut<Assets<SchematicMaterial>>) {
+    let scale = 0.1; // default projection scale
+    commands.spawn(CursorBundle {
+        tess_data: create_mesh_data(scale),
+        mat_bundle: MaterialMesh2dBundle {
+            material: materials.add(SchematicMaterial {
+                color: Color::BLACK.with_a(0.0),
+            }),
+            transform: Transform::from_translation(vec3(0.0, 0.0, Z_DEPTH)),
+            ..Default::default()
+        },
+        cursor: SchematicCursor::default(),
+        // zoom_invariant: ZoomInvariant,
+    });
+}
+
+fn create_mesh_data(scale: f32) -> CompositeMeshData {
     let mut path_builder = bevyon::path_builder();
-    let size = 0.4;
+    let size = 4.0 * scale;
     path_builder.add_rectangle(
         &Box2D {
             min: Point2D::splat(-size),
@@ -135,23 +165,8 @@ fn setup(mut commands: Commands, mut materials: ResMut<Assets<SchematicMaterial>
 
     let tessellator_input_data = TessInData {
         path,
-        stroke: Some(
-            bevyon::StrokeOptions::DEFAULT
-                .with_line_width(0.1)
-                .with_tolerance(0.1),
-        ),
+        stroke: Some(bevyon::StrokeOptions::DEFAULT.with_line_width(1.0 * scale)),
         fill: None,
     };
-    commands.spawn(CursorBundle {
-        tess_data: CompositeMeshData::from_single(tessellator_input_data),
-        mat_bundle: MaterialMesh2dBundle {
-            material: materials.add(SchematicMaterial {
-                color: Color::BLACK.with_a(0.0),
-            }),
-            transform: Transform::from_translation(vec3(0.0, 0.0, Z_DEPTH)),
-            ..Default::default()
-        },
-        cursor: SchematicCursor::default(),
-        // zoom_invariant: ZoomInvariant,
-    });
+    CompositeMeshData::from_single(tessellator_input_data)
 }
