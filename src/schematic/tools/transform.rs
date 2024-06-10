@@ -116,7 +116,7 @@ fn main1(
 ) {
     if buttons.just_pressed(MouseButton::Left) {
         next_toolstate.set(SchematicToolState::Idle);
-        // make all children of cursor not such, taking care of transforms
+        // make all children of cursor not such, taking care of transforms, and unmark as preview
         let (cursor_entity, Some(children)) = cursor_children.single() else {
             return;
         };

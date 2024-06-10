@@ -8,7 +8,7 @@ use bevy::{
     sprite::{Material2dPlugin, MaterialMesh2dBundle, Mesh2dHandle},
 };
 use bevy_save::prelude::*;
-use elements::{ElementsRes, LineSegment, LineVertex, SchematicElement};
+use elements::{Device, ElementsRes, LineSegment, LineVertex, SchematicElement};
 
 mod camera;
 mod elements;
@@ -115,6 +115,7 @@ impl Pipeline for SavePipeline {
         let mat = world.resource::<ElementsRes>().mat_dflt.clone();
         let sels = world.resource::<ElementsRes>().se_lineseg.clone();
         let selv = world.resource::<ElementsRes>().se_linevertex.clone();
+        let sedevice = world.resource::<ElementsRes>().se_device.clone();
         snapshot
             .applier(world)
             .despawn::<With<SchematicElement>>()
@@ -124,6 +125,9 @@ impl Pipeline for SavePipeline {
                 }
                 if entity.contains::<LineSegment>() {
                     cmd.insert((mesh_unitx.clone(), mat.clone(), sels.clone()));
+                }
+                if entity.contains::<Device>() {
+                    cmd.insert((mat.clone(), sedevice.clone()));
                 }
             })
             .apply()

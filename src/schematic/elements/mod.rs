@@ -13,7 +13,7 @@ use bevy::{
 
 mod devices;
 mod lineseg;
-pub use devices::DeviceBundle;
+pub use devices::{DeviceBundle, Device};
 use euclid::default::{Box2D, Point2D};
 pub use lineseg::{create_preview_lineseg, LineSegment, LineVertex};
 use lineseg::{PickableLineSeg, PickableVertex};

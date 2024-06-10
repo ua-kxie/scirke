@@ -170,6 +170,9 @@ impl Pipeline for ToolsPreviewPipeline {
                 if entityref.contains::<LineSegment>() {
                     cmd.insert((mesh_unitx.clone(), mat.clone(), sels.clone(), Preview));
                 }
+                // if entityref.contains::<Device>() {
+                //     cmd.insert((mesh_unitx.clone(), mat.clone(), sels.clone(), Preview));
+                // }
                 cmd.set_parent(cursor_ent);
             })
             .apply()
