@@ -112,6 +112,7 @@ impl Pipeline for SavePipeline {
     fn apply(world: &mut World, snapshot: &Snapshot) -> Result<(), bevy_save::Error> {
         let mesh_dot = Mesh2dHandle(world.resource::<ElementsRes>().mesh_dot.clone());
         let mesh_unitx = Mesh2dHandle(world.resource::<ElementsRes>().mesh_unitx.clone());
+        let mesh_res = Mesh2dHandle(world.resource::<ElementsRes>().mesh_res.clone());
         let mat = world.resource::<ElementsRes>().mat_dflt.clone();
         let sels = world.resource::<ElementsRes>().se_lineseg.clone();
         let selv = world.resource::<ElementsRes>().se_linevertex.clone();
@@ -127,7 +128,7 @@ impl Pipeline for SavePipeline {
                     cmd.insert((mesh_unitx.clone(), mat.clone(), sels.clone()));
                 }
                 if entity.contains::<Device>() {
-                    cmd.insert((mat.clone(), sedevice.clone()));
+                    cmd.insert((mesh_res.clone(), mat.clone(), sedevice.clone()));
                 }
             })
             .apply()

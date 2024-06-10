@@ -7,7 +7,9 @@ mod transform;
 mod wire;
 
 use super::{
-    elements::{DeviceBundle, ElementsRes, LineSegment, LineVertex, Preview, SchematicElement},
+    elements::{
+        Device, DeviceBundle, ElementsRes, LineSegment, LineVertex, Preview, SchematicElement,
+    },
     guides::SchematicCursor,
     material::SchematicMaterial,
 };
@@ -155,9 +157,11 @@ impl Pipeline for ToolsPreviewPipeline {
     fn apply(world: &mut World, snapshot: &Snapshot) -> Result<(), bevy_save::Error> {
         let mesh_dot = Mesh2dHandle(world.resource::<ElementsRes>().mesh_dot.clone());
         let mesh_unitx = Mesh2dHandle(world.resource::<ElementsRes>().mesh_unitx.clone());
+        let mesh_res = Mesh2dHandle(world.resource::<ElementsRes>().mesh_res.clone());
         let mat = world.resource::<ElementsRes>().mat_dflt.clone();
         let sels = world.resource::<ElementsRes>().se_lineseg.clone();
         let selv = world.resource::<ElementsRes>().se_linevertex.clone();
+        let sedevice = world.resource::<ElementsRes>().se_device.clone();
         let cursor_ent = world
             .query_filtered::<Entity, With<SchematicCursor>>()
             .single(&world);
@@ -170,9 +174,9 @@ impl Pipeline for ToolsPreviewPipeline {
                 if entityref.contains::<LineSegment>() {
                     cmd.insert((mesh_unitx.clone(), mat.clone(), sels.clone(), Preview));
                 }
-                // if entityref.contains::<Device>() {
-                //     cmd.insert((mesh_unitx.clone(), mat.clone(), sels.clone(), Preview));
-                // }
+                if entityref.contains::<Device>() {
+                    cmd.insert((mesh_res.clone(), mat.clone(), sedevice.clone(), Preview));
+                }
                 cmd.set_parent(cursor_ent);
             })
             .apply()

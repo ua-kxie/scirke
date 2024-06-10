@@ -13,7 +13,8 @@ use bevy::{
 
 mod devices;
 mod lineseg;
-pub use devices::{DeviceBundle, Device};
+use devices::DeviceType;
+pub use devices::{Device, DeviceBundle};
 use euclid::default::{Box2D, Point2D};
 pub use lineseg::{create_preview_lineseg, LineSegment, LineVertex};
 use lineseg::{PickableLineSeg, PickableVertex};
@@ -54,6 +55,8 @@ pub struct ElementsRes {
     pub mesh_unitx: Handle<Mesh>,
     /// circle mesh visualizing lineseg vertex
     pub mesh_dot: Handle<Mesh>,
+    /// resistor mesh
+    pub mesh_res: Handle<Mesh>,
 
     /// default material
     pub mat_dflt: Handle<SchematicMaterial>,
@@ -80,6 +83,7 @@ impl FromWorld for ElementsRes {
     fn from_world(world: &mut World) -> Self {
         let mut meshes = world.resource_mut::<Assets<Mesh>>();
         let wirecolor = Color::AQUAMARINE.rgba_linear_to_vec4();
+        let devicecolor = Color::SEA_GREEN.rgba_linear_to_vec4();
         let mesh_unitx = meshes.add(
             Mesh::new(
                 PrimitiveTopology::LineList,
@@ -111,10 +115,30 @@ impl FromWorld for ElementsRes {
                 (0..6).collect::<Vec<u32>>(),
             )),
         );
+        let mesh_res = meshes.add(
+            Mesh::new(
+                PrimitiveTopology::TriangleStrip,
+                RenderAssetUsages::RENDER_WORLD | RenderAssetUsages::MAIN_WORLD,
+            )
+            .with_inserted_attribute(
+                Mesh::ATTRIBUTE_POSITION,
+                vec![
+                    Vec3::new(-1.0, 1.0, 0.0),
+                    Vec3::new(-1.0, -1.0, 0.0),
+                    Vec3::new(1.0, 1.0, 0.0),
+                    Vec3::new(1.0, -1.0, 0.0),
+                ],
+            )
+            .with_inserted_attribute(Mesh::ATTRIBUTE_COLOR, vec![devicecolor; 4])
+            .with_inserted_indices(bevy::render::mesh::Indices::U32(
+                (0..4).collect::<Vec<u32>>(),
+            )),
+        );
         let mut mats = world.resource_mut::<Assets<SchematicMaterial>>();
         ElementsRes {
             mesh_unitx,
             mesh_dot,
+            mesh_res,
 
             mat_dflt: mats.add(SchematicMaterial {
                 color: Color::BLACK,
@@ -169,6 +193,7 @@ pub struct ElementsPlugin;
 
 impl Plugin for ElementsPlugin {
     fn build(&self, app: &mut App) {
+        app.init_asset::<DeviceType>();
         // app.add_systems(Startup, startup);
         app.add_systems(
             Update,
@@ -184,6 +209,7 @@ impl Plugin for ElementsPlugin {
         app.register_type::<LineSegment>();
         app.register_type::<LineVertex>();
         app.register_type::<Selected>();
+        app.register_type::<Device>();
     }
 }
 
