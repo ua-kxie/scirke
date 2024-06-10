@@ -28,7 +28,7 @@ impl Plugin for TransformToolPlugin {
             OnEnter(SchematicToolState::Transform),
             (prep, post_prep).chain(),
         );
-        app.add_systems(OnExit(SchematicToolState::Transform), cleanup);
+        // app.add_systems(OnExit(SchematicToolState::Transform), cleanup);
     }
 }
 
@@ -88,22 +88,6 @@ fn post_prep(
     // despawn line vertices without valid branches
 }
 
-fn cleanup(
-    mut commands: Commands,
-    st: Res<State<TransformType>>,
-    q: Query<Entity, With<Selected>>,
-) {
-    match st.get() {
-        TransformType::Copy => {}
-        TransformType::Move => {
-            // delete all entities marked as selected
-            for e in q.iter() {
-                commands.entity(e).despawn();
-            }
-        }
-    }
-}
-
 // this tool should be activated more generally through: moving, copying, placing, etc.
 
 fn main1(
@@ -113,6 +97,8 @@ fn main1(
     cursor_children: Query<(Entity, Option<&Children>), With<SchematicCursor>>,
     mut q_transform: Query<(&mut Transform, &GlobalTransform)>,
     mut commands: Commands,
+    st: Res<State<TransformType>>,
+    q_selected: Query<Entity, With<Selected>>,
 ) {
     if buttons.just_pressed(MouseButton::Left) {
         next_toolstate.set(SchematicToolState::Idle);
@@ -125,6 +111,16 @@ fn main1(
             let (mut t, gt) = q_transform.get_mut(*c).unwrap();
             *t = gt.compute_transform();
             commands.entity(*c).remove::<Preview>();
+        }
+        
+        match st.get() {
+            TransformType::Copy => {}
+            TransformType::Move => {
+                // delete all entities marked as selected
+                for e in q_selected.iter() {
+                    commands.entity(e).despawn();
+                }
+            }
         }
     }
 }
