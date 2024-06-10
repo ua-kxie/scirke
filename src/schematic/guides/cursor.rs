@@ -69,7 +69,7 @@ struct CursorBundle {
     // zoom_invariant: ZoomInvariant,
 }
 
-const Z_DEPTH: f32 = 0.0;
+const Z_DEPTH: f32 = 0.9;
 
 /// mixing in of snapping here isn't ideal - leave for now
 fn update(

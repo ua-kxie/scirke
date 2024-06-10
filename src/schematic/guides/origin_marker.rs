@@ -19,7 +19,7 @@ use crate::{
 
 use super::ZoomInvariant;
 
-const Z_DEPTH: f32 = 0.1;
+const Z_DEPTH: f32 = -0.8;
 
 #[derive(Component)]
 pub struct OriginMarker;
@@ -71,7 +71,7 @@ pub fn setup(mut commands: Commands, mut materials: ResMut<Assets<SchematicMater
             material: materials.add(SchematicMaterial {
                 color: Color::BLACK.with_a(0.0),
             }),
-            transform: Transform::from_translation(vec3(0.0, 0.0, Z_DEPTH)),
+            transform: Transform::from_translation(Vec3::Z * Z_DEPTH),
             ..Default::default()
         },
         origin_marker: OriginMarker,

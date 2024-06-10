@@ -16,7 +16,7 @@ use bevy::{
     sprite::{Material2d, MaterialMesh2dBundle, Mesh2dHandle},
 };
 
-const Z_DEPTH: f32 = 0.0;
+const Z_DEPTH: f32 = -0.9;
 
 pub fn setup(
     mut commands: Commands,
@@ -33,9 +33,9 @@ pub fn setup(
     .with_inserted_attribute(
         Mesh::ATTRIBUTE_POSITION,
         vec![
-            vec3(1.0, 3.0, Z_DEPTH),
-            vec3(1.0, -1.0, Z_DEPTH),
-            vec3(-3.0, -1.0, Z_DEPTH),
+            vec3(1.0, 3.0, 0.0),
+            vec3(1.0, -1.0, 0.0),
+            vec3(-3.0, -1.0, 0.0),
         ],
     )
     .with_inserted_indices(U16(vec![0, 1, 2]));
@@ -45,9 +45,9 @@ pub fn setup(
         MaterialMesh2dBundle {
             mesh: Mesh2dHandle(meshid),
             material: clip_materials.add(ClipMaterial {
-                color: Color::DARK_GRAY,
+                color: Color::RED,
             }),
-            transform: Transform::from_translation(vec3(0.0, 0.0, Z_DEPTH)),
+            transform: Transform::from_translation(Vec3::Z * Z_DEPTH),
             ..Default::default()
         },
         NoFrustumCulling,

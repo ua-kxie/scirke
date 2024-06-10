@@ -43,7 +43,7 @@ impl Plugin for GridPlugin {
     }
 }
 
-const Z_DEPTH: f32 = 0.9;
+const Z_DEPTH: f32 = -0.8;
 
 fn major(
     empty: Mesh,
