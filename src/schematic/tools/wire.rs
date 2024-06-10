@@ -45,13 +45,13 @@ fn main(
     let sc = qc.single();
     let Some(coords) = &sc.coords else { return };
     if keys.just_released(KeyCode::Escape) {
-        elements::despawn_preview(&mut commands, eqsp);
+        elements::despawn_preview(&mut commands, &eqsp);
         next_schematictoolstate.set(SchematicToolState::Idle);
         return;
     }
     match wiretoolstate.get() {
         WireToolState::Ready => {
-            if buttons.just_released(MouseButton::Left) {
+            if buttons.just_pressed(MouseButton::Left) {
                 next_wiretoolstate.set(WireToolState::Drawing(
                     coords.snapped_world_coords.as_ivec2(),
                 ));
@@ -59,16 +59,18 @@ fn main(
             }
         }
         WireToolState::Drawing(src) => {
-            if buttons.just_released(MouseButton::Left) {
-                elements::persist_preview(&mut commands, eqsp);
-                next_wiretoolstate.set(WireToolState::Ready);
+            if let Some(NewSnappedCursor(Some(dst))) = e_newsc.read().last() {
+                elements::despawn_preview(&mut commands, &eqsp);
+                compute_preview(&mut commands, eres, *src, dst.as_ivec2());
+            }
+            if buttons.just_pressed(MouseButton::Left) {
+                elements::persist_preview(&mut commands, &eqsp);
+                // next_wiretoolstate.set(WireToolState::Ready);
+                next_wiretoolstate.set(WireToolState::Drawing(
+                    coords.snapped_world_coords.as_ivec2(),
+                ));
                 return;
             }
-            let Some(NewSnappedCursor(Some(dst))) = e_newsc.read().last() else {
-                return;
-            };
-            elements::despawn_preview(&mut commands, eqsp);
-            compute_preview(commands, eres, *src, dst.as_ivec2());
         }
     }
 }
@@ -85,7 +87,7 @@ fn route(
 }
 
 /// this system computes the preview entities and adds them to world with preview
-fn compute_preview(mut commands: Commands, eres: Res<ElementsRes>, src: IVec2, dst: IVec2) {
+fn compute_preview(mut commands: &mut Commands, eres: Res<ElementsRes>, src: IVec2, dst: IVec2) {
     let path = route(src, dst, None);
 
     // filter redundant nodes - necessary to avoid solder dots where crossing another net segment

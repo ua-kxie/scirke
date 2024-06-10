@@ -35,7 +35,7 @@ pub struct Preview;
 /// this systetm despawns all SchematicElements marked as Preview
 pub fn despawn_preview(
     commands: &mut Commands,
-    q: Query<Entity, (With<SchematicElement>, With<Preview>)>,
+    q: &Query<Entity, (With<SchematicElement>, With<Preview>)>,
 ) {
     for e in q.iter() {
         commands.entity(e).despawn();
@@ -45,7 +45,7 @@ pub fn despawn_preview(
 /// this systetm clears all preview marker compoenents from SchematicElements
 pub fn persist_preview(
     commands: &mut Commands,
-    q: Query<Entity, (With<SchematicElement>, With<Preview>)>,
+    q: &Query<Entity, (With<SchematicElement>, With<Preview>)>,
 ) {
     for e in q.iter() {
         commands.entity(e).remove::<Preview>();
