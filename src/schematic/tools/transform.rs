@@ -1,3 +1,5 @@
+use std::f32::consts::PI;
+
 use bevy::prelude::*;
 
 use crate::schematic::{
@@ -100,19 +102,19 @@ fn main1(
     st: Res<State<TransformType>>,
     q_selected: Query<Entity, With<Selected>>,
 ) {
+    let (cursor_entity, Some(children)) = cursor_children.single() else {
+        return;
+    };
     if buttons.just_pressed(MouseButton::Left) {
         next_toolstate.set(SchematicToolState::Idle);
         // make all children of cursor not such, taking care of transforms, and unmark as preview
-        let (cursor_entity, Some(children)) = cursor_children.single() else {
-            return;
-        };
         commands.entity(cursor_entity).remove_children(children);
         for c in children {
             let (mut t, gt) = q_transform.get_mut(*c).unwrap();
             *t = gt.compute_transform();
             commands.entity(*c).remove::<Preview>();
         }
-        
+
         match st.get() {
             TransformType::Copy => {}
             TransformType::Move => {
@@ -122,6 +124,28 @@ fn main1(
                 }
             }
         }
+        return; // ignore other commands because its effects were never shown to user
+    }
+    let mut transform = Transform::IDENTITY;
+    if keys.just_pressed(KeyCode::KeyR) {
+        transform.rotate_z(if keys.pressed(KeyCode::ShiftLeft) {
+            -PI / 2.0
+        } else {
+            PI / 2.0
+        });
+    }
+    if keys.just_pressed(KeyCode::KeyX) {
+        transform.scale = transform.scale * Vec3::new(-1.0, 1.0, 1.0);
+    }
+    if keys.just_pressed(KeyCode::KeyY) {
+        transform.scale = transform.scale * Vec3::new(1.0, -1.0, 1.0);
+    }
+    if transform != Transform::IDENTITY {
+        let Ok((mut t, _)) = q_transform.get_mut(cursor_entity) else {
+            return;
+        };
+        t.scale = transform.scale * t.scale;
+        t.rotation = transform.rotation * t.rotation;
     }
 }
 

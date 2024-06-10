@@ -10,14 +10,9 @@ use bevy::{
     prelude::*,
     sprite::{MaterialMesh2dBundle, Mesh2dHandle},
 };
-use euclid::default::{Box2D, Point2D};
-use lyon_tessellation::FillOptions;
 use serde::Deserialize;
 
-use crate::{
-    bevyon::{self, CompositeMeshData, TessInData},
-    schematic::material::SchematicMaterial,
-};
+use crate::schematic::material::SchematicMaterial;
 
 use super::{ElementsRes, SchematicElement};
 
