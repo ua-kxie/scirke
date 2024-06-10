@@ -4,10 +4,7 @@ use std::f32::INFINITY;
 marker that indicates the location of the origin if in view or direction if not
 */
 use bevy::{
-    math::{vec3, Vec3A},
-    prelude::*,
-    render::camera::CameraProjection,
-    sprite::MaterialMesh2dBundle,
+    math::Vec3A, prelude::*, render::camera::CameraProjection, sprite::MaterialMesh2dBundle,
 };
 
 use lyon_tessellation::geom::euclid::{Box2D, Point2D};

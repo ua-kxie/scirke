@@ -11,7 +11,10 @@
 //! (in which case all picked, selected, or both elements share a material instance)
 
 use std::{
-    collections::{HashMap, HashSet}, f32::consts::PI, hash::Hasher, sync::Arc
+    collections::{HashMap, HashSet},
+    f32::consts::PI,
+    hash::Hasher,
+    sync::Arc,
 };
 
 use super::{ElementsRes, Pickable, Preview, SchematicElement};
@@ -390,56 +393,26 @@ fn bisect(world: &mut World) {
         .map(|(e, gt)| (e, gt.translation))
         .collect();
     // bisection
-    for vertex_coords in vcoords.iter() {
+    for (this_v_entity, this_v_coords) in vcoords.iter() {
         let mut colliding_segments = vec![];
         // collect colliding segments
         for (lse, seg, sgt, se) in qls.iter(&world) {
-            if se.behavior.collides(
-                &PickingCollider::Point(vertex_coords.1.truncate()),
-                *sgt,
-            ) {
+            if se
+                .behavior
+                .collides(&PickingCollider::Point(this_v_coords.truncate()), *sgt)
+            {
                 colliding_segments.push((
-                    lse,                                                    // line segment entity
-                    (seg.a, sgt.translation), // vertex a entity and translation
-                    (seg.b, sgt.transform_point(Vec3::new(1.0, 0.0, 0.0))), // vertex a entity and translation
+                    lse,   // line segment entity
+                    seg.a, // vertex a entity
+                    seg.b, // vertex b entity
                 ));
             }
         }
         // for all collding segments
         for (segment_entity, a, b) in colliding_segments {
             remove_lineseg(world, segment_entity);
-            let ac = world
-                .spawn(LineSegBundle::new(
-                    world.resource::<ElementsRes>(),
-                    a,
-                    *vertex_coords,
-                ))
-                .id();
-            let cb = world
-                .spawn(LineSegBundle::new(
-                    world.resource::<ElementsRes>(),
-                    *vertex_coords,
-                    b,
-                ))
-                .id();
-            world
-                .entity_mut(a.0)
-                .get_mut::<LineVertex>()
-                .unwrap()
-                .branches
-                .push(ac);
-            world
-                .entity_mut(b.0)
-                .get_mut::<LineVertex>()
-                .unwrap()
-                .branches
-                .push(cb);
-            world
-                .entity_mut(vertex_coords.0)
-                .get_mut::<LineVertex>()
-                .unwrap()
-                .branches
-                .append::<[Entity; 2]>(&mut smallvec![ac, cb]);
+            add_lineseg(world, a, *this_v_entity);
+            add_lineseg(world, *this_v_entity, b);
         }
     }
 }
@@ -463,7 +436,8 @@ fn cull(world: &mut World) {
     // delete segments missing one or both end point(s)
     for (eseg, a, b) in lses.iter() {
         if world.get_entity(*a).is_none() || world.get_entity(*b).is_none() {
-            world.despawn(*eseg);
+            remove_lineseg(world, *eseg);
+            // world.despawn(*eseg);
         }
     }
     // delete lonesome vertices
@@ -551,9 +525,9 @@ fn merge_parallel(world: &mut World, vertex: Entity) {
             // create new branch connecting
             add_lineseg(world, vertex0, vertex1);
             // despawn replaced
-            world.despawn(branches[0]);
-            world.despawn(branches[1]);
-            // world.despawn(vertex);  // todo: this is a problem if one of the linesegs has both ends connected to same vertex
+            remove_lineseg(world, branches[0]);
+            remove_lineseg(world, branches[1]);
+            world.despawn(vertex); // todo: this is a problem if one of the linesegs has both ends connected to same vertex
         }
     }
 }
@@ -563,22 +537,8 @@ fn add_lineseg(world: &mut World, a: Entity, b: Entity) {
     // create lineseg bundle
     let lsb = LineSegBundle::new(
         world.resource::<ElementsRes>(),
-        (
-            a,
-            world
-                .entity(a)
-                .get::<Transform>()
-                .unwrap()
-                .translation,
-        ),
-        (
-            b,
-            world
-                .entity(b)
-                .get::<Transform>()
-                .unwrap()
-                .translation,
-        ),
+        (a, world.entity(a).get::<Transform>().unwrap().translation),
+        (b, world.entity(b).get::<Transform>().unwrap().translation),
     );
     let new_branch_id = world.spawn(lsb).id();
     world
@@ -599,16 +559,16 @@ fn add_lineseg(world: &mut World, a: Entity, b: Entity) {
 fn remove_lineseg(world: &mut World, lineseg: Entity) {
     let ls = world.entity(lineseg).get::<LineSegment>().unwrap().clone();
     world.despawn(lineseg);
-    world
-        .entity_mut(ls.a)
-        .get_mut::<LineVertex>()
-        .unwrap()
-        .branches
-        .retain(|x| *x != lineseg);
-    world
-        .entity_mut(ls.b)
-        .get_mut::<LineVertex>()
-        .unwrap()
-        .branches
-        .retain(|x| *x != lineseg);
+    world.get_entity_mut(ls.a).map(|mut x| {
+        x.get_mut::<LineVertex>()
+            .unwrap()
+            .branches
+            .retain(|x| *x != lineseg);
+    });
+    world.get_entity_mut(ls.b).map(|mut x| {
+        x.get_mut::<LineVertex>()
+            .unwrap()
+            .branches
+            .retain(|x| *x != lineseg);
+    });
 }
