@@ -356,10 +356,10 @@ fn merge_overlapped_vertex(world: &mut World) {
     // else put new into hashmap with coord as key
     let mut cehm: HashMap<IVec2, Entity> = HashMap::new();
     let mut q =
-        world.query_filtered::<(Entity, &GlobalTransform), (With<LineVertex>, Without<Preview>)>();
+        world.query_filtered::<(Entity, &Transform), (With<LineVertex>, Without<Preview>)>();
     let vertices: Box<[(Entity, IVec2)]> = q
         .iter(&world)
-        .map(|x| (x.0, x.1.translation().truncate().as_ivec2()))
+        .map(|x| (x.0, x.1.translation.truncate().as_ivec2()))
         .collect();
     for (this_vertex, c) in vertices.into_iter() {
         match cehm.insert(*c, *this_vertex) {
@@ -374,27 +374,29 @@ fn merge_overlapped_vertex(world: &mut World) {
 /// this function iterates over all vertices and for each, bisects any segment that cross over it
 fn bisect(world: &mut World) {
     let mut qlv =
-        world.query_filtered::<(Entity, &GlobalTransform), (With<LineVertex>, Without<Preview>)>();
-    let mut qls = world.query_filtered::<(Entity, &LineSegment, &GlobalTransform, &SchematicElement), (With<LineSegment>, Without<Preview>)>();
+        world.query_filtered::<(Entity, &Transform), (With<LineVertex>, Without<Preview>)>();
+    let mut qls = world.query_filtered::<(Entity, &LineSegment, &Transform, &SchematicElement), (With<LineSegment>, Without<Preview>)>();
     let vcoords: Box<[(Entity, Vec3)]> = qlv
         .iter(&world)
-        .map(|(e, gt)| (e, gt.translation()))
+        .map(|(e, gt)| (e, gt.translation))
         .collect();
     // bisection
     for vertex_coords in vcoords.iter() {
         let mut colliding_segments = vec![];
+        // collect colliding segments
         for (lse, seg, sgt, se) in qls.iter(&world) {
             if se.behavior.collides(
                 &PickingCollider::Point(vertex_coords.1.truncate()),
-                sgt.compute_transform(),
+                *sgt,
             ) {
                 colliding_segments.push((
                     lse,                                                    // line segment entity
-                    (seg.a, sgt.translation()), // vertex a entity and translation
+                    (seg.a, sgt.translation), // vertex a entity and translation
                     (seg.b, sgt.transform_point(Vec3::new(1.0, 0.0, 0.0))), // vertex a entity and translation
                 ));
             }
         }
+        // for all collding segments
         for (segment_entity, a, b) in colliding_segments {
             remove_lineseg(world, segment_entity);
             let ac = world
@@ -428,13 +430,7 @@ fn bisect(world: &mut World) {
                 .get_mut::<LineVertex>()
                 .unwrap()
                 .branches
-                .push(ac);
-            world
-                .entity_mut(vertex_coords.0)
-                .get_mut::<LineVertex>()
-                .unwrap()
-                .branches
-                .push(cb);
+                .append::<[Entity; 2]>(&mut smallvec![ac, cb]);
         }
     }
 }
@@ -548,7 +544,7 @@ fn merge_parallel(world: &mut World, vertex: Entity) {
             // despawn replaced
             world.despawn(branches[0]);
             world.despawn(branches[1]);
-            world.despawn(vertex);
+            // world.despawn(vertex);  // todo: this is a problem if one of the linesegs has both ends connected to same vertex
         }
     }
 }
@@ -562,17 +558,17 @@ fn add_lineseg(world: &mut World, a: Entity, b: Entity) {
             a,
             world
                 .entity(a)
-                .get::<GlobalTransform>()
+                .get::<Transform>()
                 .unwrap()
-                .translation(),
+                .translation,
         ),
         (
             b,
             world
                 .entity(b)
-                .get::<GlobalTransform>()
+                .get::<Transform>()
                 .unwrap()
-                .translation(),
+                .translation,
         ),
     );
     let new_branch_id = world.spawn(lsb).id();
