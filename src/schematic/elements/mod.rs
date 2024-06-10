@@ -43,21 +43,84 @@ pub fn persist_preview(
     }
 }
 
-#[derive(Resource, Default)]
+#[derive(Resource)]
 pub struct ElementsRes {
     /// unit x line mesh, transformed by scale, rotation and translation to visualize a line segment
-    pub mesh_unitx: Option<Handle<Mesh>>,
+    pub mesh_unitx: Handle<Mesh>,
     /// circle mesh visualizing lineseg vertex
-    pub mesh_dot: Option<Handle<Mesh>>,
+    pub mesh_dot: Handle<Mesh>,
 
     /// default material
-    pub mat_dflt: Option<Handle<SchematicMaterial>>,
+    pub mat_dflt: Handle<SchematicMaterial>,
     /// selected material
-    pub mat_seld: Option<Handle<SchematicMaterial>>,
+    pub mat_seld: Handle<SchematicMaterial>,
     /// picked material
-    pub mat_pckd: Option<Handle<SchematicMaterial>>,
+    pub mat_pckd: Handle<SchematicMaterial>,
     /// selected + picked material
-    pub mat_alld: Option<Handle<SchematicMaterial>>,
+    pub mat_alld: Handle<SchematicMaterial>,
+    // /// lsse
+    // pub se_lineseg: Option<>
+    // /// lvse
+    // pub se_linevertex:
+    // pub se_device:
+}
+
+const MAT_SEL_COLOR: Color = Color::YELLOW;
+const MAT_PCK_COLOR: Color = Color::WHITE;
+
+impl FromWorld for ElementsRes {
+    fn from_world(world: &mut World) -> Self {
+        let mut meshes = world.resource_mut::<Assets<Mesh>>();
+        let wirecolor = Color::AQUAMARINE.rgba_linear_to_vec4();
+        let mesh_unitx = meshes.add(
+            Mesh::new(
+                PrimitiveTopology::LineList,
+                RenderAssetUsages::RENDER_WORLD | RenderAssetUsages::MAIN_WORLD,
+            )
+            .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, vec![Vec3::ZERO, Vec3::X])
+            .with_inserted_attribute(Mesh::ATTRIBUTE_COLOR, vec![wirecolor; 2])
+            .with_inserted_indices(bevy::render::mesh::Indices::U32(vec![0, 1])),
+        );
+        let hex = [
+            Vec3::new(0.0, 1.0, 0.0),
+            Vec3::new(-0.866025, 0.5, 0.0),
+            Vec3::new(0.866025, 0.5, 0.0),
+            Vec3::new(-0.866025, -0.5, 0.0),
+            Vec3::new(0.866025, -0.5, 0.0),
+            Vec3::new(0.0, -1.0, 0.0),
+        ]
+        .into_iter()
+        .map(|x| x * 2.0)
+        .collect::<Vec<Vec3>>();
+        let mesh_dot = meshes.add(
+            Mesh::new(
+                PrimitiveTopology::TriangleStrip,
+                RenderAssetUsages::RENDER_WORLD | RenderAssetUsages::MAIN_WORLD,
+            )
+            .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, hex)
+            .with_inserted_attribute(Mesh::ATTRIBUTE_COLOR, vec![wirecolor; 6])
+            .with_inserted_indices(bevy::render::mesh::Indices::U32(
+                (0..6).collect::<Vec<u32>>(),
+            )),
+        );
+        let mut mats = world.resource_mut::<Assets<SchematicMaterial>>();
+        ElementsRes {
+            mesh_unitx,
+            mesh_dot,
+            mat_dflt: mats.add(SchematicMaterial {
+                color: Color::BLACK,
+            }),
+            mat_pckd: mats.add(SchematicMaterial {
+                color: MAT_PCK_COLOR,
+            }),
+            mat_seld: mats.add(SchematicMaterial {
+                color: MAT_SEL_COLOR,
+            }),
+            mat_alld: mats.add(SchematicMaterial {
+                color: MAT_SEL_COLOR + MAT_PCK_COLOR,
+            }),
+        }
+    }
 }
 
 /// marker component to mark entity as colliding with picking collider
@@ -87,7 +150,7 @@ pub struct ElementsPlugin;
 
 impl Plugin for ElementsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, startup);
+        // app.add_systems(Startup, startup);
         app.add_systems(
             Update,
             (
@@ -103,67 +166,6 @@ impl Plugin for ElementsPlugin {
         app.register_type::<LineVertex>();
         app.register_type::<Selected>();
     }
-}
-
-const MAT_SEL_COLOR: Color = Color::YELLOW;
-const MAT_PCK_COLOR: Color = Color::WHITE;
-
-/// startup system to initialize element resource
-fn startup(
-    mut eres: ResMut<ElementsRes>,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut mats: ResMut<Assets<SchematicMaterial>>,
-) {
-    let c = Color::AQUAMARINE.rgba_linear_to_vec4();
-    eres.mesh_unitx = Some(
-        meshes.add(
-            Mesh::new(
-                PrimitiveTopology::LineList,
-                RenderAssetUsages::RENDER_WORLD | RenderAssetUsages::MAIN_WORLD,
-            )
-            .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, vec![Vec3::ZERO, Vec3::X])
-            .with_inserted_attribute(Mesh::ATTRIBUTE_COLOR, vec![c, c])
-            .with_inserted_indices(bevy::render::mesh::Indices::U32(vec![0, 1])),
-        ),
-    );
-
-    let hex = [
-        Vec3::new(0.0, 1.0, 0.0),
-        Vec3::new(-0.866025, 0.5, 0.0),
-        Vec3::new(0.866025, 0.5, 0.0),
-        Vec3::new(-0.866025, -0.5, 0.0),
-        Vec3::new(0.866025, -0.5, 0.0),
-        Vec3::new(0.0, -1.0, 0.0),
-    ]
-    .into_iter()
-    .map(|x| x * 2.0)
-    .collect::<Vec<Vec3>>();
-    eres.mesh_dot = Some(
-        meshes.add(
-            Mesh::new(
-                PrimitiveTopology::TriangleStrip,
-                RenderAssetUsages::RENDER_WORLD | RenderAssetUsages::MAIN_WORLD,
-            )
-            .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, hex)
-            .with_inserted_attribute(Mesh::ATTRIBUTE_COLOR, vec![c; 6])
-            .with_inserted_indices(bevy::render::mesh::Indices::U32(
-                (0..6).collect::<Vec<u32>>(),
-            )),
-        ),
-    );
-
-    eres.mat_dflt = Some(mats.add(SchematicMaterial {
-        color: Color::BLACK,
-    }));
-    eres.mat_pckd = Some(mats.add(SchematicMaterial {
-        color: MAT_PCK_COLOR,
-    }));
-    eres.mat_seld = Some(mats.add(SchematicMaterial {
-        color: MAT_SEL_COLOR,
-    }));
-    eres.mat_alld = Some(mats.add(SchematicMaterial {
-        color: MAT_SEL_COLOR + MAT_PCK_COLOR,
-    }));
 }
 
 /// system to apply selected/picked marker components
@@ -262,10 +264,10 @@ fn set_mat(
 ) {
     for (mut mat, pcked, seld) in q_sse.iter_mut() {
         match (pcked, seld) {
-            (None, None) => *mat = element_res.mat_dflt.clone().unwrap(),
-            (None, Some(_)) => *mat = element_res.mat_seld.clone().unwrap(),
-            (Some(_), None) => *mat = element_res.mat_pckd.clone().unwrap(),
-            (Some(_), Some(_)) => *mat = element_res.mat_alld.clone().unwrap(),
+            (None, None) => *mat = element_res.mat_dflt.clone(),
+            (None, Some(_)) => *mat = element_res.mat_seld.clone(),
+            (Some(_), None) => *mat = element_res.mat_pckd.clone(),
+            (Some(_), Some(_)) => *mat = element_res.mat_alld.clone(),
         }
     }
 }

@@ -53,7 +53,7 @@ impl DeviceBundle {
         DeviceBundle {
             tess_data: CompositeMeshData::from_single(tessellator_input_data),
             mat: MaterialMesh2dBundle {
-                material: eres.mat_dflt.clone().unwrap(),
+                material: eres.mat_dflt.clone(),
                 ..Default::default()
             },
             // schematic_element: todo!(),

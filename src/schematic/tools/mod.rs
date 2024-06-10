@@ -155,9 +155,9 @@ impl Pipeline for ToolsPreviewPipeline {
     /// spawning preview copies for previewing tools effect
     /// spawn as children of cursor
     fn apply(world: &mut World, snapshot: &Snapshot) -> Result<(), bevy_save::Error> {
-        let mesh_dot = Mesh2dHandle(world.resource::<ElementsRes>().mesh_dot.clone().unwrap());
-        let mesh_unitx = Mesh2dHandle(world.resource::<ElementsRes>().mesh_unitx.clone().unwrap());
-        let mat = world.resource::<ElementsRes>().mat_dflt.clone().unwrap();
+        let mesh_dot = Mesh2dHandle(world.resource::<ElementsRes>().mesh_dot.clone());
+        let mesh_unitx = Mesh2dHandle(world.resource::<ElementsRes>().mesh_unitx.clone());
+        let mat = world.resource::<ElementsRes>().mat_dflt.clone();
         let cursor_ent = world
             .query_filtered::<Entity, With<SchematicCursor>>()
             .single(&world);

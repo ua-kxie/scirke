@@ -36,6 +36,7 @@ pub struct SchematicPlugin;
 
 impl Plugin for SchematicPlugin {
     fn build(&self, app: &mut App) {
+        app.add_plugins(Material2dPlugin::<SchematicMaterial>::default());
         app.add_plugins((
             CameraPlugin,
             InfoPlugin,
@@ -49,7 +50,6 @@ impl Plugin for SchematicPlugin {
         );
         app.add_systems(PostUpdate, snap.in_set(SnapSet));
         app.add_systems(Update, handle_save_input);
-        app.add_plugins(Material2dPlugin::<SchematicMaterial>::default());
         app.add_plugins((
             // Bevy Save
             SavePlugins,
@@ -110,9 +110,9 @@ impl Pipeline for SavePipeline {
     }
 
     fn apply(world: &mut World, snapshot: &Snapshot) -> Result<(), bevy_save::Error> {
-        let mesh_dot = Mesh2dHandle(world.resource::<ElementsRes>().mesh_dot.clone().unwrap());
-        let mesh_unitx = Mesh2dHandle(world.resource::<ElementsRes>().mesh_unitx.clone().unwrap());
-        let mat = world.resource::<ElementsRes>().mat_dflt.clone().unwrap();
+        let mesh_dot = Mesh2dHandle(world.resource::<ElementsRes>().mesh_dot.clone());
+        let mesh_unitx = Mesh2dHandle(world.resource::<ElementsRes>().mesh_unitx.clone());
+        let mat = world.resource::<ElementsRes>().mat_dflt.clone();
         snapshot
             .applier(world)
             .despawn::<With<SchematicElement>>()

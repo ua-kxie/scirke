@@ -182,8 +182,8 @@ impl VertexBundle {
             },
             schematic_element: lvse(),
             mat: MaterialMesh2dBundle {
-                mesh: Mesh2dHandle(eres.mesh_dot.clone().unwrap()),
-                material: eres.mat_dflt.clone().unwrap(),
+                mesh: Mesh2dHandle(eres.mesh_dot.clone()),
+                material: eres.mat_dflt.clone(),
                 transform: Transform::from_translation(pt),
                 ..Default::default()
             },
@@ -208,8 +208,8 @@ impl LineSegBundle {
             .with_scale(Vec3::splat(m10.length()));
 
         let mat = MaterialMesh2dBundle {
-            mesh: Mesh2dHandle(eres.mesh_unitx.clone().unwrap()),
-            material: eres.mat_dflt.clone().unwrap(),
+            mesh: Mesh2dHandle(eres.mesh_unitx.clone()),
+            material: eres.mat_dflt.clone(),
             transform: transform,
             ..Default::default()
         };
