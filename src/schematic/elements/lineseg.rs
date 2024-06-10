@@ -299,9 +299,11 @@ pub fn transform_lineseg(
 /// step 3: net labeling
 /// get subgraph/nets, assign unique id string to each
 pub fn prune(world: &mut World) {
+    // delete orphaned vertices or incomplete segments
     cull(world);
+    //
     merge_overlapped_vertex(world);
-
+    // bisect segments at vertices
     bisect(world);
     // removing overlapping segments should always come after bisection
     // because bisection can produce overlapping segments
@@ -448,7 +450,7 @@ fn combine_parallel(world: &mut World) {
 
 /// system to prune line segs and vertices
 /// deletes vertices with no branches or segments missing a vertex
-/// needs to be exclusive system to fully complete in 1 frame
+/// needs to be exclusive system to fully complete in 1 frame?
 fn cull(world: &mut World) {
     let mut qls = world.query_filtered::<(Entity, &LineSegment), Without<Preview>>();
     let lses: Box<[(Entity, Entity, Entity)]> =
@@ -520,13 +522,13 @@ fn merge_parallel(world: &mut World, vertex: Entity) {
         .branches
         .clone();
     if branches.len() == 2 {
-        let gt0 = world.entity(branches[0]).get::<GlobalTransform>().unwrap();
-        let gt1 = world.entity(branches[1]).get::<GlobalTransform>().unwrap();
+        // look at transform here because global transform has not yet been updated
+        let gt0 = world.entity(branches[0]).get::<Transform>().unwrap();
+        let gt1 = world.entity(branches[1]).get::<Transform>().unwrap();
         let rads_btwn = gt0
-            .to_scale_rotation_translation()
-            .1
+            .rotation
             .normalize()
-            .angle_between(gt1.to_scale_rotation_translation().1.normalize());
+            .angle_between(gt1.rotation.normalize());
         if rads_btwn.approx_eq_eps(&PI, &ANGULAR_RADIANS_EPSILON)
             || rads_btwn.approx_eq_eps(&0.0, &ANGULAR_RADIANS_EPSILON)
         {

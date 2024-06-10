@@ -4,7 +4,7 @@ use crate::{
     bevyon::{self, CompositeMeshData, SubMesh, TessInData},
     schematic::{
         camera::SchematicCamera,
-        elements::Selected,
+        elements::{SchematicElement, Selected},
         guides::{NewSnappedCursor, SchematicCursor},
         material::SchematicMaterial,
     },
@@ -208,4 +208,10 @@ fn setup(mut commands: Commands, mut materials: ResMut<Assets<SchematicMaterial>
             ..Default::default()
         },
     });
+}
+
+pub fn select_all(q_valid: Query<Entity, With<SchematicElement>>, mut commands: Commands) {
+    for e in q_valid.iter() {
+        commands.entity(e).insert(Selected);
+    }
 }

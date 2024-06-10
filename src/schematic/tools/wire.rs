@@ -22,12 +22,17 @@ pub struct WireToolPlugin;
 
 impl Plugin for WireToolPlugin {
     fn build(&self, app: &mut App) {
-        // app.add_systems(Startup, setup);
         app.init_state::<WireToolState>();
-        // app.add_systems(OnExit(SchematicToolState::Wiring), tool_cleanup);
         app.add_systems(Update, main.run_if(in_state(SchematicToolState::Wiring)));
+        app.add_systems(OnExit(SchematicToolState::Wiring), cleanup);
     }
 }
+
+/// resets the tool so that it is ready for next initiation
+fn cleanup(mut nwts: ResMut<NextState<WireToolState>>) {
+    nwts.set(WireToolState::Ready);
+}
+
 fn main(
     keys: Res<ButtonInput<KeyCode>>,
     buttons: Res<ButtonInput<MouseButton>>,

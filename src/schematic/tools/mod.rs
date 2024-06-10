@@ -9,6 +9,7 @@ mod wire;
 use super::{
     elements::{
         Device, DeviceBundle, ElementsRes, LineSegment, LineVertex, Preview, SchematicElement,
+        Selected,
     },
     guides::SchematicCursor,
     material::SchematicMaterial,
@@ -44,6 +45,8 @@ impl Plugin for ToolsPlugin {
     }
 }
 
+/// this system clears cursor children
+/// runs upon entering idle state (exit transform tool)
 fn clear_cursor_children(
     mut commands: Commands,
     q: Query<(Entity, &Children), With<SchematicCursor>>,
@@ -124,6 +127,13 @@ fn exclusive_main(world: &mut World) {
                 next_toolst.set(SchematicToolState::Transform);
                 let mut next_transst = world.resource_mut::<NextState<TransformType>>();
                 next_transst.set(TransformType::Copy);
+            } else if keys.just_released(KeyCode::KeyA) {
+                let mut q_valid = world.query_filtered::<Entity, With<SchematicElement>>();
+                let valids = q_valid
+                    .iter(&world)
+                    .map(|e| (e, Selected))
+                    .collect::<Vec<(Entity, Selected)>>();
+                let _ = world.insert_or_spawn_batch(valids.into_iter());
             }
         }
         SchematicToolState::Wiring => {}
