@@ -18,6 +18,9 @@ pub use devices::{Device, DeviceBundle};
 use euclid::default::{Box2D, Point2D};
 pub use lineseg::{create_preview_lineseg, LineSegment, LineVertex};
 use lineseg::{PickableLineSeg, PickableVertex};
+use lyon_tessellation::{FillOptions, VertexBuffers};
+
+use crate::bevyon::{self, build_mesh, fill, FillTessellator};
 
 use super::{
     material::SchematicMaterial,
@@ -81,9 +84,26 @@ const MAT_PCK_COLOR: Color = Color::WHITE;
 
 impl FromWorld for ElementsRes {
     fn from_world(world: &mut World) -> Self {
-        let mut meshes = world.resource_mut::<Assets<Mesh>>();
         let wirecolor = Color::AQUAMARINE.rgba_linear_to_vec4();
         let devicecolor = Color::SEA_GREEN.rgba_linear_to_vec4();
+        let mut path_builder = bevyon::path_builder();
+        path_builder.add_rectangle(
+            &Box2D {
+                min: Point2D::new(-2.0, -3.0),
+                max: Point2D::new(2.0, 3.0),
+            },
+            lyon_tessellation::path::Winding::Positive,
+        );
+        let path = path_builder.build();
+        let mut buffers = VertexBuffers::new();
+        let mut fill_tess = world.resource_mut::<FillTessellator>();
+        fill(&mut *fill_tess, &path, &FillOptions::DEFAULT, &mut buffers);
+        let mut meshes = world.resource_mut::<Assets<Mesh>>();
+        let mesh_res = meshes.add(build_mesh(&buffers).with_inserted_attribute(
+            Mesh::ATTRIBUTE_COLOR,
+            vec![devicecolor; buffers.vertices.len()],
+        ));
+
         let mesh_unitx = meshes.add(
             Mesh::new(
                 PrimitiveTopology::LineList,
@@ -115,25 +135,25 @@ impl FromWorld for ElementsRes {
                 (0..6).collect::<Vec<u32>>(),
             )),
         );
-        let mesh_res = meshes.add(
-            Mesh::new(
-                PrimitiveTopology::TriangleStrip,
-                RenderAssetUsages::RENDER_WORLD | RenderAssetUsages::MAIN_WORLD,
-            )
-            .with_inserted_attribute(
-                Mesh::ATTRIBUTE_POSITION,
-                vec![
-                    Vec3::new(-1.0, 1.0, 0.0),
-                    Vec3::new(-1.0, -1.0, 0.0),
-                    Vec3::new(1.0, 1.0, 0.0),
-                    Vec3::new(1.0, -1.0, 0.0),
-                ],
-            )
-            .with_inserted_attribute(Mesh::ATTRIBUTE_COLOR, vec![devicecolor; 4])
-            .with_inserted_indices(bevy::render::mesh::Indices::U32(
-                (0..4).collect::<Vec<u32>>(),
-            )),
-        );
+        // let mesh_res = meshes.add(
+        //     Mesh::new(
+        //         PrimitiveTopology::TriangleStrip,
+        //         RenderAssetUsages::RENDER_WORLD | RenderAssetUsages::MAIN_WORLD,
+        //     )
+        //     .with_inserted_attribute(
+        //         Mesh::ATTRIBUTE_POSITION,
+        //         vec![
+        //             Vec3::new(-1.0, 1.0, 0.0),
+        //             Vec3::new(-1.0, -1.0, 0.0),
+        //             Vec3::new(1.0, 1.0, 0.0),
+        //             Vec3::new(1.0, -1.0, 0.0),
+        //         ],
+        //     )
+        //     .with_inserted_attribute(Mesh::ATTRIBUTE_COLOR, vec![devicecolor; 4])
+        //     .with_inserted_indices(bevy::render::mesh::Indices::U32(
+        //         (0..4).collect::<Vec<u32>>(),
+        //     )),
+        // );
         let mut mats = world.resource_mut::<Assets<SchematicMaterial>>();
         ElementsRes {
             mesh_unitx,
@@ -154,7 +174,7 @@ impl FromWorld for ElementsRes {
             }),
 
             se_device: SchematicElement {
-                behavior: Arc::from(PickableAabb::default()),
+                behavior: Arc::from(PickableRes::default()),
             },
             se_lineseg: SchematicElement {
                 behavior: Arc::from(PickableLineSeg::default()),
@@ -319,16 +339,16 @@ fn set_mat(
 
 /// A struct defining picking behavior for Aabbs
 #[derive(Clone)]
-pub struct PickableAabb(Box2D<f32>);
-impl Default for PickableAabb {
+pub struct PickableRes(Box2D<f32>);
+impl Default for PickableRes {
     fn default() -> Self {
         Self(Box2D::from_points([
-            Point2D::splat(-1.0),
-            Point2D::splat(1.0),
+            Point2D::new(-2.0, -3.0),
+            Point2D::new(2.0, 3.0),
         ]))
     }
 }
-impl Pickable for PickableAabb {
+impl Pickable for PickableRes {
     fn collides(&self, pc: &PickingCollider, gt: Transform) -> bool {
         match pc {
             PickingCollider::Point(p) => {

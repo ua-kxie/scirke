@@ -175,7 +175,7 @@ fn update_mesh(
     }
 }
 
-fn fill(
+pub fn fill(
     tess: &mut FillTessellator,
     path: &tess::path::Path,
     options: &FillOptions,
