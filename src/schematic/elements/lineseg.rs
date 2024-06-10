@@ -13,6 +13,7 @@
 use std::{
     collections::{HashMap, HashSet},
     f32::consts::PI,
+    sync::Arc,
 };
 
 use super::{ElementsRes, Pickable, Preview, SchematicElement};
@@ -66,8 +67,16 @@ impl LineSegment {
 
 const LINESEG_POINTS: [Vec3; 2] = [Vec3::splat(0.0), Vec3::new(1.0, 0.0, 0.0)];
 /// A struct to define picking behavior specific to line segments
-#[derive(Default)]
-struct PickableLineSeg;
+pub struct PickableLineSeg(Box2D<f32>);
+
+impl Default for PickableLineSeg {
+    fn default() -> Self {
+        Self(Box2D::from_points([
+            Point2D::splat(0.0),
+            Point2D::new(1.0, 0.0),
+        ]))
+    }
+}
 
 impl Pickable for PickableLineSeg {
     fn collides(&self, pc: &PickingCollider, gt: Transform) -> bool {
@@ -124,8 +133,16 @@ impl MapEntities for LineVertex {
 }
 
 /// A struct defining picking behavior specific to line vertices
-#[derive(Clone, Default)]
-struct PickableVertex;
+#[derive(Clone)]
+pub struct PickableVertex(Box2D<f32>);
+impl Default for PickableVertex {
+    fn default() -> Self {
+        Self(Box2D::from_points([
+            Point2D::splat(-0.5),
+            Point2D::splat(0.5),
+        ]))
+    }
+}
 impl Pickable for PickableVertex {
     fn collides(&self, pc: &PickingCollider, gt: Transform) -> bool {
         match pc {
@@ -135,8 +152,7 @@ impl Pickable for PickableVertex {
                     return false;
                 }
                 let p1 = t.transform_point(p.extend(0.0));
-                Box2D::from_points([Point2D::splat(-0.5), Point2D::splat(0.5)])
-                    .contains_inclusive(Point2D::new(p1.x, p1.y))
+                self.0.contains_inclusive(Point2D::new(p1.x, p1.y))
             }
             PickingCollider::AreaIntersect(pc) => pc.intersects(&Aabb2d::from_point_cloud(
                 Vec2::splat(0.0),
@@ -149,20 +165,6 @@ impl Pickable for PickableVertex {
                 &[gt.transform_point(Vec3::splat(0.0)).truncate()],
             )),
         }
-    }
-}
-
-/// helper function to return SchematicElement containing lineseg picking behavior
-pub fn lsse() -> SchematicElement {
-    SchematicElement {
-        behavior: Box::new(PickableLineSeg::default()),
-    }
-}
-
-/// helper function to return SchematicElement containing vertex picking behavior
-pub fn lvse() -> SchematicElement {
-    SchematicElement {
-        behavior: Box::new(PickableVertex::default()),
     }
 }
 
@@ -180,7 +182,7 @@ impl VertexBundle {
             vertex: LineVertex {
                 branches: smallvec![branch],
             },
-            schematic_element: lvse(),
+            schematic_element: eres.se_linevertex.clone(),
             mat: MaterialMesh2dBundle {
                 mesh: Mesh2dHandle(eres.mesh_dot.clone()),
                 material: eres.mat_dflt.clone(),
@@ -215,7 +217,7 @@ impl LineSegBundle {
         };
         let ls = LineSegment { a: a.0, b: b.0 };
         let se = SchematicElement {
-            behavior: Box::new(PickableLineSeg::default()),
+            behavior: Arc::new(PickableLineSeg::default()),
         };
         Self { ls, mat, se }
     }

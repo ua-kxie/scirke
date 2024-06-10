@@ -7,9 +7,7 @@ mod transform;
 mod wire;
 
 use super::{
-    elements::{
-        lsse, lvse, DeviceBundle, ElementsRes, LineSegment, LineVertex, Preview, SchematicElement,
-    },
+    elements::{DeviceBundle, ElementsRes, LineSegment, LineVertex, Preview, SchematicElement},
     guides::SchematicCursor,
     material::SchematicMaterial,
 };
@@ -158,6 +156,8 @@ impl Pipeline for ToolsPreviewPipeline {
         let mesh_dot = Mesh2dHandle(world.resource::<ElementsRes>().mesh_dot.clone());
         let mesh_unitx = Mesh2dHandle(world.resource::<ElementsRes>().mesh_unitx.clone());
         let mat = world.resource::<ElementsRes>().mat_dflt.clone();
+        let sels = world.resource::<ElementsRes>().se_lineseg.clone();
+        let selv = world.resource::<ElementsRes>().se_linevertex.clone();
         let cursor_ent = world
             .query_filtered::<Entity, With<SchematicCursor>>()
             .single(&world);
@@ -165,10 +165,10 @@ impl Pipeline for ToolsPreviewPipeline {
             .applier(world)
             .hook(move |entityref, cmd| {
                 if entityref.contains::<LineVertex>() {
-                    cmd.insert((mesh_dot.clone(), mat.clone(), lvse(), Preview));
+                    cmd.insert((mesh_dot.clone(), mat.clone(), selv.clone(), Preview));
                 }
                 if entityref.contains::<LineSegment>() {
-                    cmd.insert((mesh_unitx.clone(), mat.clone(), lsse(), Preview));
+                    cmd.insert((mesh_unitx.clone(), mat.clone(), sels.clone(), Preview));
                 }
                 cmd.set_parent(cursor_ent);
             })

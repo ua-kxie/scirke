@@ -8,7 +8,7 @@ use bevy::{
     sprite::{Material2dPlugin, MaterialMesh2dBundle, Mesh2dHandle},
 };
 use bevy_save::prelude::*;
-use elements::{lsse, lvse, ElementsRes, LineSegment, LineVertex, SchematicElement};
+use elements::{ElementsRes, LineSegment, LineVertex, SchematicElement};
 
 mod camera;
 mod elements;
@@ -113,15 +113,17 @@ impl Pipeline for SavePipeline {
         let mesh_dot = Mesh2dHandle(world.resource::<ElementsRes>().mesh_dot.clone());
         let mesh_unitx = Mesh2dHandle(world.resource::<ElementsRes>().mesh_unitx.clone());
         let mat = world.resource::<ElementsRes>().mat_dflt.clone();
+        let sels = world.resource::<ElementsRes>().se_lineseg.clone();
+        let selv = world.resource::<ElementsRes>().se_linevertex.clone();
         snapshot
             .applier(world)
             .despawn::<With<SchematicElement>>()
             .hook(move |entity, cmd| {
                 if entity.contains::<LineVertex>() {
-                    cmd.insert((mesh_dot.clone(), mat.clone(), lvse()));
+                    cmd.insert((mesh_dot.clone(), mat.clone(), selv.clone()));
                 }
                 if entity.contains::<LineSegment>() {
-                    cmd.insert((mesh_unitx.clone(), mat.clone(), lsse()));
+                    cmd.insert((mesh_unitx.clone(), mat.clone(), sels.clone()));
                 }
             })
             .apply()

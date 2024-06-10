@@ -51,7 +51,7 @@ impl DeviceBundle {
             fill: Some(FillOptions::DEFAULT),
         };
         DeviceBundle {
-            tess_data: CompositeMeshData::from_single(tessellator_input_data),
+            tess_data: CompositeMeshData::from_single_w_color(tessellator_input_data, Color::GRAY),
             mat: MaterialMesh2dBundle {
                 material: eres.mat_dflt.clone(),
                 ..Default::default()

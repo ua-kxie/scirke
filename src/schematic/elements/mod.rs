@@ -3,7 +3,10 @@
 //! must support: picking by point/ray, by area intersect, by area contained
 //! picking by point/ray should only ever mark 1 entity as picked
 
+use std::sync::Arc;
+
 use bevy::{
+    math::bounding::{Aabb2d, BoundingVolume, IntersectsVolume},
     prelude::*,
     render::{mesh::PrimitiveTopology, render_asset::RenderAssetUsages},
 };
@@ -11,7 +14,9 @@ use bevy::{
 mod devices;
 mod lineseg;
 pub use devices::DeviceBundle;
-pub use lineseg::{create_preview_lineseg, lsse, lvse, LineSegment, LineVertex};
+use euclid::default::{Box2D, Point2D};
+pub use lineseg::{create_preview_lineseg, LineSegment, LineVertex};
+use lineseg::{PickableLineSeg, PickableVertex};
 
 use super::{
     material::SchematicMaterial,
@@ -58,11 +63,14 @@ pub struct ElementsRes {
     pub mat_pckd: Handle<SchematicMaterial>,
     /// selected + picked material
     pub mat_alld: Handle<SchematicMaterial>,
-    // /// lsse
-    // pub se_lineseg: Option<>
-    // /// lvse
-    // pub se_linevertex:
-    // pub se_device:
+
+    /// schematic elements
+    /// lsse
+    pub se_lineseg: SchematicElement,
+    /// lvse
+    pub se_linevertex: SchematicElement,
+    /// devices schematic element
+    pub se_device: SchematicElement,
 }
 
 const MAT_SEL_COLOR: Color = Color::YELLOW;
@@ -107,6 +115,7 @@ impl FromWorld for ElementsRes {
         ElementsRes {
             mesh_unitx,
             mesh_dot,
+
             mat_dflt: mats.add(SchematicMaterial {
                 color: Color::BLACK,
             }),
@@ -119,6 +128,16 @@ impl FromWorld for ElementsRes {
             mat_alld: mats.add(SchematicMaterial {
                 color: MAT_SEL_COLOR + MAT_PCK_COLOR,
             }),
+
+            se_device: SchematicElement {
+                behavior: Arc::from(PickableAabb::default()),
+            },
+            se_lineseg: SchematicElement {
+                behavior: Arc::from(PickableLineSeg::default()),
+            },
+            se_linevertex: SchematicElement {
+                behavior: Arc::from(PickableVertex::default()),
+            },
         }
     }
 }
@@ -133,9 +152,9 @@ pub struct Picked;
 pub struct Selected;
 
 /// different components that impl a given trait T with functions to compute picking collision
-#[derive(Component)]
+#[derive(Component, Clone)]
 pub struct SchematicElement {
-    behavior: Box<dyn Pickable + Send + Sync + 'static>,
+    behavior: Arc<dyn Pickable + Send + Sync + 'static>,
 }
 
 /// Pickable trait to define how elements consider themselves "picked"
@@ -268,6 +287,48 @@ fn set_mat(
             (None, Some(_)) => *mat = element_res.mat_seld.clone(),
             (Some(_), None) => *mat = element_res.mat_pckd.clone(),
             (Some(_), Some(_)) => *mat = element_res.mat_alld.clone(),
+        }
+    }
+}
+
+/// A struct defining picking behavior for Aabbs
+#[derive(Clone)]
+pub struct PickableAabb(Box2D<f32>);
+impl Default for PickableAabb {
+    fn default() -> Self {
+        Self(Box2D::from_points([
+            Point2D::splat(-1.0),
+            Point2D::splat(1.0),
+        ]))
+    }
+}
+impl Pickable for PickableAabb {
+    fn collides(&self, pc: &PickingCollider, gt: Transform) -> bool {
+        match pc {
+            PickingCollider::Point(p) => {
+                let t = gt.compute_matrix().inverse();
+                if t.is_nan() {
+                    return false;
+                }
+                let p1 = t.transform_point(p.extend(0.0));
+                self.0.contains_inclusive(Point2D::new(p1.x, p1.y))
+            }
+            PickingCollider::AreaIntersect(pc) => pc.intersects(&Aabb2d::from_point_cloud(
+                gt.transform_point(Vec3::splat(0.0)).truncate(),
+                0.0,
+                &[
+                    Vec2::new(self.0.min.x, self.0.min.y),
+                    Vec2::new(self.0.max.x, self.0.max.y),
+                ],
+            )),
+            PickingCollider::AreaContains(pc) => pc.contains(&Aabb2d::from_point_cloud(
+                gt.transform_point(Vec3::splat(0.0)).truncate(),
+                0.0,
+                &[
+                    Vec2::new(self.0.min.x, self.0.min.y),
+                    Vec2::new(self.0.max.x, self.0.max.y),
+                ],
+            )),
         }
     }
 }
