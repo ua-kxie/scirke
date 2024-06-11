@@ -1,5 +1,6 @@
 use bevy::prelude::*;
-use bevy_console::{Color32, ConsoleCommandEntered, ConsolePlugin, ConsoleSet, PrintConsoleLine};
+// use bevy_console::{Color32, ConsoleCommandEntered, ConsolePlugin, ConsoleSet, PrintConsoleLine};
+use super::console::{Color32, ConsoleCommandEntered, ConsolePlugin, ConsoleSet, PrintConsoleLine};
 use paprika::*;
 use std::{
     collections::VecDeque,

@@ -13,13 +13,12 @@ euclid = {version="0.22.10"}
 lyon_tessellation = "1"
 serde = "1.0.203"
 paprika = { path = "./paprika", features = ["serde"] }
-bevy_console = { path = "./bevy_console" }
 bevy_save = { path = "./bevy_save" }
 colored = "2.0"
+bevy_egui = "0.27.1"
 
 [workspace]
 members = [
     "paprika",
-    "bevy_console",
     "bevy_save",
 ]

@@ -1,4 +1,5 @@
 use bevy::{prelude::*, window::PrimaryWindow};
+use bevy_egui::EguiPlugin;
 use bevyon::BevyonPlugin;
 use schematic::SchematicPlugin;
 
@@ -6,6 +7,7 @@ mod bevyon;
 mod readable_idgen;
 mod schematic;
 mod spmanager;
+mod console;
 
 pub use bevyon::{FillOptions, StrokeOptions};
 use spmanager::SPManagerPlugin;
@@ -23,6 +25,7 @@ fn main() {
         .add_plugins(BevyonPlugin)
         .add_plugins(SchematicPlugin)
         .add_systems(Startup, hide_cursor)
+        .add_plugins(EguiPlugin)
         .run();
 }
 
