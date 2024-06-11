@@ -8,7 +8,7 @@ mod wire;
 
 use super::{
     elements::{
-        Device, DeviceBundle, DeviceType, ElementsRes, LineSegment, LineVertex, Preview,
+        Device, DeviceType, ElementsRes, LineSegment, LineVertex, NewDevice, Preview,
         SchematicElement, Selected,
     },
     guides::SchematicCursor,
@@ -112,16 +112,7 @@ fn exclusive_main(world: &mut World) {
                 next_toolst.set(SchematicToolState::Wiring);
             } else if keys.just_released(KeyCode::KeyR) {
                 // spawn a resistor device as child of cursor
-
-                let new = world
-                    .spawn(DeviceBundle::new_resistor(
-                        world.resource_ref::<ElementsRes>(),
-                    ))
-                    .id();
-
-                let mut q_cursor = world.query_filtered::<Entity, With<SchematicCursor>>();
-                let ent = q_cursor.single(&world);
-                world.entity_mut(ent).add_child(new);
+                let _ = world.send_event(NewDevice::R);
 
                 let mut next_toolst = world.resource_mut::<NextState<SchematicToolState>>();
                 next_toolst.set(SchematicToolState::Transform);
@@ -193,3 +184,10 @@ impl Pipeline for ToolsPreviewPipeline {
             .apply()
     }
 }
+
+/*
+Update
+    input handling (tools)
+
+- pruning?
+*/

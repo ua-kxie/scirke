@@ -5,7 +5,6 @@ use schematic::SchematicPlugin;
 
 mod bevyon;
 mod console;
-mod readable_idgen;
 mod schematic;
 mod spmanager;
 

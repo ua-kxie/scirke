@@ -13,19 +13,24 @@
 
 use bevy::{
     prelude::*,
+    reflect::Enum,
     sprite::{MaterialMesh2dBundle, Mesh2dHandle},
 };
 use serde::Deserialize;
 
-use crate::schematic::material::SchematicMaterial;
+use crate::schematic::{guides::SchematicCursor, material::SchematicMaterial};
 
-use super::{ElementsRes, SchematicElement};
+use super::{readable_idgen::IdTracker, ElementsRes, Preview, SchematicElement, Selected};
 
 /// device types, 1 per type, stored as resource
 /// needs to contain data about:
 /// graphics
 /// relative port locations
 ///
+#[derive(Debug, Deserialize, Reflect)]
+enum SpType {
+    R,
+}
 
 #[derive(Debug, Deserialize)]
 struct DevicecTypePort {
@@ -41,6 +46,7 @@ impl DevicecTypePort {
 pub struct DeviceType {
     // graphics: DeviceGraphics,
     ports: Box<[DevicecTypePort]>,
+    prefix: SpType,
 }
 
 impl DeviceType {
@@ -50,7 +56,12 @@ impl DeviceType {
                 DevicecTypePort::new("+".into(), IVec2::new(0, 3)),
                 DevicecTypePort::new("-".into(), IVec2::new(0, -3)),
             ]),
+            prefix: SpType::R,
         }
+    }
+
+    pub fn prefix(&self) -> &str {
+        self.prefix.variant_name()
     }
 }
 
@@ -79,13 +90,20 @@ struct DeviceGraphics {
 #[derive(Component, Default, Reflect)]
 #[reflect(Component)]
 pub struct Device {
+    id: String,
     #[reflect(ignore)]
     device_type: Handle<DeviceType>,
 }
 
+impl Device {
+    pub fn get_id(&self) -> (Handle<DeviceType>, &str) {
+        (self.device_type.clone(), &self.id)
+    }
+}
+
 /// bundle of device components
 #[derive(Bundle)]
-pub struct DeviceBundle {
+struct DeviceBundle {
     device: Device,
     // tess_data: CompositeMeshData,
     schematic_element: SchematicElement,
@@ -93,9 +111,10 @@ pub struct DeviceBundle {
 }
 
 impl DeviceBundle {
-    pub fn new_resistor(eres: Res<ElementsRes>) -> Self {
+    fn new_resistor(eres: &Res<ElementsRes>, id: String) -> Self {
         DeviceBundle {
             device: Device {
+                id,
                 device_type: eres.dtype_r.clone(),
             },
             mat: MaterialMesh2dBundle {
@@ -106,4 +125,35 @@ impl DeviceBundle {
             schematic_element: eres.se_device.clone(),
         }
     }
+}
+
+#[derive(Event)]
+pub enum NewDevice {
+    R,
+}
+
+/// system to create new device on event
+pub fn add_preview_device(
+    mut e_new_device: EventReader<NewDevice>,
+    eres: Res<ElementsRes>,
+    mut idtracker: ResMut<IdTracker>,
+    mut commands: Commands,
+    q_cursor: Query<Entity, With<SchematicCursor>>,
+) {
+    let cursor_entity = q_cursor.single();
+    let ents = e_new_device
+        .read()
+        .map(|e| {
+            commands
+                .spawn((
+                    match e {
+                        NewDevice::R => DeviceBundle::new_resistor(&eres, idtracker.new_r_id("")),
+                    },
+                    Preview,
+                    Selected,
+                ))
+                .id()
+        })
+        .collect::<Box<[Entity]>>();
+    commands.entity(cursor_entity).push_children(&ents);
 }

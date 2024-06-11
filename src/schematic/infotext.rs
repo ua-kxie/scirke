@@ -1,8 +1,11 @@
 use bevy::{prelude::*, reflect::Enum};
 
 use super::{
-    camera::SchematicCamera, elements::SchematicElement, guides::SchematicCursor,
-    tools::SchematicToolState, SnapSet,
+    camera::SchematicCamera,
+    elements::{Device, DeviceType},
+    guides::SchematicCursor,
+    tools::SchematicToolState,
+    SnapSet,
 };
 
 #[derive(Resource, Default)]
@@ -10,7 +13,7 @@ pub struct InfoRes {
     cpos: Option<IVec2>,
     scale: f32,
     toolst: SchematicToolState,
-    picked: Option<SchematicElement>,
+    picked: Option<Entity>,
 }
 
 impl InfoRes {
@@ -35,6 +38,9 @@ impl InfoRes {
     // pub fn set_toolst(&mut self, ts: SchematicToolState) {
     //     self.toolst = ts;
     // }
+    pub fn set_picked(&mut self, e: Option<Entity>) {
+        self.picked = e
+    }
 }
 
 #[derive(Component)]
@@ -76,6 +82,8 @@ fn update(
     projection: Query<&OrthographicProjection, With<SchematicCamera>>,
     toolst: Res<State<SchematicToolState>>,
     mut infores: ResMut<InfoRes>,
+    devices: Res<Assets<DeviceType>>,
+    qd: Query<&Device>,
 ) {
     infores.cpos = cursor
         .single()
@@ -88,4 +96,10 @@ fn update(
     let mut text = text.single_mut();
     let text = &mut text.sections[0].value;
     *text = infores.line();
+
+    if let Some(Ok((hndl, id))) = infores.picked.map(|e| qd.get(e).map(|op| op.get_id())) {
+        devices
+            .get(hndl)
+            .map(|x| text.push_str(&(x.prefix().to_owned() + id)));
+    }
 }

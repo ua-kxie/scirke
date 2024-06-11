@@ -10,10 +10,10 @@ use bevy::{
     prelude::*,
     render::{mesh::PrimitiveTopology, render_asset::RenderAssetUsages},
 };
-
+pub use devices::NewDevice;
 mod devices;
 mod nets;
-pub use devices::{Device, DeviceBundle};
+pub use devices::Device;
 use euclid::default::{Box2D, Point2D, Size2D};
 use lyon_tessellation::{FillOptions, VertexBuffers};
 pub use nets::{create_preview_lineseg, LineSegment, LineVertex};
@@ -22,10 +22,14 @@ use nets::{PickableLineSeg, PickableVertex};
 use crate::bevyon::{self, build_mesh, fill, FillTessellator};
 
 use super::{
+    infotext::InfoRes,
     material::SchematicMaterial,
     tools::{NewPickingCollider, PickingCollider, SelectEvt},
 };
 pub use devices::DeviceType;
+mod readable_idgen;
+use readable_idgen::IdTracker;
+
 /// marker component to mark entity as being previewed (constructed by an active tool)
 /// entities marked [`SchematicElement`] but without this marker is persistent
 #[derive(Component)]
@@ -230,7 +234,13 @@ impl Plugin for ElementsPlugin {
         // app.add_systems(Startup, startup);
         app.add_systems(
             Update,
-            (nets::transform_lineseg, picking, selection, nets::prune),
+            (
+                nets::transform_lineseg,
+                picking,
+                selection,
+                nets::prune,
+                devices::add_preview_device,
+            ),
         );
         app.add_systems(PostUpdate, set_mat);
         app.init_resource::<ElementsRes>();
@@ -238,6 +248,8 @@ impl Plugin for ElementsPlugin {
         app.register_type::<LineVertex>();
         app.register_type::<Selected>();
         app.register_type::<Device>();
+        app.init_resource::<IdTracker>();
+        app.add_event::<NewDevice>();
     }
 }
 
@@ -253,13 +265,14 @@ fn picking(
     mut colliding: Local<Vec<Entity>>,
     mut idx: Local<usize>,
     keys: Res<ButtonInput<KeyCode>>,
+    mut infores: ResMut<InfoRes>,
 ) {
     // colliding: vector of colliding entities under current point picking collider
     // should be empty if picking collider is not a point
     // idx: current index of colliding, such that collding[idx] is the picked element
-
     // process any new picking collider event
     if let Some(NewPickingCollider(pc)) = e_newpck.read().last() {
+        infores.set_picked(None);
         if let PickingCollider::Point(_) = pc {
             // update `colliding`, and unset any Picked
             colliding.clear();
@@ -271,6 +284,7 @@ fn picking(
             }
             // set one, if any, entity as picked
             if let Some(&ent) = colliding.first() {
+                infores.set_picked(Some(ent));
                 commands.entity(ent).insert(Picked);
                 *idx = 0;
             }
