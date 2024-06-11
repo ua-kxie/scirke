@@ -15,7 +15,7 @@ mod devices;
 mod nets;
 use devices::DeviceType;
 pub use devices::{Device, DeviceBundle};
-use euclid::default::{Box2D, Point2D};
+use euclid::default::{Box2D, Point2D, Size2D};
 use lyon_tessellation::{FillOptions, VertexBuffers};
 pub use nets::{create_preview_lineseg, LineSegment, LineVertex};
 use nets::{PickableLineSeg, PickableVertex};
@@ -77,6 +77,9 @@ pub struct ElementsRes {
     pub se_linevertex: SchematicElement,
     /// devices schematic element
     pub se_device: SchematicElement,
+
+    /// resistor device type
+    pub dtype_r: Handle<DeviceType>,
 }
 
 const MAT_SEL_COLOR: Color = Color::YELLOW;
@@ -85,7 +88,8 @@ const MAT_PCK_COLOR: Color = Color::WHITE;
 impl FromWorld for ElementsRes {
     fn from_world(world: &mut World) -> Self {
         let wirecolor = Color::AQUAMARINE.rgba_linear_to_vec4();
-        let devicecolor = Color::SEA_GREEN.rgba_linear_to_vec4();
+        let devicecolor = Color::GREEN.rgba_linear_to_vec4();
+        let mut fill_tess = world.resource_mut::<FillTessellator>();
         let mut path_builder = bevyon::path_builder();
         path_builder.add_rectangle(
             &Box2D {
@@ -96,13 +100,32 @@ impl FromWorld for ElementsRes {
         );
         let path = path_builder.build();
         let mut buffers = VertexBuffers::new();
-        let mut fill_tess = world.resource_mut::<FillTessellator>();
         fill(&mut *fill_tess, &path, &FillOptions::DEFAULT, &mut buffers);
-        let mut meshes = world.resource_mut::<Assets<Mesh>>();
-        let mesh_res = meshes.add(build_mesh(&buffers).with_inserted_attribute(
+        let mut res_mesh = build_mesh(&buffers).with_inserted_attribute(
             Mesh::ATTRIBUTE_COLOR,
             vec![devicecolor; buffers.vertices.len()],
-        ));
+        );
+        // add port visuals
+        let mut path_builder = bevyon::path_builder();
+        let half_size = Size2D::splat(0.25);
+        path_builder.add_rectangle(
+            &Box2D::from_origin_and_size(Point2D::<f32>::new(0.0, 3.0) - half_size, half_size * 2.0),
+            lyon_tessellation::path::Winding::Positive,
+        );
+        path_builder.add_rectangle(
+            &Box2D::from_origin_and_size(Point2D::<f32>::new(0.0, -3.0) - half_size, half_size * 2.0),
+            lyon_tessellation::path::Winding::Positive,
+        );
+        let path = path_builder.build();
+        let mut buffers = VertexBuffers::new();
+        fill(&mut *fill_tess, &path, &FillOptions::DEFAULT, &mut buffers);
+        let ports_mesh = build_mesh(&buffers).with_inserted_attribute(
+            Mesh::ATTRIBUTE_COLOR,
+            vec![Color::RED.rgba_linear_to_vec4(); buffers.vertices.len()],
+        );
+        let mut meshes = world.resource_mut::<Assets<Mesh>>();
+        res_mesh.merge(ports_mesh);
+        let mesh_res = meshes.add(res_mesh);
 
         let mesh_unitx = meshes.add(
             Mesh::new(
@@ -135,25 +158,8 @@ impl FromWorld for ElementsRes {
                 (0..6).collect::<Vec<u32>>(),
             )),
         );
-        // let mesh_res = meshes.add(
-        //     Mesh::new(
-        //         PrimitiveTopology::TriangleStrip,
-        //         RenderAssetUsages::RENDER_WORLD | RenderAssetUsages::MAIN_WORLD,
-        //     )
-        //     .with_inserted_attribute(
-        //         Mesh::ATTRIBUTE_POSITION,
-        //         vec![
-        //             Vec3::new(-1.0, 1.0, 0.0),
-        //             Vec3::new(-1.0, -1.0, 0.0),
-        //             Vec3::new(1.0, 1.0, 0.0),
-        //             Vec3::new(1.0, -1.0, 0.0),
-        //         ],
-        //     )
-        //     .with_inserted_attribute(Mesh::ATTRIBUTE_COLOR, vec![devicecolor; 4])
-        //     .with_inserted_indices(bevy::render::mesh::Indices::U32(
-        //         (0..4).collect::<Vec<u32>>(),
-        //     )),
-        // );
+        let mut dtypes = world.resource_mut::<Assets<DeviceType>>();
+        let dtype_r = dtypes.add(devices::DeviceType::new_resistor());
         let mut mats = world.resource_mut::<Assets<SchematicMaterial>>();
         ElementsRes {
             mesh_unitx,
@@ -182,6 +188,8 @@ impl FromWorld for ElementsRes {
             se_linevertex: SchematicElement {
                 behavior: Arc::from(PickableVertex::default()),
             },
+
+            dtype_r,
         }
     }
 }

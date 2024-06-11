@@ -5,6 +5,11 @@
 //! DeviceType held as asset, create mesh asset if instanced at least once
 //! update mesh asset whenever projection scale changes
 //! for now, all device types are always loaded
+//! 
+//! device ports are jank until bevy ecs relations
+//! show ports on device mesh
+//! devicetypes to keep track of list of ports and offsets
+//! manually make sure ports visual (mesh) and internals (in device types) match
 
 use bevy::{
     prelude::*,
@@ -21,10 +26,30 @@ use super::{ElementsRes, SchematicElement};
 /// graphics
 /// relative port locations
 ///
+
+#[derive(Debug, Deserialize)]
+struct DevicecTypePort {
+    name: String,
+    offset: IVec2,
+}
+impl DevicecTypePort {
+    fn new(name: String, offset: IVec2) -> Self {
+        Self { name, offset }
+    }
+}
 #[derive(Asset, TypePath, Debug, Deserialize)]
 pub struct DeviceType {
-    graphics: DeviceGraphics,
-    ports: bool,
+    // graphics: DeviceGraphics,
+    ports: Box<[DevicecTypePort]>,
+}
+
+impl DeviceType {
+    pub fn new_resistor() -> Self {
+        Self { ports: Box::from([
+            DevicecTypePort::new("+".into(), IVec2::new(0, 3)),
+            DevicecTypePort::new("-".into(), IVec2::new(0, -3)),
+            ]) }
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -67,12 +92,10 @@ pub struct DeviceBundle {
 impl DeviceBundle {
     pub fn new_resistor(eres: Res<ElementsRes>) -> Self {
         DeviceBundle {
-            device: Device::default(),
-            // tess_data: CompositeMeshData::from_single_w_color(tessellator_input_data, Color::GRAY),
+            device: Device { device_type: eres.dtype_r.clone() },
             mat: MaterialMesh2dBundle {
                 material: eres.mat_dflt.clone(),
                 mesh: Mesh2dHandle(eres.mesh_res.clone()),
-                // transform: Transform::from_translation(Vec3::new(0.0, 0.0, 0.1)),
                 ..Default::default()
             },
             schematic_element: eres.se_device.clone(),
