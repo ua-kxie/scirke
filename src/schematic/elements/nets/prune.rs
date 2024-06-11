@@ -3,9 +3,7 @@ use std::{
     f32::consts::PI,
 };
 
-use super::{
-    ElementsRes, LineSegBundle, LineSegment, LineVertex, Preview, SchematicElement,
-};
+use super::{ElementsRes, LineSegBundle, LineSegment, LineVertex, Preview, SchematicElement};
 use crate::schematic::tools::PickingCollider;
 use bevy::{ecs::entity::Entity, prelude::*, utils::smallvec::SmallVec};
 use euclid::approxeq::ApproxEq;

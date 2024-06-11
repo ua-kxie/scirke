@@ -29,7 +29,7 @@ use bevy::{
 use euclid::default::{Box2D, Point2D};
 mod prune;
 pub use prune::prune;
-
+mod graph;
 /// LineSegment component containing references to defining ['LineVertex'] Entities
 #[derive(Component, Reflect, Eq, Clone)]
 #[reflect(Component, MapEntities)]
