@@ -5,7 +5,7 @@
 //! DeviceType held as asset, create mesh asset if instanced at least once
 //! update mesh asset whenever projection scale changes
 //! for now, all device types are always loaded
-//! 
+//!
 //! device ports are jank until bevy ecs relations
 //! show ports on device mesh
 //! devicetypes to keep track of list of ports and offsets
@@ -45,10 +45,12 @@ pub struct DeviceType {
 
 impl DeviceType {
     pub fn new_resistor() -> Self {
-        Self { ports: Box::from([
-            DevicecTypePort::new("+".into(), IVec2::new(0, 3)),
-            DevicecTypePort::new("-".into(), IVec2::new(0, -3)),
-            ]) }
+        Self {
+            ports: Box::from([
+                DevicecTypePort::new("+".into(), IVec2::new(0, 3)),
+                DevicecTypePort::new("-".into(), IVec2::new(0, -3)),
+            ]),
+        }
     }
 }
 
@@ -92,7 +94,9 @@ pub struct DeviceBundle {
 impl DeviceBundle {
     pub fn new_resistor(eres: Res<ElementsRes>) -> Self {
         DeviceBundle {
-            device: Device { device_type: eres.dtype_r.clone() },
+            device: Device {
+                device_type: eres.dtype_r.clone(),
+            },
             mat: MaterialMesh2dBundle {
                 material: eres.mat_dflt.clone(),
                 mesh: Mesh2dHandle(eres.mesh_res.clone()),

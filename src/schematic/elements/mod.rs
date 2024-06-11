@@ -109,11 +109,17 @@ impl FromWorld for ElementsRes {
         let mut path_builder = bevyon::path_builder();
         let half_size = Size2D::splat(0.25);
         path_builder.add_rectangle(
-            &Box2D::from_origin_and_size(Point2D::<f32>::new(0.0, 3.0) - half_size, half_size * 2.0),
+            &Box2D::from_origin_and_size(
+                Point2D::<f32>::new(0.0, 3.0) - half_size,
+                half_size * 2.0,
+            ),
             lyon_tessellation::path::Winding::Positive,
         );
         path_builder.add_rectangle(
-            &Box2D::from_origin_and_size(Point2D::<f32>::new(0.0, -3.0) - half_size, half_size * 2.0),
+            &Box2D::from_origin_and_size(
+                Point2D::<f32>::new(0.0, -3.0) - half_size,
+                half_size * 2.0,
+            ),
             lyon_tessellation::path::Winding::Positive,
         );
         let path = path_builder.build();

@@ -1,7 +1,7 @@
 #![doc = include_str ! ("../README.md")]
 #![deny(missing_docs)]
 
-use bevy::prelude::*;
+use bevy::{input::keyboard::KeyboardInput, prelude::*};
 use bevy_egui::EguiPlugin;
 
 use crate::console::{console_ui, receive_console_line, ConsoleState};
@@ -59,11 +59,28 @@ impl Plugin for ConsolePlugin {
                     ConsoleSet::PostCommands.after(ConsoleSet::Commands),
                 ),
             );
-
+        app.add_systems(
+            Update,
+            block_inputs_on_console_focus.in_set(ConsoleSet::PostCommands),
+        );
         // Don't initialize an egui plugin if one already exists.
         // This can happen if another plugin is using egui and was installed before us.
         if !app.is_plugin_added::<EguiPlugin>() {
             app.add_plugins(EguiPlugin);
         }
+    }
+}
+
+/// system to block inputs on console focus
+pub fn block_inputs_on_console_focus(
+    mut events: ResMut<Events<KeyboardInput>>,
+    mut keys: ResMut<ButtonInput<KeyCode>>,
+    mut mouse: ResMut<ButtonInput<MouseButton>>,
+    console_open: Res<ConsoleOpen>,
+) {
+    if console_open.open {
+        events.drain().for_each(drop);
+        keys.reset_all();
+        mouse.reset_all();
     }
 }
