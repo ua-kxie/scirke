@@ -12,13 +12,13 @@ use bevy::{
 };
 
 mod devices;
-mod lineseg;
+mod nets;
 use devices::DeviceType;
 pub use devices::{Device, DeviceBundle};
 use euclid::default::{Box2D, Point2D};
-pub use lineseg::{create_preview_lineseg, LineSegment, LineVertex};
-use lineseg::{PickableLineSeg, PickableVertex};
 use lyon_tessellation::{FillOptions, VertexBuffers};
+pub use nets::{create_preview_lineseg, LineSegment, LineVertex};
+use nets::{PickableLineSeg, PickableVertex};
 
 use crate::bevyon::{self, build_mesh, fill, FillTessellator};
 
@@ -217,12 +217,7 @@ impl Plugin for ElementsPlugin {
         // app.add_systems(Startup, startup);
         app.add_systems(
             Update,
-            (
-                lineseg::transform_lineseg,
-                picking,
-                selection,
-                lineseg::prune,
-            ),
+            (nets::transform_lineseg, picking, selection, nets::prune),
         );
         app.add_systems(PostUpdate, set_mat);
         app.init_resource::<ElementsRes>();
