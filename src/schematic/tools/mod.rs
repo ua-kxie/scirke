@@ -8,8 +8,8 @@ mod wire;
 
 use super::{
     elements::{
-        Device, DeviceBundle, ElementsRes, LineSegment, LineVertex, Preview, SchematicElement,
-        Selected,
+        Device, DeviceBundle, DeviceType, ElementsRes, LineSegment, LineVertex, Preview,
+        SchematicElement, Selected,
     },
     guides::SchematicCursor,
     material::SchematicMaterial,
@@ -158,6 +158,7 @@ impl Pipeline for ToolsPreviewPipeline {
         builder
             .deny::<Mesh2dHandle>()
             .deny::<Handle<SchematicMaterial>>()
+            .deny::<Handle<DeviceType>>()
             .extract_entities_matching(|e| e.contains::<SchematicElement>())
             .build()
     }

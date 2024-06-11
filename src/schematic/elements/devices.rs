@@ -79,6 +79,7 @@ struct DeviceGraphics {
 #[derive(Component, Default, Reflect)]
 #[reflect(Component)]
 pub struct Device {
+    #[reflect(ignore)]
     device_type: Handle<DeviceType>,
 }
 

@@ -1,13 +1,5 @@
-use bevy::{input::keyboard::KeyboardInput, prelude::*};
-use bevy_egui::EguiPlugin;
-use bevy::{
-    ecs::{
-        component::Tick,
-        system::{Resource, SystemMeta, SystemParam},
-        world::unsafe_world_cell::UnsafeWorldCell,
-    },
-    prelude::*,
-};
+use bevy::{ecs::system::Resource, input::keyboard::KeyboardInput, prelude::*};
+pub use bevy_egui::egui::Color32;
 use bevy_egui::{
     egui::{
         self, epaint::text::cursor::CCursor, text::LayoutJob, text_selection::CCursorRange, Align,
@@ -15,12 +7,7 @@ use bevy_egui::{
     },
     EguiContexts,
 };
-use std::{
-    collections::{BTreeMap, VecDeque},
-    marker::PhantomData,
-    mem,
-};
-pub use bevy_egui::egui::Color32;
+use std::collections::VecDeque;
 
 /// Console plugin.
 pub struct ConsolePlugin;
@@ -89,7 +76,6 @@ pub fn block_inputs_on_console_focus(
         mouse.reset_all();
     }
 }
-
 
 /// Parsed raw console command into `command` and `args`.
 #[derive(Clone, Debug, Event)]

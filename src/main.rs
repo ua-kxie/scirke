@@ -4,10 +4,10 @@ use bevyon::BevyonPlugin;
 use schematic::SchematicPlugin;
 
 mod bevyon;
+mod console;
 mod readable_idgen;
 mod schematic;
 mod spmanager;
-mod console;
 
 pub use bevyon::{FillOptions, StrokeOptions};
 use spmanager::SPManagerPlugin;

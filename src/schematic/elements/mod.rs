@@ -13,7 +13,6 @@ use bevy::{
 
 mod devices;
 mod nets;
-use devices::DeviceType;
 pub use devices::{Device, DeviceBundle};
 use euclid::default::{Box2D, Point2D, Size2D};
 use lyon_tessellation::{FillOptions, VertexBuffers};
@@ -26,7 +25,7 @@ use super::{
     material::SchematicMaterial,
     tools::{NewPickingCollider, PickingCollider, SelectEvt},
 };
-
+pub use devices::DeviceType;
 /// marker component to mark entity as being previewed (constructed by an active tool)
 /// entities marked [`SchematicElement`] but without this marker is persistent
 #[derive(Component)]
