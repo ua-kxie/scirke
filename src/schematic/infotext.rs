@@ -89,7 +89,7 @@ fn update(
         .single()
         .coords
         .clone()
-        .map(|x| x.snapped_world_coords.as_ivec2());
+        .map(|x| x.get_snapped_coords());
     infores.scale = projection.single().scale;
     infores.toolst = toolst.get().clone();
 

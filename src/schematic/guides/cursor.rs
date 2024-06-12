@@ -1,9 +1,10 @@
-/*
-render into clip space to keep dimensions invariant of zoom
-tessellate based on calculated clip position and size
-cursor - canvas - clip
-*/
-use bevy::{math::vec3, prelude::*, sprite::MaterialMesh2dBundle, window::PrimaryWindow};
+//! this module takes cursor movement and updates the in-world cursor entity and send out cursor position changed events
+//!
+
+use bevy::{
+    input::mouse::MouseMotion, math::vec3, prelude::*, sprite::MaterialMesh2dBundle,
+    window::PrimaryWindow,
+};
 use lyon_tessellation::geom::euclid::{Box2D, Point2D};
 
 use crate::{
@@ -15,27 +16,32 @@ use super::SchematicCamera;
 
 /// event indicating a new cursor position. None indicates that the cursor moved off-window
 #[derive(Event, Deref, PartialEq)]
-pub struct NewSnappedCursor(pub Option<Vec2>);
+pub struct NewCursorPos(pub Option<Vec2>);
+
+/// event indicating a new snapped cursor position. None indicates that the cursor moved off-window
+/// contains the position in IVec2 and Vec2
+#[derive(Event, Deref, PartialEq)]
+pub struct NewSnappedCursorPos(pub Option<(IVec2, Vec2)>);
 
 pub struct CursorPlugin;
 
 impl Plugin for CursorPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, setup);
-        app.add_systems(Update, update.run_if(cursor_moved));
+        // cursor position and moved events need to be ready for other systems, so put in PreUpdate schedule
+        app.add_systems(PreUpdate, update.run_if(on_event::<MouseMotion>()));
         app.add_systems(Update, redraw);
-        app.add_event::<NewSnappedCursor>();
+        app.add_event::<NewSnappedCursorPos>();
+        app.add_event::<NewCursorPos>();
     }
 }
 
-fn cursor_moved(mut ecm: EventReader<CursorMoved>) -> bool {
-    ecm.read().last().is_some()
-}
-
+/// component to store cursor position in various coordinates, if cursor is on window
+/// a unique entity with this component represents the user's in-world cursor.
 #[derive(Component)]
 pub struct SchematicCursor {
     pub coords: Option<Coords>,
-    snap_step: f32,
+    snap_step: f32, // TODO should this be moved into a resource so snap step is sync'd?
 }
 
 impl Default for SchematicCursor {
@@ -47,79 +53,84 @@ impl Default for SchematicCursor {
     }
 }
 
-impl SchematicCursor {
-    fn as_new_event(&self) -> NewSnappedCursor {
-        NewSnappedCursor(self.coords.as_ref().map(|x| x.snapped_world_coords))
+/// struct to collect coordinates in which to store cursor position
+#[allow(dead_code)]
+#[derive(Clone)]
+pub struct Coords {
+    vport_pos: Vec2,
+    snapped_world_pos: (IVec2, Vec2),
+    world_pos: Vec2,
+}
+
+#[allow(dead_code)]
+impl Coords {
+    pub fn get_coords(&self) -> Vec2 {
+        self.world_pos
+    }
+    pub fn get_snapped_coords(&self) -> IVec2 {
+        self.snapped_world_pos.0
+    }
+    pub fn get_snapped_coords_float(&self) -> Vec2 {
+        self.snapped_world_pos.1
     }
 }
 
-#[derive(Clone)]
-pub struct Coords {
-    screen_coords: Vec2,
-    pub snapped_world_coords: Vec2,
-    world_coords: Vec2,
-    ndc_coords: Vec3,
-}
-
+/// bundle necessary for schematic cursor
 #[derive(Bundle)]
 struct CursorBundle {
     tess_data: CompositeMeshData,
     mat_bundle: MaterialMesh2dBundle<SchematicMaterial>,
     cursor: SchematicCursor,
-    // zoom_invariant: ZoomInvariant,
 }
 
+/// z depth to alleviate z-fighting
 const Z_DEPTH: f32 = 0.9;
 
-/// mixing in of snapping here isn't ideal - leave for now
+/// this system updates the cursor entity and send out related events if applicable
 fn update(
     q_window: Query<&Window, With<PrimaryWindow>>,
     q_camera: Query<(&Camera, &GlobalTransform), With<SchematicCamera>>,
     mut q_cursor: Query<(&mut SchematicCursor, &mut Visibility, &mut Transform)>,
-    mut e_new_snapped: EventWriter<NewSnappedCursor>,
+    mut e_new_snapped_curpos: EventWriter<NewSnappedCursorPos>,
+    mut e_new_curpos: EventWriter<NewCursorPos>,
 ) {
     let (mut c, mut visibility, mut c_t) = q_cursor.single_mut();
-    let cam = q_camera.get_single();
-    let window = q_window.get_single();
-    let new_coords;
-    let new_event;
-    if cam.is_ok() && window.as_ref().is_ok_and(|w| w.cursor_position().is_some()) {
-        let (cam, cgt) = cam.unwrap();
-        let window = window.unwrap();
-        let screen_coords = window.cursor_position().unwrap();
-        if let Some(world_coords) = cam.viewport_to_world_2d(cgt, screen_coords) {
-            let ndc_coords = cam
-                .world_to_ndc(cgt, world_coords.extend(c_t.translation.z))
-                .unwrap();
-            let snapped_world_coords = (world_coords / c.snap_step).round() * c.snap_step;
-
-            *visibility = Visibility::Visible;
-            new_coords = Some(Coords {
-                screen_coords,
-                world_coords,
-                ndc_coords,
-                snapped_world_coords,
-            });
-            new_event = NewSnappedCursor(Some(snapped_world_coords));
-
-            // snap the cursor position
-            *c_t = c_t.with_translation(snapped_world_coords.extend(c_t.translation.z));
-        } else {
-            *visibility = Visibility::Hidden;
-            new_coords = None;
-            new_event = NewSnappedCursor(None);
-        }
-    } else {
-        *visibility = Visibility::Hidden;
-        new_coords = None;
-        new_event = NewSnappedCursor(None);
-    }
-    // see whats changed and maybe write an event
-    if c.as_new_event() != new_event {
-        e_new_snapped.send(new_event);
-    }
-    // write the new coords
-    c.coords = new_coords;
+    let (cam, cgt) = q_camera.get_single().unwrap();
+    let window = q_window.get_single().unwrap();
+    // let new_coords;
+    let opt_coords = window
+        .cursor_position()
+        .map(|vport_pos| {
+            cam.viewport_to_world_2d(cgt, vport_pos).map(|world_pos| {
+                let snapped_world_pos = (
+                    ((world_pos / c.snap_step).round() * c.snap_step).as_ivec2(),
+                    (world_pos / c.snap_step).round() * c.snap_step,
+                );
+                Coords {
+                    vport_pos,
+                    snapped_world_pos,
+                    world_pos,
+                }
+            })
+        })
+        .flatten();
+    // send out event for new cursor world position
+    e_new_curpos.send(NewCursorPos(
+        opt_coords.clone().map(|coords| coords.world_pos),
+    ));
+    // send out event for new cursor snapped world position, if necessary
+    if opt_coords.as_ref().map(|coords| coords.snapped_world_pos)
+        != c.coords.as_ref().map(|coords| coords.snapped_world_pos)
+    {
+        let mut new_visibility = Visibility::Hidden;
+        e_new_snapped_curpos.send(NewSnappedCursorPos(opt_coords.as_ref().map(|coords| {
+            new_visibility = Visibility::Visible;
+            *c_t = c_t.with_translation(coords.snapped_world_pos.1.extend(c_t.translation.z));
+            (coords.snapped_world_pos.0, coords.snapped_world_pos.1)
+        })));
+        *visibility = new_visibility;
+    };
+    c.coords = opt_coords;
 }
 
 /// system to redraw cursor mesh as needed
@@ -135,6 +146,7 @@ fn redraw(
     *mesh_data = create_mesh_data(scale);
 }
 
+/// initialize [`SchematicCursor`] entity
 fn setup(mut commands: Commands, mut materials: ResMut<Assets<SchematicMaterial>>) {
     let scale = 0.1; // default projection scale
     commands.spawn(CursorBundle {
@@ -147,10 +159,10 @@ fn setup(mut commands: Commands, mut materials: ResMut<Assets<SchematicMaterial>
             ..Default::default()
         },
         cursor: SchematicCursor::default(),
-        // zoom_invariant: ZoomInvariant,
     });
 }
 
+/// create mesh data for [`SchematicCursor`]
 fn create_mesh_data(scale: f32) -> CompositeMeshData {
     let mut path_builder = bevyon::path_builder();
     let size = 4.0 * scale;

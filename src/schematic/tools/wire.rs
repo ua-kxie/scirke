@@ -6,7 +6,7 @@ use bevy::prelude::*;
 
 use crate::schematic::{
     elements::{self, ElementsRes, Preview, SchematicElement},
-    guides::{NewSnappedCursor, SchematicCursor},
+    guides::{NewSnappedCursorPos, SchematicCursor},
 };
 
 use super::SchematicToolState;
@@ -41,7 +41,7 @@ fn main(
     mut next_schematictoolstate: ResMut<NextState<SchematicToolState>>,
     mut commands: Commands,
     qc: Query<&SchematicCursor>,
-    mut e_newsc: EventReader<NewSnappedCursor>,
+    mut e_newsc: EventReader<NewSnappedCursorPos>,
     eres: Res<ElementsRes>,
     eqsp: Query<Entity, (With<SchematicElement>, With<Preview>)>,
     mut prev_curpos: Local<IVec2>,
@@ -55,7 +55,7 @@ fn main(
         next_schematictoolstate.set(SchematicToolState::Idle);
         return;
     }
-    let now_curpos = coords.snapped_world_coords.as_ivec2();
+    let now_curpos = coords.get_snapped_coords();
     match wiretoolstate.get() {
         WireToolState::Ready => {
             if buttons.just_pressed(MouseButton::Left) {
@@ -66,7 +66,7 @@ fn main(
             if buttons.just_pressed(MouseButton::Left) {
                 elements::persist_preview(&mut commands, &eqsp);
                 next_wiretoolstate.set(WireToolState::Drawing(*prev_curpos));
-            } else if let Some(NewSnappedCursor(Some(_))) = e_newsc.read().last() {
+            } else if let Some(NewSnappedCursorPos(Some(_))) = e_newsc.read().last() {
                 elements::despawn_preview(&mut commands, &eqsp);
                 compute_preview(&mut commands, eres, *src, now_curpos);
             }

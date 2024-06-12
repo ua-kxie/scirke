@@ -5,7 +5,7 @@ use crate::{
     schematic::{
         camera::SchematicCamera,
         elements::{SchematicElement, Selected},
-        guides::{NewSnappedCursor, SchematicCursor},
+        guides::{NewSnappedCursorPos, SchematicCursor},
         material::SchematicMaterial,
     },
 };
@@ -100,7 +100,7 @@ fn listener(
 
 /// on mouse button released: add selected marker to all schematic elements with picked marker
 fn main(
-    mut e_newsc: EventReader<NewSnappedCursor>,
+    mut e_newsc: EventReader<NewSnappedCursorPos>,
     qc: Query<&SchematicCursor>,
     buttons: Res<ButtonInput<MouseButton>>,
     mut e_newpc: EventWriter<NewPickingCollider>,
@@ -113,18 +113,21 @@ fn main(
     // record cursor left click location
     if buttons.just_pressed(MouseButton::Left) {
         if let Some(coords) = &qc.single().coords {
-            selres.sel_area_origin = coords.snapped_world_coords;
+            selres.sel_area_origin = coords.get_snapped_coords_float();
         };
     }
     let mut cmdata = q_s.single_mut();
     // send new picking collider event if cursor moves
-    if let Some(NewSnappedCursor(Some(coords))) = e_newsc.read().last() {
+    if let Some(NewSnappedCursorPos(Some((_, float_coords)))) = e_newsc.read().last() {
         if buttons.pressed(MouseButton::Left) {
             // update selection area appearance
-            new_valid_path(&mut cmdata, selres.sel_area_origin, *coords);
-            e_newpc.send(NewPickingCollider::min_max(selres.sel_area_origin, *coords));
+            new_valid_path(&mut cmdata, selres.sel_area_origin, *float_coords);
+            e_newpc.send(NewPickingCollider::min_max(
+                selres.sel_area_origin,
+                *float_coords,
+            ));
         } else {
-            e_newpc.send(NewPickingCollider::point(*coords));
+            e_newpc.send(NewPickingCollider::point(*float_coords));
         }
     }
     if let Ok(p) = qcam.get_single() {
