@@ -44,6 +44,7 @@ fn main(
     mut e_newsc: EventReader<NewSnappedCursor>,
     eres: Res<ElementsRes>,
     eqsp: Query<Entity, (With<SchematicElement>, With<Preview>)>,
+    mut prev_curpos: Local<IVec2>,
 ) {
     // system should be set to run if schematic tool state is wiring
     // main purpose is to manage WireToolState
@@ -54,30 +55,24 @@ fn main(
         next_schematictoolstate.set(SchematicToolState::Idle);
         return;
     }
+    let now_curpos = coords.snapped_world_coords.as_ivec2();
     match wiretoolstate.get() {
         WireToolState::Ready => {
             if buttons.just_pressed(MouseButton::Left) {
-                next_wiretoolstate.set(WireToolState::Drawing(
-                    coords.snapped_world_coords.as_ivec2(),
-                ));
-                return;
+                next_wiretoolstate.set(WireToolState::Drawing(*prev_curpos));
             }
         }
         WireToolState::Drawing(src) => {
-            if let Some(NewSnappedCursor(Some(dst))) = e_newsc.read().last() {
-                elements::despawn_preview(&mut commands, &eqsp);
-                compute_preview(&mut commands, eres, *src, dst.as_ivec2());
-            }
             if buttons.just_pressed(MouseButton::Left) {
                 elements::persist_preview(&mut commands, &eqsp);
-                // next_wiretoolstate.set(WireToolState::Ready);
-                next_wiretoolstate.set(WireToolState::Drawing(
-                    coords.snapped_world_coords.as_ivec2(),
-                ));
-                return;
+                next_wiretoolstate.set(WireToolState::Drawing(*prev_curpos));
+            } else if let Some(NewSnappedCursor(Some(_))) = e_newsc.read().last() {
+                elements::despawn_preview(&mut commands, &eqsp);
+                compute_preview(&mut commands, eres, *src, now_curpos);
             }
         }
     }
+    *prev_curpos = now_curpos;
 }
 
 /// this function pathfinds the optimal route from src to dst with a traversal cost function
