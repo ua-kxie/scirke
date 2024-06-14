@@ -118,16 +118,16 @@ fn main(
     }
     let mut cmdata = q_s.single_mut();
     // send new picking collider event if cursor moves
-    if let Some(NewSnappedCursorPos(Some((_, float_coords)))) = e_newsc.read().last() {
+    if let Some(NewSnappedCursorPos(Some(coords))) = e_newsc.read().last() {
         if buttons.pressed(MouseButton::Left) {
             // update selection area appearance
-            new_valid_path(&mut cmdata, selres.sel_area_origin, *float_coords);
+            new_valid_path(&mut cmdata, selres.sel_area_origin, coords.get_snapped_coords_float());
             e_newpc.send(NewPickingCollider::min_max(
                 selres.sel_area_origin,
-                *float_coords,
+                coords.get_snapped_coords_float(),
             ));
         } else {
-            e_newpc.send(NewPickingCollider::point(*float_coords));
+            e_newpc.send(NewPickingCollider::point(coords.get_snapped_coords_float()));
         }
     }
     if let Ok(p) = qcam.get_single() {

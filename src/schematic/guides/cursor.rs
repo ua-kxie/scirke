@@ -1,5 +1,7 @@
 //! this module takes cursor movement and updates the in-world cursor entity and send out cursor position changed events
-//!
+//! the new cursor position is calculated and event sent in preupdate, but the cursor entity is updated in postupdate
+//! this enables systems to choose whether to operate with the rendered cursor position (in cursor entity) or the new data
+//! sent out in events
 
 use bevy::{
     input::mouse::MouseMotion, math::vec3, prelude::*, sprite::MaterialMesh2dBundle,
@@ -16,12 +18,12 @@ use super::SchematicCamera;
 
 /// event indicating a new cursor position. None indicates that the cursor moved off-window
 #[derive(Event, Deref, PartialEq)]
-pub struct NewCursorPos(pub Option<Vec2>);
+pub struct NewCursorPos(pub SchCurPos);
 
 /// event indicating a new snapped cursor position. None indicates that the cursor moved off-window
 /// contains the position in IVec2 and Vec2
 #[derive(Event, Deref, PartialEq)]
-pub struct NewSnappedCursorPos(pub Option<(IVec2, Vec2)>);
+pub struct NewSnappedCursorPos(pub SchCurPos);
 
 pub struct CursorPlugin;
 
@@ -29,8 +31,9 @@ impl Plugin for CursorPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, setup);
         // cursor position and moved events need to be ready for other systems, so put in PreUpdate schedule
-        app.add_systems(PreUpdate, update.run_if(on_event::<MouseMotion>()));
+        app.add_systems(PreUpdate, send_events.run_if(on_event::<MouseMotion>()));
         app.add_systems(Update, redraw);
+        app.add_systems(PostUpdate, post_update);
         app.add_event::<NewSnappedCursorPos>();
         app.add_event::<NewCursorPos>();
     }
@@ -40,7 +43,7 @@ impl Plugin for CursorPlugin {
 /// a unique entity with this component represents the user's in-world cursor.
 #[derive(Component)]
 pub struct SchematicCursor {
-    pub coords: Option<Coords>,
+    pub coords: SchCurPos,
     snap_step: f32, // TODO should this be moved into a resource so snap step is sync'd?
 }
 
@@ -53,9 +56,12 @@ impl Default for SchematicCursor {
     }
 }
 
+/// schematic cursor position
+type SchCurPos = Option<Coords>;
+
 /// struct to collect coordinates in which to store cursor position
 #[allow(dead_code)]
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct Coords {
     vport_pos: Vec2,
     snapped_world_pos: (IVec2, Vec2),
@@ -87,18 +93,18 @@ struct CursorBundle {
 const Z_DEPTH: f32 = 0.9;
 
 /// this system updates the cursor entity and send out related events if applicable
-fn update(
+fn send_events(
     q_window: Query<&Window, With<PrimaryWindow>>,
     q_camera: Query<(&Camera, &GlobalTransform), With<SchematicCamera>>,
-    mut q_cursor: Query<(&mut SchematicCursor, &mut Visibility, &mut Transform)>,
+    q_cursor: Query<&SchematicCursor>,
     mut e_new_snapped_curpos: EventWriter<NewSnappedCursorPos>,
     mut e_new_curpos: EventWriter<NewCursorPos>,
 ) {
-    let (mut c, mut visibility, mut c_t) = q_cursor.single_mut();
+    let c = q_cursor.single();
     let (cam, cgt) = q_camera.get_single().unwrap();
     let window = q_window.get_single().unwrap();
     // let new_coords;
-    let opt_coords = window
+    let sch_cur_pos = window
         .cursor_position()
         .map(|vport_pos| {
             cam.viewport_to_world_2d(cgt, vport_pos).map(|world_pos| {
@@ -114,26 +120,49 @@ fn update(
             })
         })
         .flatten();
-    // send out event for new cursor world position
-    e_new_curpos.send(NewCursorPos(
-        opt_coords.clone().map(|coords| coords.world_pos),
-    ));
     // send out event for new cursor snapped world position, if necessary
-    if opt_coords.as_ref().map(|coords| coords.snapped_world_pos)
+    if sch_cur_pos.as_ref().map(|coords| coords.snapped_world_pos)
         != c.coords.as_ref().map(|coords| coords.snapped_world_pos)
     {
-        let mut new_visibility = Visibility::Hidden;
-        e_new_snapped_curpos.send(NewSnappedCursorPos(opt_coords.as_ref().map(|coords| {
-            new_visibility = Visibility::Visible;
-            *c_t = c_t.with_translation(coords.snapped_world_pos.1.extend(c_t.translation.z));
-            (coords.snapped_world_pos.0, coords.snapped_world_pos.1)
-        })));
-        *visibility = new_visibility;
+        e_new_snapped_curpos.send(NewSnappedCursorPos(
+            sch_cur_pos.clone(),
+        ));
+        // let mut new_visibility = Visibility::Hidden;
+        // e_new_snapped_curpos.send(NewSnappedCursorPos(sch_cur_pos.as_ref().map(|coords| {
+        //     // new_visibility = Visibility::Visible;
+        //     // *c_t = c_t.with_translation(coords.snapped_world_pos.1.extend(c_t.translation.z));
+        //     (coords.snapped_world_pos.0, coords.snapped_world_pos.1)
+        // })));
+        // *visibility = new_visibility;
     };
-    c.coords = opt_coords;
+    // send out event for new cursor world position
+    e_new_curpos.send(NewCursorPos(
+        sch_cur_pos,
+    ));
+    // c.coords = opt_coords;
 }
 
-/// system to redraw cursor mesh as needed
+/// updates schematic cursor entity
+fn post_update(
+    mut q_cursor: Query<(&mut SchematicCursor, &mut Transform, &mut Visibility)>,
+    mut e_new_curpos: EventReader<NewCursorPos>,
+    mut e_new_snapped_curpos: EventReader<NewSnappedCursorPos>
+) {
+    if let Some(NewCursorPos(sch)) = e_new_curpos.read().last() {
+        let (mut c, mut t, mut v) = q_cursor.single_mut();
+        if let Some(NewSnappedCursorPos(sch)) = e_new_snapped_curpos.read().last() {
+            let mut new_visibility = Visibility::Hidden;
+            sch.as_ref().map(|coords| {
+                *t = t.with_translation(coords.snapped_world_pos.1.extend(t.translation.z));
+                new_visibility = Visibility::Visible;
+            });
+            *v = new_visibility;
+        }
+        c.coords = sch.clone();
+    }
+}
+
+/// system to redraw cursor mesh when zoom changes, such that it appears zoom invariant
 fn redraw(
     q_projection: Query<&OrthographicProjection, Changed<OrthographicProjection>>,
     mut q_cursor: Query<&mut CompositeMeshData, With<SchematicCursor>>,
