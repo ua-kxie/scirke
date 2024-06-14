@@ -2,7 +2,7 @@ use bevy::{prelude::*, reflect::Enum};
 
 use super::{
     camera::SchematicCamera,
-    elements::{Device, DeviceType},
+    elements::{Device, DeviceType, SpId},
     guides::SchematicCursor,
     tools::SchematicToolState,
     SnapSet,
@@ -84,6 +84,7 @@ fn update(
     mut infores: ResMut<InfoRes>,
     devices: Res<Assets<DeviceType>>,
     qd: Query<&Device>,
+    qid: Query<&SpId>,
 ) {
     infores.cpos = cursor
         .single()
@@ -101,5 +102,8 @@ fn update(
         devices
             .get(hndl)
             .map(|x| text.push_str(&(x.prefix().to_owned() + id)));
+    }
+    if let Some(Ok(spid)) = infores.picked.map(|e| qid.get(e).map(|op| op.get_spid())) {
+        text.push_str(&spid);
     }
 }

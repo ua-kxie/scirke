@@ -31,6 +31,7 @@ pub use devices::DeviceType;
 mod readable_idgen;
 use readable_idgen::IdTracker;
 mod spid;
+pub use spid::SpId;
 /// marker component to mark entity as being previewed (constructed by an active tool)
 /// entities marked [`SchematicElement`] but without this marker is persistent
 #[derive(Component)]
@@ -242,9 +243,12 @@ impl Plugin for ElementsPlugin {
                 devices::add_preview_device,
             ),
         );
+        app.add_systems(PostUpdate, set_mat);
         app.add_systems(
             PostUpdate,
-            (set_mat, nets::prune.run_if(on_event::<SchematicChanged>())),
+            (nets::prune, nets::insert_spid, nets::connected_graphs)
+                .chain()
+                .run_if(on_event::<SchematicChanged>()),
         );
         app.init_resource::<ElementsRes>();
         app.register_type::<LineSegment>();

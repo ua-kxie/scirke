@@ -21,7 +21,7 @@ sptype_prefix!(
 pub const NET: &str = "";
 
 /// spice id to identify a unique device or net
-#[derive(Component, Reflect)]
+#[derive(Component, Reflect, Clone)]
 #[reflect(Component)]
 pub struct SpId {
     prefix: &'static str,
@@ -29,10 +29,13 @@ pub struct SpId {
 }
 
 impl SpId {
-    fn new(prefix: &'static str, id: String) -> Self {
+    pub fn new(prefix: &'static str, id: String) -> Self {
         SpId { prefix, id }
     }
-    fn get_id(&self) -> String {
+    pub fn get_id(&self) -> &str {
+        &self.id
+    }
+    pub fn get_spid(&self) -> String {
         self.prefix.to_owned() + &self.id
     }
 }

@@ -29,6 +29,10 @@ impl IdTracker {
     pub fn new_r_id(&mut self, prefix: &str) -> String {
         self.r.get_id(prefix)
     }
+
+    pub fn new_net_id(&mut self) -> String {
+        self.nets.get_id("net_")
+    }
 }
 
 /// one of these per recognized spice device prefix (r l c v i m q d etc.)
@@ -41,12 +45,12 @@ struct IdGen {
 
 impl IdGen {
     pub fn get_id(&mut self, prefix: &str) -> String {
-        // TODO: would rather loop a limited number of times and return a Result<String, E>
         if !self.history.contains_key(prefix) {
             self.history.insert(prefix.into(), 0);
         }
         let watermark = self.history.get_mut(prefix).unwrap();
         loop {
+            // TODO: would rather loop a limited number of times and return a Result<String, E>
             *watermark += 1;
             let out = format!("{}{}", prefix, watermark);
             if self.library.insert(out.clone()) {
