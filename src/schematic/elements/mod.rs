@@ -29,7 +29,7 @@ use super::{
 pub use devices::DeviceType;
 mod readable_idgen;
 use readable_idgen::IdTracker;
-
+mod spid;
 /// marker component to mark entity as being previewed (constructed by an active tool)
 /// entities marked [`SchematicElement`] but without this marker is persistent
 #[derive(Component)]

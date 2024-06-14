@@ -38,6 +38,8 @@ pub fn prune(world: &mut World) {
     // because bisection can produce overlapping segments
     cull_redundant_segments(world);
     combine_parallel(world);
+    // get subgraphs and assign unique id
+    
 }
 
 /// this function merges vertices occupying the same coordinate
