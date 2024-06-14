@@ -7,6 +7,7 @@ use bevy::prelude::*;
 use crate::schematic::{
     elements::{self, ElementsRes, Preview, SchematicElement},
     guides::{NewSnappedCursorPos, SchematicCursor},
+    SchematicChanged,
 };
 
 use super::SchematicToolState;
@@ -44,7 +45,7 @@ fn main(
     mut e_newsc: EventReader<NewSnappedCursorPos>,
     eres: Res<ElementsRes>,
     eqsp: Query<Entity, (With<SchematicElement>, With<Preview>)>,
-    // mut prev_curpos: Local<IVec2>,
+    mut notify_changed: EventWriter<SchematicChanged>,
 ) {
     // system should be set to run if schematic tool state is wiring
     // main purpose is to manage WireToolState
@@ -66,6 +67,7 @@ fn main(
             if buttons.just_pressed(MouseButton::Left) {
                 elements::persist_preview(&mut commands, &eqsp);
                 next_wiretoolstate.set(WireToolState::Drawing(coords.get_snapped_coords()));
+                notify_changed.send(SchematicChanged);
             } else if let Some(NewSnappedCursorPos(Some(c))) = e_newsc.read().last() {
                 elements::despawn_preview(&mut commands, &eqsp);
                 compute_preview(&mut commands, eres, *src, c.get_snapped_coords());

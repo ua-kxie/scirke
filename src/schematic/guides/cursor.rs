@@ -124,9 +124,7 @@ fn send_events(
     if sch_cur_pos.as_ref().map(|coords| coords.snapped_world_pos)
         != c.coords.as_ref().map(|coords| coords.snapped_world_pos)
     {
-        e_new_snapped_curpos.send(NewSnappedCursorPos(
-            sch_cur_pos.clone(),
-        ));
+        e_new_snapped_curpos.send(NewSnappedCursorPos(sch_cur_pos.clone()));
         // let mut new_visibility = Visibility::Hidden;
         // e_new_snapped_curpos.send(NewSnappedCursorPos(sch_cur_pos.as_ref().map(|coords| {
         //     // new_visibility = Visibility::Visible;
@@ -136,9 +134,7 @@ fn send_events(
         // *visibility = new_visibility;
     };
     // send out event for new cursor world position
-    e_new_curpos.send(NewCursorPos(
-        sch_cur_pos,
-    ));
+    e_new_curpos.send(NewCursorPos(sch_cur_pos));
     // c.coords = opt_coords;
 }
 
@@ -146,7 +142,7 @@ fn send_events(
 fn post_update(
     mut q_cursor: Query<(&mut SchematicCursor, &mut Transform, &mut Visibility)>,
     mut e_new_curpos: EventReader<NewCursorPos>,
-    mut e_new_snapped_curpos: EventReader<NewSnappedCursorPos>
+    mut e_new_snapped_curpos: EventReader<NewSnappedCursorPos>,
 ) {
     if let Some(NewCursorPos(sch)) = e_new_curpos.read().last() {
         let (mut c, mut t, mut v) = q_cursor.single_mut();

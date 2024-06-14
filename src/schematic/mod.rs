@@ -27,6 +27,10 @@ impl Snap {
     const DEFAULT: Self = Snap { world_step: 1.0 };
 }
 
+/// event to fire whenever the schematic change in a way that should be checkpointed
+#[derive(Event)]
+pub struct SchematicChanged;
+
 /// [`SystemSet`] for system which performs snapping.
 /// Resides in [`PostUpdate`] schedule.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, SystemSet)]
@@ -54,6 +58,7 @@ impl Plugin for SchematicPlugin {
             // Bevy Save
             SavePlugins,
         ));
+        app.add_event::<SchematicChanged>();
     }
 }
 

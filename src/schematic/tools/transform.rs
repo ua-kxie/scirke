@@ -5,6 +5,7 @@ use bevy::prelude::*;
 use crate::schematic::{
     elements::{LineVertex, Preview, Selected},
     guides::SchematicCursor,
+    SchematicChanged,
 };
 
 use super::SchematicToolState;
@@ -99,6 +100,7 @@ fn main(
     mut commands: Commands,
     st: Res<State<TransformType>>,
     q_selected: Query<Entity, With<Selected>>,
+    mut notify_changed: EventWriter<SchematicChanged>,
 ) {
     let (cursor_entity, Some(children)) = cursor_children.single() else {
         return;
@@ -121,6 +123,7 @@ fn main(
                 }
             }
         }
+        notify_changed.send(SchematicChanged);
         return; // ignore other commands because its effects were never shown to user
     }
     let mut transform = Transform::IDENTITY;

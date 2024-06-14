@@ -1,8 +1,6 @@
 //! Spice Id as a ecs component
 
-use std::collections::HashMap;
-
-use bevy::{prelude::*, reflect::Reflect, utils::hashbrown::HashSet};
+use bevy::{prelude::*, reflect::Reflect};
 
 macro_rules! sptype_prefix {
     ($x:ident) => {
@@ -15,9 +13,8 @@ macro_rules! sptype_prefix {
 }
 
 sptype_prefix!(
-    R, L, C,
-    V, I,  // voltage/current source
-    D, Q, M  // diode, bjt, mosfet
+    R, L, C, V, I, // voltage/current source
+    D, Q, M // diode, bjt, mosfet
 );
 
 // pub const L: &str = "L";  // what the above macro does for each spice device type

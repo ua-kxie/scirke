@@ -25,6 +25,7 @@ use super::{
     infotext::InfoRes,
     material::SchematicMaterial,
     tools::{NewPickingCollider, PickingCollider, SelectEvt},
+    SchematicChanged,
 };
 pub use devices::DeviceType;
 mod readable_idgen;
@@ -238,11 +239,13 @@ impl Plugin for ElementsPlugin {
                 nets::transform_lineseg,
                 picking,
                 selection,
-                nets::prune,
                 devices::add_preview_device,
             ),
         );
-        app.add_systems(PostUpdate, set_mat);
+        app.add_systems(
+            PostUpdate,
+            (set_mat, nets::prune.run_if(on_event::<SchematicChanged>())),
+        );
         app.init_resource::<ElementsRes>();
         app.register_type::<LineSegment>();
         app.register_type::<LineVertex>();

@@ -121,7 +121,11 @@ fn main(
     if let Some(NewSnappedCursorPos(Some(coords))) = e_newsc.read().last() {
         if buttons.pressed(MouseButton::Left) {
             // update selection area appearance
-            new_valid_path(&mut cmdata, selres.sel_area_origin, coords.get_snapped_coords_float());
+            new_valid_path(
+                &mut cmdata,
+                selres.sel_area_origin,
+                coords.get_snapped_coords_float(),
+            );
             e_newpc.send(NewPickingCollider::min_max(
                 selres.sel_area_origin,
                 coords.get_snapped_coords_float(),
