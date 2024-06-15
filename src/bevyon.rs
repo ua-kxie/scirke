@@ -190,7 +190,7 @@ pub fn fill(
     }
 }
 
-fn stroke(
+pub fn stroke(
     tess: &mut StrokeTessellator,
     path: &tess::path::Path,
     options: &StrokeOptions,

@@ -1,10 +1,7 @@
 use bevy::{prelude::*, reflect::Enum};
 
 use super::{
-    camera::SchematicCamera,
-    elements::{Device, DeviceType, SpId},
-    guides::SchematicCursor,
-    tools::SchematicToolState,
+    camera::SchematicCamera, elements::SpId, guides::SchematicCursor, tools::SchematicToolState,
     SnapSet,
 };
 
@@ -82,8 +79,8 @@ fn update(
     projection: Query<&OrthographicProjection, With<SchematicCamera>>,
     toolst: Res<State<SchematicToolState>>,
     mut infores: ResMut<InfoRes>,
-    devices: Res<Assets<DeviceType>>,
-    qd: Query<&Device>,
+    // devices: Res<Assets<DeviceType>>,
+    // qd: Query<&Device>,
     qid: Query<&SpId>,
 ) {
     infores.cpos = cursor

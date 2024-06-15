@@ -95,7 +95,7 @@ impl Pickable for PickableLineSeg {
                 }
                 let p1 = t.transform_point(p.extend(0.0));
                 let (s, _, _) = t.to_scale_rotation_translation();
-                Box2D::from_points([Point2D::splat(0.0), Point2D::new(1.0, 0.0)])
+                self.0
                     // inflate proportional to inverse transform scale so that longer lines dont get bigger hit boxes
                     .inflate(-s.y * 0.5, s.y * 0.1)
                     .contains_inclusive(Point2D::new(p1.x, p1.y))

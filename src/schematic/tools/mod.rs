@@ -8,8 +8,7 @@ mod wire;
 
 use super::{
     elements::{
-        Device, DeviceType, ElementsRes, LineSegment, LineVertex, NewDevice, Preview,
-        SchematicElement, Selected,
+        DefaultDevices, ElementsRes, LineSegment, LineVertex, Preview, SchematicElement, Selected,
     },
     guides::SchematicCursor,
     material::SchematicMaterial,
@@ -112,7 +111,17 @@ fn exclusive_main(world: &mut World) {
                 next_toolst.set(SchematicToolState::Wiring);
             } else if keys.just_released(KeyCode::KeyR) {
                 // spawn a resistor device as child of cursor
-                let _ = world.send_event(NewDevice::R);
+                let dd = world.get_resource::<DefaultDevices>().unwrap();
+                let _ = world.send_event(dd.resistor());
+
+                let mut next_toolst = world.resource_mut::<NextState<SchematicToolState>>();
+                next_toolst.set(SchematicToolState::Transform);
+                let mut next_transst = world.resource_mut::<NextState<TransformType>>();
+                next_transst.set(TransformType::Copy);
+            } else if keys.just_released(KeyCode::KeyV) {
+                // spawn a voltage source as child of cursor
+                let dd = world.get_resource::<DefaultDevices>().unwrap();
+                let _ = world.send_event(dd.voltage_source());
 
                 let mut next_toolst = world.resource_mut::<NextState<SchematicToolState>>();
                 next_toolst.set(SchematicToolState::Transform);
@@ -149,7 +158,7 @@ impl Pipeline for ToolsPreviewPipeline {
         builder
             .deny::<Mesh2dHandle>()
             .deny::<Handle<SchematicMaterial>>()
-            .deny::<Handle<DeviceType>>()
+            // .deny::<Handle<DeviceType>>()
             .extract_entities_matching(|e| e.contains::<SchematicElement>())
             .build()
     }
@@ -159,11 +168,9 @@ impl Pipeline for ToolsPreviewPipeline {
     fn apply(world: &mut World, snapshot: &Snapshot) -> Result<(), bevy_save::Error> {
         let mesh_dot = Mesh2dHandle(world.resource::<ElementsRes>().mesh_dot.clone());
         let mesh_unitx = Mesh2dHandle(world.resource::<ElementsRes>().mesh_unitx.clone());
-        let mesh_res = Mesh2dHandle(world.resource::<ElementsRes>().mesh_res.clone());
         let mat = world.resource::<ElementsRes>().mat_dflt.clone();
         let sels = world.resource::<ElementsRes>().se_lineseg.clone();
         let selv = world.resource::<ElementsRes>().se_linevertex.clone();
-        let sedevice = world.resource::<ElementsRes>().se_device.clone();
         let cursor_ent = world
             .query_filtered::<Entity, With<SchematicCursor>>()
             .single(&world);
@@ -175,9 +182,6 @@ impl Pipeline for ToolsPreviewPipeline {
                 }
                 if entityref.contains::<LineSegment>() {
                     cmd.insert((mesh_unitx.clone(), mat.clone(), sels.clone(), Preview));
-                }
-                if entityref.contains::<Device>() {
-                    cmd.insert((mesh_res.clone(), mat.clone(), sedevice.clone(), Preview));
                 }
                 cmd.set_parent(cursor_ent);
             })

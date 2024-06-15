@@ -13,8 +13,6 @@ to assign unique id to each subgraph:
 collect &mut to ids for all entities in each subgraph
 first, iterate through subgraphs with only 1, use that 1 if not taken. otherwise get new
 then for the other subgraphs, find an used id that is not already taken and apply that to whole subgraph, otherwise get new
-
-
 */
 
 /// ensures that all nets related elements have SpId component

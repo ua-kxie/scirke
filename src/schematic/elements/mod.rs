@@ -10,16 +10,13 @@ use bevy::{
     prelude::*,
     render::{mesh::PrimitiveTopology, render_asset::RenderAssetUsages},
 };
-pub use devices::NewDevice;
+use devices::DeviceType0;
 mod devices;
 mod nets;
-pub use devices::Device;
-use euclid::default::{Box2D, Point2D, Size2D};
-use lyon_tessellation::{FillOptions, VertexBuffers};
+pub use devices::DefaultDevices;
+use euclid::default::{Box2D, Point2D};
 pub use nets::{create_preview_lineseg, LineSegment, LineVertex};
 use nets::{PickableLineSeg, PickableVertex};
-
-use crate::bevyon::{self, build_mesh, fill, FillTessellator};
 
 use super::{
     infotext::InfoRes,
@@ -27,7 +24,6 @@ use super::{
     tools::{NewPickingCollider, PickingCollider, SelectEvt},
     SchematicChanged,
 };
-pub use devices::DeviceType;
 mod readable_idgen;
 use readable_idgen::IdTracker;
 mod spid;
@@ -63,8 +59,8 @@ pub struct ElementsRes {
     pub mesh_unitx: Handle<Mesh>,
     /// circle mesh visualizing lineseg vertex
     pub mesh_dot: Handle<Mesh>,
-    /// resistor mesh
-    pub mesh_res: Handle<Mesh>,
+    /// device port mesh
+    pub mesh_port: Handle<Mesh>,
 
     /// default material
     pub mat_dflt: Handle<SchematicMaterial>,
@@ -82,9 +78,6 @@ pub struct ElementsRes {
     pub se_linevertex: SchematicElement,
     /// devices schematic element
     pub se_device: SchematicElement,
-
-    /// resistor device type
-    pub dtype_r: Handle<DeviceType>,
 }
 
 const MAT_SEL_COLOR: Color = Color::YELLOW;
@@ -93,50 +86,32 @@ const MAT_PCK_COLOR: Color = Color::WHITE;
 impl FromWorld for ElementsRes {
     fn from_world(world: &mut World) -> Self {
         let wirecolor = Color::AQUAMARINE.rgba_linear_to_vec4();
-        let devicecolor = Color::GREEN.rgba_linear_to_vec4();
-        let mut fill_tess = world.resource_mut::<FillTessellator>();
-        let mut path_builder = bevyon::path_builder();
-        path_builder.add_rectangle(
-            &Box2D {
-                min: Point2D::new(-2.0, -3.0),
-                max: Point2D::new(2.0, 3.0),
-            },
-            lyon_tessellation::path::Winding::Positive,
-        );
-        let path = path_builder.build();
-        let mut buffers = VertexBuffers::new();
-        fill(&mut *fill_tess, &path, &FillOptions::DEFAULT, &mut buffers);
-        let mut res_mesh = build_mesh(&buffers).with_inserted_attribute(
-            Mesh::ATTRIBUTE_COLOR,
-            vec![devicecolor; buffers.vertices.len()],
-        );
+
         // add port visuals
-        let mut path_builder = bevyon::path_builder();
-        let half_size = Size2D::splat(0.25);
-        path_builder.add_rectangle(
-            &Box2D::from_origin_and_size(
-                Point2D::<f32>::new(0.0, 3.0) - half_size,
-                half_size * 2.0,
-            ),
-            lyon_tessellation::path::Winding::Positive,
-        );
-        path_builder.add_rectangle(
-            &Box2D::from_origin_and_size(
-                Point2D::<f32>::new(0.0, -3.0) - half_size,
-                half_size * 2.0,
-            ),
-            lyon_tessellation::path::Winding::Positive,
-        );
-        let path = path_builder.build();
-        let mut buffers = VertexBuffers::new();
-        fill(&mut *fill_tess, &path, &FillOptions::DEFAULT, &mut buffers);
-        let ports_mesh = build_mesh(&buffers).with_inserted_attribute(
-            Mesh::ATTRIBUTE_COLOR,
-            vec![Color::RED.rgba_linear_to_vec4(); buffers.vertices.len()],
-        );
         let mut meshes = world.resource_mut::<Assets<Mesh>>();
-        res_mesh.merge(ports_mesh);
-        let mesh_res = meshes.add(res_mesh);
+        let psize = 0.25;
+        let mesh_port = meshes.add(
+            Mesh::new(
+                PrimitiveTopology::TriangleStrip,
+                RenderAssetUsages::RENDER_WORLD | RenderAssetUsages::MAIN_WORLD,
+            )
+            .with_inserted_attribute(
+                Mesh::ATTRIBUTE_POSITION,
+                vec![
+                    Vec3::new(-psize, psize, 0.0),
+                    Vec3::new(-psize, -psize, 0.0),
+                    Vec3::new(psize, psize, 0.0),
+                    Vec3::new(psize, -psize, 0.0),
+                ],
+            )
+            .with_inserted_attribute(
+                Mesh::ATTRIBUTE_COLOR,
+                vec![Color::RED.rgba_linear_to_vec4(); 4],
+            )
+            .with_inserted_indices(bevy::render::mesh::Indices::U32(
+                (0..4).collect::<Vec<u32>>(),
+            )),
+        );
 
         let mesh_unitx = meshes.add(
             Mesh::new(
@@ -169,13 +144,11 @@ impl FromWorld for ElementsRes {
                 (0..6).collect::<Vec<u32>>(),
             )),
         );
-        let mut dtypes = world.resource_mut::<Assets<DeviceType>>();
-        let dtype_r = dtypes.add(devices::DeviceType::new_resistor());
         let mut mats = world.resource_mut::<Assets<SchematicMaterial>>();
         ElementsRes {
             mesh_unitx,
             mesh_dot,
-            mesh_res,
+            mesh_port,
 
             mat_dflt: mats.add(SchematicMaterial {
                 color: Color::BLACK,
@@ -191,7 +164,7 @@ impl FromWorld for ElementsRes {
             }),
 
             se_device: SchematicElement {
-                behavior: Arc::from(PickableRes::default()),
+                behavior: Arc::from(PickableDevice::_4x6()),
             },
             se_lineseg: SchematicElement {
                 behavior: Arc::from(PickableLineSeg::default()),
@@ -199,8 +172,6 @@ impl FromWorld for ElementsRes {
             se_linevertex: SchematicElement {
                 behavior: Arc::from(PickableVertex::default()),
             },
-
-            dtype_r,
         }
     }
 }
@@ -232,36 +203,29 @@ pub struct ElementsPlugin;
 
 impl Plugin for ElementsPlugin {
     fn build(&self, app: &mut App) {
-        app.init_asset::<DeviceType>();
-        // app.add_systems(Startup, startup);
-        app.add_systems(
-            Update,
-            (
-                nets::transform_lineseg,
-                picking,
-                selection,
-                devices::add_preview_device,
-            ),
-        );
+        app.add_systems(Update, (nets::transform_lineseg, picking, selection));
         app.add_systems(PostUpdate, set_mat);
         app.add_systems(
             PostUpdate,
             (
                 nets::prune,
                 nets::insert_spid,
-                devices::insert_spid,
+                // devices::insert_spid,
                 nets::connected_graphs,
             )
                 .chain()
                 .run_if(on_event::<SchematicChanged>()),
         );
         app.init_resource::<ElementsRes>();
+        app.init_resource::<DefaultDevices>();
         app.register_type::<LineSegment>();
         app.register_type::<LineVertex>();
         app.register_type::<Selected>();
-        app.register_type::<Device>();
+        // app.register_type::<Device>();
         app.init_resource::<IdTracker>();
-        app.add_event::<NewDevice>();
+        // app.add_event::<NewDevice>();
+        app.add_event::<DeviceType0>();
+        app.add_plugins(devices::DevicesPlugin);
     }
 }
 
@@ -373,16 +337,16 @@ fn set_mat(
 
 /// A struct defining picking behavior for Aabbs
 #[derive(Clone)]
-pub struct PickableRes(Box2D<f32>);
-impl Default for PickableRes {
-    fn default() -> Self {
+pub struct PickableDevice(Box2D<f32>);
+impl PickableDevice {
+    fn _4x6() -> Self {
         Self(Box2D::from_points([
             Point2D::new(-2.0, -3.0),
             Point2D::new(2.0, 3.0),
         ]))
     }
 }
-impl Pickable for PickableRes {
+impl Pickable for PickableDevice {
     fn collides(&self, pc: &PickingCollider, gt: Transform) -> bool {
         match pc {
             PickingCollider::Point(p) => {

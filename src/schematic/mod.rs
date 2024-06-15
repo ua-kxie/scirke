@@ -8,7 +8,7 @@ use bevy::{
     sprite::{Material2dPlugin, MaterialMesh2dBundle, Mesh2dHandle},
 };
 use bevy_save::prelude::*;
-use elements::{Device, ElementsRes, LineSegment, LineVertex, SchematicElement};
+use elements::{ElementsRes, LineSegment, LineVertex, SchematicElement};
 
 mod camera;
 mod elements;
@@ -117,7 +117,7 @@ impl Pipeline for SavePipeline {
     fn apply(world: &mut World, snapshot: &Snapshot) -> Result<(), bevy_save::Error> {
         let mesh_dot = Mesh2dHandle(world.resource::<ElementsRes>().mesh_dot.clone());
         let mesh_unitx = Mesh2dHandle(world.resource::<ElementsRes>().mesh_unitx.clone());
-        let mesh_res = Mesh2dHandle(world.resource::<ElementsRes>().mesh_res.clone());
+        // let mesh_res = Mesh2dHandle(world.resource::<ElementsRes>().mesh_res.clone());
         let mat = world.resource::<ElementsRes>().mat_dflt.clone();
         let sels = world.resource::<ElementsRes>().se_lineseg.clone();
         let selv = world.resource::<ElementsRes>().se_linevertex.clone();
@@ -131,9 +131,6 @@ impl Pipeline for SavePipeline {
                 }
                 if entity.contains::<LineSegment>() {
                     cmd.insert((mesh_unitx.clone(), mat.clone(), sels.clone()));
-                }
-                if entity.contains::<Device>() {
-                    cmd.insert((mesh_res.clone(), mat.clone(), sedevice.clone()));
                 }
             })
             .apply()
