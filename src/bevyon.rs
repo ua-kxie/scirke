@@ -25,7 +25,6 @@ type VertexBuffers = tess::VertexBuffers<Vec2, u32>;
 pub fn path_builder() -> NoAttributes<BuilderImpl> {
     tess::path::path::Builder::new()
 }
-
 /// Zero-sized type used to implement various vertex construction traits from
 /// Lyon.
 pub struct VertexConstructor;

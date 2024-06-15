@@ -17,11 +17,11 @@ use bevy::{
     prelude::*,
     sprite::{MaterialMesh2dBundle, Mesh2dHandle},
 };
-use euclid::default::{Box2D, Point2D};
-use lyon_tessellation::{FillOptions, StrokeOptions, VertexBuffers};
+use euclid::{default::Point2D, Angle, Vector2D};
+use lyon_tessellation::{StrokeOptions, VertexBuffers};
 
 use crate::{
-    bevyon::{self, build_mesh, fill, stroke, FillTessellator, StrokeTessellator},
+    bevyon::{self, build_mesh, stroke, StrokeTessellator},
     schematic::{guides::SchematicCursor, material::SchematicMaterial},
 };
 
@@ -68,17 +68,34 @@ impl DeviceType {
     fn type_v(world: &mut World) -> Self {
         let devicecolor = Color::GREEN.rgba_linear_to_vec4();
         let mut stroke_tess = world.resource_mut::<StrokeTessellator>();
-        let mut path_builder = bevyon::path_builder();
-        path_builder.begin(Point2D::new(0.0, -3.0));
-        path_builder.line_to(Point2D::new(0.0, 3.0));
-        path_builder.end(true);
+        let mut path_builder = bevyon::path_builder().with_svg();
+        let r = 1.2;
+        path_builder.move_to(Point2D::new(0.0, -3.0));
+        path_builder.line_to(Point2D::new(0.0, -r));
+        path_builder.move_to(Point2D::new(0.0, 3.0));
+        path_builder.line_to(Point2D::new(0.0, r));
+        path_builder.move_to(Point2D::new(0.0, 1.0));
+        path_builder.line_to(Point2D::new(0.0, 0.2));
+        path_builder.move_to(Point2D::new(-0.4, 0.6));
+        path_builder.line_to(Point2D::new(0.4, 0.6));
+        path_builder.move_to(Point2D::new(-0.4, -0.6));
+        path_builder.line_to(Point2D::new(0.4, -0.6));
+        path_builder.move_to(Point2D::new(0.0, -r));
+        path_builder.arc(
+            Point2D::zero(),
+            Vector2D::splat(r),
+            Angle::two_pi(),
+            Angle::zero(),
+        );
         let path = path_builder.build();
         let mut buffers = VertexBuffers::new();
-        // fill(&mut *fill_tess, &path, &FillOptions::DEFAULT, &mut buffers);
         stroke(
             &mut *stroke_tess,
             &path,
-            &StrokeOptions::DEFAULT.with_line_width(0.1),
+            &StrokeOptions::DEFAULT
+                .with_line_width(0.1)
+                .with_tolerance(0.01)
+                .with_line_cap(lyon_tessellation::LineCap::Round),
             &mut buffers,
         );
         let res_mesh = build_mesh(&buffers).with_inserted_attribute(
@@ -100,18 +117,41 @@ impl DeviceType {
     }
     fn type_r(world: &mut World) -> Self {
         let devicecolor = Color::GREEN.rgba_linear_to_vec4();
-        let mut fill_tess = world.resource_mut::<FillTessellator>();
-        let mut path_builder = bevyon::path_builder();
-        path_builder.add_rectangle(
-            &Box2D {
-                min: Point2D::new(-2.0, -3.0),
-                max: Point2D::new(2.0, 3.0),
-            },
-            lyon_tessellation::path::Winding::Positive,
-        );
+        let mut stroke_tess = world.resource_mut::<StrokeTessellator>();
+        let mut path_builder = bevyon::path_builder().with_svg();
+        path_builder.move_to(Point2D::new(1.00, -0.25));
+        path_builder.line_to(Point2D::new(-1.00, -0.75));
+        path_builder.move_to(Point2D::new(-1.00, -0.75));
+        path_builder.line_to(Point2D::new(1.00, -1.25));
+        path_builder.move_to(Point2D::new(1.00, -1.25));
+        path_builder.line_to(Point2D::new(-1.00, -1.75));
+        path_builder.move_to(Point2D::new(0.00, -2.00));
+        path_builder.line_to(Point2D::new(0.00, -3.00));
+        path_builder.move_to(Point2D::new(-1.00, -1.75));
+        path_builder.line_to(Point2D::new(0.00, -2.00));
+        path_builder.move_to(Point2D::new(1.00, 1.75));
+        path_builder.line_to(Point2D::new(-1.00, 1.25));
+        path_builder.move_to(Point2D::new(1.00, 0.75));
+        path_builder.line_to(Point2D::new(-1.00, 0.25));
+        path_builder.move_to(Point2D::new(-1.00, 1.25));
+        path_builder.line_to(Point2D::new(1.00, 0.75));
+        path_builder.move_to(Point2D::new(0.00, 3.00));
+        path_builder.line_to(Point2D::new(0.00, 2.00));
+        path_builder.move_to(Point2D::new(0.00, 2.00));
+        path_builder.line_to(Point2D::new(1.00, 1.75));
+        path_builder.move_to(Point2D::new(-1.00, 0.25));
+        path_builder.line_to(Point2D::new(1.00, -0.25));
         let path = path_builder.build();
         let mut buffers = VertexBuffers::new();
-        fill(&mut *fill_tess, &path, &FillOptions::DEFAULT, &mut buffers);
+        stroke(
+            &mut *stroke_tess,
+            &path,
+            &StrokeOptions::DEFAULT
+                .with_line_width(0.1)
+                .with_tolerance(0.01)
+                .with_line_cap(lyon_tessellation::LineCap::Round),
+            &mut buffers,
+        );
         let res_mesh = build_mesh(&buffers).with_inserted_attribute(
             Mesh::ATTRIBUTE_COLOR,
             vec![devicecolor; buffers.vertices.len()],
