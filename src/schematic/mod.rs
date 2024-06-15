@@ -53,7 +53,12 @@ impl Plugin for SchematicPlugin {
             SnapSet.before(bevy::transform::TransformSystem::TransformPropagate),
         );
         app.add_systems(PostUpdate, snap.in_set(SnapSet));
-        app.add_systems(Update, handle_save_input);
+        app.add_systems(PostStartup, register_checkpoint); // so we can rollback to initial state
+        app.add_systems(
+            Update,
+            register_checkpoint.run_if(on_event::<SchematicChanged>()),
+        );
+        app.add_systems(Update, process_checkpoints);
         app.add_plugins((
             // Bevy Save
             SavePlugins,
@@ -121,7 +126,6 @@ impl Pipeline for SavePipeline {
         let mat = world.resource::<ElementsRes>().mat_dflt.clone();
         let sels = world.resource::<ElementsRes>().se_lineseg.clone();
         let selv = world.resource::<ElementsRes>().se_linevertex.clone();
-        let sedevice = world.resource::<ElementsRes>().se_device.clone();
         snapshot
             .applier(world)
             .despawn::<With<SchematicElement>>()
@@ -137,22 +141,39 @@ impl Pipeline for SavePipeline {
     }
 }
 
-fn handle_save_input(world: &mut World) {
+/// saving
+/// loading
+fn register_checkpoint(world: &mut World) {
+    world.checkpoint::<SavePipeline>();
+}
+fn process_checkpoints(world: &mut World) {
     let keys = world.resource::<ButtonInput<KeyCode>>();
-
-    if keys.just_released(KeyCode::Space) {
-        world.checkpoint::<SavePipeline>();
-    } else if keys.just_released(KeyCode::Enter) {
-        world.save(SavePipeline).expect("Failed to save");
-    } else if keys.just_released(KeyCode::Backspace) {
-        world.load(SavePipeline).expect("Failed to load");
-    } else if keys.just_released(KeyCode::KeyA) {
-        world
-            .rollback::<SavePipeline>(1)
-            .expect("Failed to rollback");
-    } else if keys.just_released(KeyCode::KeyD) {
-        world
-            .rollback::<SavePipeline>(-1)
-            .expect("Failed to rollforward");
+    if keys.just_pressed(KeyCode::KeyZ) && keys.pressed(KeyCode::ControlLeft) {
+        if keys.pressed(KeyCode::ShiftLeft) {
+            world
+                .rollback::<SavePipeline>(-1)
+                .expect("Failed to rollforward");
+        } else {
+            world
+                .rollback::<SavePipeline>(1)
+                .expect("Failed to rollback");
+        }
+        // world.send_event(SchematicChanged);
     }
+
+    // if keys.just_released(KeyCode::Space) {
+    //     world.checkpoint::<SavePipeline>();
+    // } else if keys.just_released(KeyCode::Enter) {
+    //     world.save(SavePipeline).expect("Failed to save");
+    // } else if keys.just_released(KeyCode::Backspace) {
+    //     world.load(SavePipeline).expect("Failed to load");
+    // } else if keys.just_released(KeyCode::KeyA) {
+    //     world
+    //         .rollback::<SavePipeline>(1)
+    //         .expect("Failed to rollback");
+    // } else if keys.just_released(KeyCode::KeyD) {
+    //     world
+    //         .rollback::<SavePipeline>(-1)
+    //         .expect("Failed to rollforward");
+    // }
 }
