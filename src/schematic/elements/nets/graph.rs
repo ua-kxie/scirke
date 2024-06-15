@@ -23,6 +23,9 @@ pub fn insert_spid(
     mut commands: Commands,
     mut idtracker: ResMut<IdTracker>,
 ) {
+    if q.is_empty() {
+        return;
+    }
     let netid = SpId::new("", idtracker.new_net_id());
     q.iter().for_each(|e| {
         commands.entity(e).insert(netid.clone());

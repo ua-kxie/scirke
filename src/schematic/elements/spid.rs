@@ -4,7 +4,7 @@ use bevy::{prelude::*, reflect::Reflect};
 
 macro_rules! sptype_prefix {
     ($x:ident) => {
-        pub const $x: &str = "$x";  // define const str
+        pub const $x: &str = stringify!($x);  // define const str
     };
     ($x:ident, $($y:ident),+) => {
         sptype_prefix!($x);

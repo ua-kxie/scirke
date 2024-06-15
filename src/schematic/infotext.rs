@@ -98,11 +98,6 @@ fn update(
     let text = &mut text.sections[0].value;
     *text = infores.line();
 
-    if let Some(Ok((hndl, id))) = infores.picked.map(|e| qd.get(e).map(|op| op.get_id())) {
-        devices
-            .get(hndl)
-            .map(|x| text.push_str(&(x.prefix().to_owned() + id)));
-    }
     if let Some(Ok(spid)) = infores.picked.map(|e| qid.get(e).map(|op| op.get_spid())) {
         text.push_str(&spid);
     }

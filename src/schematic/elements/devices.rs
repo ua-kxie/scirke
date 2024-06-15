@@ -20,7 +20,9 @@ use serde::Deserialize;
 
 use crate::schematic::{guides::SchematicCursor, material::SchematicMaterial};
 
-use super::{readable_idgen::IdTracker, ElementsRes, Preview, SchematicElement, Selected};
+use super::{
+    readable_idgen::IdTracker, spid, ElementsRes, Preview, SchematicElement, Selected, SpId,
+};
 
 /// device types, 1 per type, stored as resource
 /// needs to contain data about:
@@ -90,15 +92,8 @@ struct DeviceGraphics {
 #[derive(Component, Default, Reflect)]
 #[reflect(Component)]
 pub struct Device {
-    id: String,
     #[reflect(ignore)]
     device_type: Handle<DeviceType>,
-}
-
-impl Device {
-    pub fn get_id(&self) -> (Handle<DeviceType>, &str) {
-        (self.device_type.clone(), &self.id)
-    }
 }
 
 /// bundle of device components
@@ -111,10 +106,9 @@ struct DeviceBundle {
 }
 
 impl DeviceBundle {
-    fn new_resistor(eres: &Res<ElementsRes>, id: String) -> Self {
+    fn new_resistor(eres: &Res<ElementsRes>) -> Self {
         DeviceBundle {
             device: Device {
-                id,
                 device_type: eres.dtype_r.clone(),
             },
             mat: MaterialMesh2dBundle {
@@ -132,11 +126,22 @@ pub enum NewDevice {
     R,
 }
 
+pub fn insert_spid(
+    q: Query<Entity, (With<Device>, Without<SpId>)>,
+    mut commands: Commands,
+    mut idtracker: ResMut<IdTracker>,
+) {
+    q.iter().for_each(|e| {
+        commands
+            .entity(e)
+            .insert(SpId::new(spid::R, idtracker.new_r_id("")));
+    });
+}
+
 /// system to create new device on event
 pub fn add_preview_device(
     mut e_new_device: EventReader<NewDevice>,
     eres: Res<ElementsRes>,
-    mut idtracker: ResMut<IdTracker>,
     mut commands: Commands,
     q_cursor: Query<Entity, With<SchematicCursor>>,
 ) {
@@ -147,7 +152,7 @@ pub fn add_preview_device(
             commands
                 .spawn((
                     match e {
-                        NewDevice::R => DeviceBundle::new_resistor(&eres, idtracker.new_r_id("")),
+                        NewDevice::R => DeviceBundle::new_resistor(&eres),
                     },
                     Preview,
                     Selected,
