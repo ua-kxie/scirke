@@ -282,7 +282,9 @@ fn update_port_location(
             let Ok((_, mut t, port)) = q_p.get_mut(*pe) else {
                 continue;
             };
-            t.translation = gt.translation() + port.offset.as_vec2().extend(0.01);
+            let mut newt = gt.transform_point(port.offset.extend(0).as_vec3());
+            newt.z = 0.01;
+            t.translation = newt;
         }
     }
 }
