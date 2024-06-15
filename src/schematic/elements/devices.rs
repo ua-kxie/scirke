@@ -32,17 +32,17 @@ use super::{
 
 #[derive(Resource)]
 pub struct DefaultDevices {
-    v: DeviceType0,
+    v: DeviceType,
     // i: DeviceType0,
-    r: DeviceType0,
+    r: DeviceType,
 }
 
 impl DefaultDevices {
-    pub fn voltage_source(&self) -> DeviceType0 {
+    pub fn voltage_source(&self) -> DeviceType {
         self.v.clone()
     }
 
-    pub fn resistor(&self) -> DeviceType0 {
+    pub fn resistor(&self) -> DeviceType {
         self.r.clone()
     }
 }
@@ -50,20 +50,21 @@ impl DefaultDevices {
 impl FromWorld for DefaultDevices {
     fn from_world(world: &mut World) -> Self {
         DefaultDevices {
-            v: DeviceType0::type_v(world),
-            r: DeviceType0::type_r(world),
+            v: DeviceType::type_v(world),
+            r: DeviceType::type_r(world),
         }
     }
 }
 
 #[derive(Event, Clone)]
-pub struct DeviceType0 {
+pub struct DeviceType {
+    spice_type: &'static str,
     visuals: Mesh2dHandle,
     collider: Arc<dyn Pickable + Send + Sync + 'static>, // schematic element
     ports: Arc<[IVec2]>,                                 // offset of each port
 }
 
-impl DeviceType0 {
+impl DeviceType {
     fn type_v(world: &mut World) -> Self {
         let devicecolor = Color::GREEN.rgba_linear_to_vec4();
         let mut stroke_tess = world.resource_mut::<StrokeTessellator>();
@@ -77,7 +78,7 @@ impl DeviceType0 {
         stroke(
             &mut *stroke_tess,
             &path,
-            &StrokeOptions::DEFAULT,
+            &StrokeOptions::DEFAULT.with_line_width(0.1),
             &mut buffers,
         );
         let res_mesh = build_mesh(&buffers).with_inserted_attribute(
@@ -90,7 +91,8 @@ impl DeviceType0 {
         let collider = Arc::new(PickableDevice::_4x6());
 
         let ports = Arc::new([IVec2::new(0, 3), IVec2::new(0, -3)]);
-        DeviceType0 {
+        DeviceType {
+            spice_type: &spid::V,
             visuals: Mesh2dHandle(mesh_res),
             collider,
             ports,
@@ -121,7 +123,8 @@ impl DeviceType0 {
 
         let ports = Arc::new([IVec2::new(0, 3), IVec2::new(0, -3)]);
 
-        DeviceType0 {
+        DeviceType {
+            spice_type: &spid::R,
             visuals: Mesh2dHandle(mesh_res),
             collider,
             ports,
@@ -130,21 +133,21 @@ impl DeviceType0 {
 }
 
 #[derive(Component)]
-struct Port0 {
+struct Port {
     parent_device: Entity,
     offset: IVec2,
 }
 
 #[derive(Bundle)]
-struct PortBundle0 {
-    port: Port0,
+struct PortBundle {
+    port: Port,
     mat: MaterialMesh2dBundle<SchematicMaterial>,
 }
 
-impl PortBundle0 {
+impl PortBundle {
     fn new(deviceid: Entity, offset: IVec2, eres: &ElementsRes) -> Self {
-        PortBundle0 {
-            port: Port0 {
+        PortBundle {
+            port: Port {
                 parent_device: deviceid,
                 offset,
             },
@@ -157,22 +160,29 @@ impl PortBundle0 {
     }
 }
 
-#[derive(Component)]
-struct Device0 {
+#[derive(Component, Reflect)]
+#[reflect(Component)]
+struct Device {
     ports: Vec<Entity>,
 }
 
+#[derive(Component, Reflect, Deref, Debug)]
+#[reflect(Component)]
+struct SpType(&'static str);
+
 #[derive(Bundle)]
-struct DeviceBundle0 {
-    device: Device0,
+struct DeviceBundle {
+    device: Device,
+    sptype: SpType,
     mat: MaterialMesh2dBundle<SchematicMaterial>,
     se: SchematicElement,
 }
 
-impl DeviceBundle0 {
-    fn from_type(dtype: &DeviceType0, eres: &ElementsRes, ports: Vec<Entity>) -> Self {
+impl DeviceBundle {
+    fn from_type(dtype: &DeviceType, eres: &ElementsRes, ports: Vec<Entity>) -> Self {
         Self {
-            device: Device0 { ports },
+            device: Device { ports },
+            sptype: SpType(dtype.spice_type),
             mat: MaterialMesh2dBundle {
                 mesh: dtype.visuals.clone(),
                 material: eres.mat_dflt.clone(),
@@ -186,7 +196,7 @@ impl DeviceBundle0 {
 }
 
 pub fn spawn_preview_device_from_type(
-    mut e: EventReader<DeviceType0>,
+    mut e: EventReader<DeviceType>,
     mut commands: Commands,
     eres: Res<ElementsRes>,
     cursor: Query<Entity, With<SchematicCursor>>,
@@ -202,22 +212,22 @@ pub fn spawn_preview_device_from_type(
         .map(|_| commands.spawn_empty().id())
         .collect::<Vec<Entity>>();
     let device_bundle = (
-        DeviceBundle0::from_type(newtype, &eres, ports_entities.clone()),
+        DeviceBundle::from_type(newtype, &eres, ports_entities.clone()),
         Preview,
     );
     let port_iter = newtype
         .ports
         .iter()
-        .map(|&offset| PortBundle0::new(device_entity, offset, &eres))
-        .collect::<Vec<PortBundle0>>();
+        .map(|&offset| PortBundle::new(device_entity, offset, &eres))
+        .collect::<Vec<PortBundle>>();
     commands.entity(cursor.single()).add_child(device_entity);
     commands.insert_or_spawn_batch(ports_entities.into_iter().zip(port_iter.into_iter()));
     commands.insert_or_spawn_batch(iter::once((device_entity, device_bundle)));
 }
 
 fn update_port_location(
-    q: Query<(&GlobalTransform, &Device0)>,
-    mut q_p: Query<(Entity, &mut Transform, &Port0)>,
+    q: Query<(&GlobalTransform, &Device)>,
+    mut q_p: Query<(Entity, &mut Transform, &Port)>,
     mut commands: Commands,
 ) {
     // delete all ports without valid parent device
@@ -238,14 +248,19 @@ fn update_port_location(
 }
 
 fn insert_spid(
-    q: Query<Entity, (With<Device0>, Without<SpId>)>,
+    q: Query<(Entity, &SpType), Without<SpId>>,
     mut commands: Commands,
     mut idtracker: ResMut<IdTracker>,
 ) {
-    q.iter().for_each(|e| {
-        commands
-            .entity(e)
-            .insert(SpId::new(spid::R, idtracker.new_r_id("")));
+    q.iter().for_each(|(e, sptype)| {
+        let spid = match sptype.0 {
+            spid::R => SpId::new(spid::R, idtracker.new_r_id("")),
+            spid::V => SpId::new(spid::V, idtracker.new_v_id("")),
+            _ => {
+                panic!("received unknown type {:?}", sptype)
+            }
+        };
+        commands.entity(e).insert(spid);
     });
 }
 

@@ -30,6 +30,10 @@ impl IdTracker {
         self.r.get_id(prefix)
     }
 
+    pub fn new_v_id(&mut self, prefix: &str) -> String {
+        self.v.get_id(prefix)
+    }
+
     pub fn new_net_id(&mut self) -> String {
         self.nets.get_id("net_")
     }

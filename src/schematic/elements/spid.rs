@@ -13,8 +13,9 @@ macro_rules! sptype_prefix {
 }
 
 sptype_prefix!(
-    R, L, C, V, I, // voltage/current source
-    D, Q, M // diode, bjt, mosfet
+    R, L, C, // resistor, inductor, capacitor
+    V, I, // independent voltage/current source
+    D, Q, M, X // diode, bjt, mosfet
 );
 
 // pub const L: &str = "L";  // what the above macro does for each spice device type
@@ -24,18 +25,18 @@ pub const NET: &str = "";
 #[derive(Component, Reflect, Clone)]
 #[reflect(Component)]
 pub struct SpId {
-    prefix: &'static str,
+    sptype: &'static str,
     id: String,
 }
 
 impl SpId {
-    pub fn new(prefix: &'static str, id: String) -> Self {
-        SpId { prefix, id }
+    pub fn new(sptype: &'static str, id: String) -> Self {
+        SpId { sptype, id }
     }
     pub fn get_id(&self) -> &str {
         &self.id
     }
     pub fn get_spid(&self) -> String {
-        self.prefix.to_owned() + &self.id
+        self.sptype.to_owned() + &self.id
     }
 }

@@ -10,7 +10,7 @@ use bevy::{
     prelude::*,
     render::{mesh::PrimitiveTopology, render_asset::RenderAssetUsages},
 };
-use devices::DeviceType0;
+use devices::DeviceType;
 mod devices;
 mod nets;
 pub use devices::DefaultDevices;
@@ -224,7 +224,7 @@ impl Plugin for ElementsPlugin {
         // app.register_type::<Device>();
         app.init_resource::<IdTracker>();
         // app.add_event::<NewDevice>();
-        app.add_event::<DeviceType0>();
+        app.add_event::<DeviceType>();
         app.add_plugins(devices::DevicesPlugin);
     }
 }
