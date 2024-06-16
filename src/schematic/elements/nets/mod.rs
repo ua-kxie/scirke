@@ -12,7 +12,7 @@
 
 use std::{hash::Hasher, sync::Arc};
 
-use super::{ElementsRes, Pickable, PickableElement, Preview, SchematicElement};
+use super::{spid, ElementsRes, Pickable, PickableElement, Preview, SchematicElement};
 use crate::schematic::{
     guides::ZoomInvariant, material::SchematicMaterial, tools::PickingCollider,
 };
@@ -198,7 +198,9 @@ impl VertexBundle {
                 ..Default::default()
             },
             zi: ZoomInvariant,
-            se: SchematicElement,
+            se: SchematicElement {
+                schtype: spid::SchType::Spice(spid::SpType::Net),
+            },
         }
     }
 }
@@ -233,7 +235,9 @@ impl LineSegBundle {
             ls,
             mat,
             pe,
-            se: SchematicElement,
+            se: SchematicElement {
+                schtype: spid::SchType::Spice(spid::SpType::Net),
+            },
         }
     }
 }

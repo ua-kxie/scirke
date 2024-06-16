@@ -27,8 +27,9 @@ use crate::{
 };
 
 use super::{
-    readable_idgen::IdTracker, spid, ElementsRes, Pickable, PickableDevice, PickableElement,
-    Preview, SchematicElement, SpId,
+    readable_idgen::IdTracker,
+    spid::{self, SpDeviceType},
+    ElementsRes, Pickable, PickableDevice, PickableElement, Preview, SchematicElement, SpId,
 };
 
 #[derive(Resource)]
@@ -59,7 +60,7 @@ impl FromWorld for DefaultDevices {
 
 #[derive(Event, Clone)]
 pub struct DeviceType {
-    spice_type: spid::SpDeviceTypes,
+    spice_type: spid::SpDeviceType,
     visuals: Mesh2dHandle,
     collider: Arc<dyn Pickable + Send + Sync + 'static>, // schematic element
     ports: Arc<[IVec2]>,                                 // offset of each port
@@ -121,7 +122,7 @@ impl DeviceType {
 
         let ports = Arc::new([IVec2::new(0, 3), IVec2::new(0, -3)]);
         DeviceType {
-            spice_type: spid::SpDeviceTypes::V,
+            spice_type: spid::SpDeviceType::V,
             visuals: Mesh2dHandle(mesh_res),
             collider,
             ports,
@@ -176,7 +177,7 @@ impl DeviceType {
         let ports = Arc::new([IVec2::new(0, 3), IVec2::new(0, -3)]);
 
         DeviceType {
-            spice_type: spid::SpDeviceTypes::R,
+            spice_type: spid::SpDeviceType::R,
             visuals: Mesh2dHandle(mesh_res),
             collider,
             ports,
@@ -215,7 +216,9 @@ impl PortBundle {
                 material: eres.mat_dflt.clone(),
                 ..Default::default()
             },
-            se: SchematicElement,
+            se: SchematicElement {
+                schtype: spid::SchType::Port,
+            },
         }
     }
 }
@@ -235,14 +238,9 @@ impl MapEntities for Device {
     }
 }
 
-#[derive(Component, Reflect, Deref, Debug)]
-#[reflect(Component)]
-struct SpType(spid::SpDeviceTypes);
-
 #[derive(Bundle)]
 struct DeviceBundle {
     device: Device,
-    sptype: SpType,
     mat: MaterialMesh2dBundle<SchematicMaterial>,
     pe: PickableElement,
     se: SchematicElement,
@@ -252,7 +250,6 @@ impl DeviceBundle {
     fn from_type(dtype: &DeviceType, eres: &ElementsRes, ports: Vec<Entity>) -> Self {
         Self {
             device: Device { ports },
-            sptype: SpType(dtype.spice_type.clone()),
             mat: MaterialMesh2dBundle {
                 mesh: dtype.visuals.clone(),
                 material: eres.mat_dflt.clone(),
@@ -261,7 +258,9 @@ impl DeviceBundle {
             pe: PickableElement {
                 behavior: dtype.collider.clone(),
             },
-            se: SchematicElement,
+            se: SchematicElement {
+                schtype: spid::SchType::Spice(spid::SpType::Device(dtype.spice_type.clone())),
+            },
         }
     }
 }
@@ -320,16 +319,16 @@ fn update_port_location(
     }
 }
 
-/// inspert spid component for entities which have SpType but not spid
+/// inspert spid component for entities which have SpDeviceType but not spid
 fn insert_spid(
-    q: Query<(Entity, &SpType), Without<SpId>>,
+    q: Query<(Entity, &SpDeviceType), Without<SpId>>,
     mut commands: Commands,
     mut idtracker: ResMut<IdTracker>,
 ) {
-    q.iter().for_each(|(e, sptype)| {
-        let spid = match sptype.0 {
-            spid::SpDeviceTypes::V => SpId::new(spid::SpDeviceTypes::V, idtracker.new_v_id("")),
-            spid::SpDeviceTypes::R => SpId::new(spid::SpDeviceTypes::R, idtracker.new_r_id("")),
+    q.iter().for_each(|(e, dtype)| {
+        let spid = match dtype {
+            spid::SpDeviceType::V => SpId::new(spid::SpDeviceType::V, idtracker.new_v_id("")),
+            spid::SpDeviceType::R => SpId::new(spid::SpDeviceType::R, idtracker.new_r_id("")),
         };
         commands.entity(e).insert(spid);
     });
@@ -339,18 +338,18 @@ fn insert_spid(
 /// inserts non-refelct components for device type elements
 /// useful for applying mesh handles and such after loading
 fn insert_non_reflect(
-    qd: Query<(Entity, &Device, &SpId), With<FreshLoad>>,
+    qd: Query<(Entity, &Device, &SchematicElement), With<FreshLoad>>,
     default_devices: Res<DefaultDevices>,
     eres: Res<ElementsRes>,
     mut commands: Commands,
 ) {
     for (device_ent, device, spid) in qd.iter() {
-        let bundle = match spid.get_sptype() {
-            spid::SpDeviceTypes::V => (
+        let bundle = match spid.get_dtype().unwrap() {
+            spid::SpDeviceType::V => (
                 default_devices.v.as_non_reflect_bundle(),
                 eres.mat_dflt.clone(),
             ),
-            spid::SpDeviceTypes::R => (
+            spid::SpDeviceType::R => (
                 default_devices.r.as_non_reflect_bundle(),
                 eres.mat_dflt.clone(),
             ),
@@ -362,7 +361,9 @@ fn insert_non_reflect(
             commands.entity(*port_ent).insert((
                 eres.mat_dflt.clone(),
                 eres.mesh_port.clone(),
-                SchematicElement,
+                SchematicElement {
+                    schtype: spid::SchType::Port,
+                },
             ));
             commands.entity(*port_ent).remove::<FreshLoad>();
         }

@@ -17,7 +17,7 @@ pub use devices::DefaultDevices;
 use euclid::default::{Box2D, Point2D};
 pub use nets::{create_preview_lineseg, LineSegment, LineVertex};
 use nets::{PickableLineSeg, PickableVertex};
-use spid::SpDeviceTypes;
+use spid::{SchType, SpDeviceType, SpType};
 
 use super::{
     infotext::InfoRes,
@@ -194,7 +194,22 @@ pub struct PickableElement {
 
 #[derive(Component, Clone, Reflect)]
 #[reflect(Component)]
-pub struct SchematicElement;
+pub struct SchematicElement {
+    schtype: SchType,
+}
+
+impl SchematicElement {
+    pub fn get_schtype(&self) -> &SchType {
+        &self.schtype
+    }
+    pub fn get_dtype(&self) -> Option<&SpDeviceType> {
+        if let SchType::Spice(SpType::Device(dtyp)) = &self.schtype {
+            Some(&dtyp)
+        } else {
+            None
+        }
+    }
+}
 
 /// Pickable trait to define how elements consider themselves "picked"
 /// function needs sufficient information to determine collision
@@ -229,10 +244,10 @@ impl Plugin for ElementsPlugin {
         app.register_type::<SpId>();
         app.register_type::<NetId>();
         app.register_type::<SchematicElement>();
-        app.register_type::<SpDeviceTypes>();
-        // app.register_type::<Device>();
+        app.register_type::<SpDeviceType>();
+        app.register_type::<SchType>();
+        app.register_type::<SpType>();
         app.init_resource::<IdTracker>();
-        // app.add_event::<NewDevice>();
         app.add_event::<DeviceType>();
         app.add_plugins(devices::DevicesPlugin);
     }

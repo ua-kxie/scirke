@@ -21,8 +21,10 @@ sptype_prefix!(
 // pub const L: &str = "L";  // what the above macro does for each spice device type
 const NET: &str = "";
 
-#[derive(Clone, Reflect, Debug)]
-pub enum SpDeviceTypes {
+/// Spice Device Types enumeration
+#[derive(Component, Reflect, Debug, Clone)]
+#[reflect(Component)]
+pub enum SpDeviceType {
     V,
     // I,
     R,
@@ -30,28 +32,42 @@ pub enum SpDeviceTypes {
     // C,
 }
 
-impl SpDeviceTypes {
+impl SpDeviceType {
     pub fn prefix(&self) -> &'static str {
         match self {
-            SpDeviceTypes::V => V,
-            SpDeviceTypes::R => R,
+            SpDeviceType::V => V,
+            SpDeviceType::R => R,
         }
     }
+}
+
+/// spice types enumeration
+#[derive(Reflect, Clone)]
+pub enum SpType {
+    Net,
+    Device(SpDeviceType),
+}
+
+/// schematic element types enumeration
+#[derive(Reflect, Clone)]
+pub enum SchType {
+    Spice(SpType),
+    Port,
 }
 
 /// spice id to identify a unique device
 #[derive(Component, Reflect, Clone)]
 #[reflect(Component)]
 pub struct SpId {
-    sptype: SpDeviceTypes,
+    sptype: SpDeviceType,
     id: String,
 }
 
 impl SpId {
-    pub fn new(sptype: SpDeviceTypes, id: String) -> Self {
+    pub fn new(sptype: SpDeviceType, id: String) -> Self {
         SpId { sptype, id }
     }
-    pub fn get_sptype(&self) -> &SpDeviceTypes {
+    pub fn get_sptype(&self) -> &SpDeviceType {
         &self.sptype
     }
     pub fn get_id(&self) -> &str {
