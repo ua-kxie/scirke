@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use bevy::{prelude::*, utils::hashbrown::HashSet};
 
-use crate::schematic::elements::{readable_idgen::IdTracker, spid::SpId};
+use crate::schematic::elements::{readable_idgen::IdTracker, spid::NetId};
 
 use super::{LineSegment, LineVertex};
 
@@ -15,16 +15,16 @@ first, iterate through subgraphs with only 1, use that 1 if not taken. otherwise
 then for the other subgraphs, find an used id that is not already taken and apply that to whole subgraph, otherwise get new
 */
 
-/// ensures that all nets related elements have SpId component
-pub fn insert_spid(
-    q: Query<Entity, (Or<(With<LineVertex>, With<LineSegment>)>, Without<SpId>)>,
+/// ensures that all nets related elements have NetId component
+pub fn insert_netid(
+    q: Query<Entity, (Or<(With<LineVertex>, With<LineSegment>)>, Without<NetId>)>,
     mut commands: Commands,
     mut idtracker: ResMut<IdTracker>,
 ) {
     if q.is_empty() {
         return;
     }
-    let netid = SpId::new("", idtracker.new_net_id());
+    let netid = NetId::new(idtracker.new_net_id());
     q.iter().for_each(|e| {
         commands.entity(e).insert(netid.clone());
     })
@@ -32,8 +32,8 @@ pub fn insert_spid(
 
 /// finds the connected subgraphs using depth first search
 pub fn connected_graphs(
-    q_nodes: Query<(&LineVertex, &SpId)>,
-    q_paths: Query<(&LineSegment, &SpId)>,
+    q_nodes: Query<(&LineVertex, &NetId)>,
+    q_paths: Query<(&LineSegment, &NetId)>,
     q_nodeids: Query<Entity, With<LineVertex>>,
     mut commands: Commands,
     mut idtracker: ResMut<IdTracker>,
@@ -99,7 +99,7 @@ pub fn connected_graphs(
             }
         }
         subgraph.iter().for_each(|(e, _s)| {
-            commands.entity(*e).insert(SpId::new("", newid.clone()));
+            commands.entity(*e).insert(NetId::new(newid.clone()));
         });
     }
 }
@@ -109,8 +109,8 @@ fn dfs_recurs(
     visited_nodes: &mut HashMap<Entity, String>,
     visited_paths: &mut HashMap<Entity, String>,
     node: Entity,
-    q_paths: &Query<(&LineSegment, &SpId)>,
-    q_nodes: &Query<(&LineVertex, &SpId)>,
+    q_paths: &Query<(&LineSegment, &NetId)>,
+    q_nodes: &Query<(&LineVertex, &NetId)>,
 ) {
     let (lv, vid) = q_nodes.get(node).unwrap();
     if visited_nodes.insert(node, vid.get_id().into()).is_some() {

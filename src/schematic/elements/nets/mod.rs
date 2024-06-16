@@ -30,7 +30,7 @@ use euclid::default::{Box2D, Point2D};
 mod prune;
 pub use prune::prune;
 mod graph;
-pub use graph::{connected_graphs, insert_spid};
+pub use graph::{connected_graphs, insert_netid};
 /// LineSegment component containing references to defining ['LineVertex'] Entities
 #[derive(Component, Reflect, Eq, Clone)]
 #[reflect(Component, MapEntities)]

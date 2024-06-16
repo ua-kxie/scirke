@@ -158,7 +158,6 @@ impl Pipeline for ToolsPreviewPipeline {
         builder
             .deny::<Mesh2dHandle>()
             .deny::<Handle<SchematicMaterial>>()
-            // .deny::<Handle<DeviceType>>()
             .extract_entities_matching(|e| e.contains::<SchematicElement>())
             .build()
     }
@@ -178,11 +177,12 @@ impl Pipeline for ToolsPreviewPipeline {
             .applier(world)
             .hook(move |entityref, cmd| {
                 if entityref.contains::<LineVertex>() {
-                    cmd.insert((mesh_dot.clone(), mat.clone(), selv.clone(), Preview));
+                    cmd.insert((mesh_dot.clone(), mat.clone(), selv.clone()));
                 }
                 if entityref.contains::<LineSegment>() {
-                    cmd.insert((mesh_unitx.clone(), mat.clone(), sels.clone(), Preview));
+                    cmd.insert((mesh_unitx.clone(), mat.clone(), sels.clone()));
                 }
+                cmd.insert(Preview);
                 cmd.set_parent(cursor_ent);
             })
             .apply()

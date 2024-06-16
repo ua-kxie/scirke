@@ -4,7 +4,7 @@ use bevy::{prelude::*, reflect::Reflect};
 
 macro_rules! sptype_prefix {
     ($x:ident) => {
-        pub const $x: &str = stringify!($x);  // define const str
+        const $x: &str = stringify!($x);  // define const str
     };
     ($x:ident, $($y:ident),+) => {
         sptype_prefix!($x);
@@ -19,24 +19,61 @@ sptype_prefix!(
 );
 
 // pub const L: &str = "L";  // what the above macro does for each spice device type
-pub const NET: &str = "";
+const NET: &str = "";
 
-/// spice id to identify a unique device or net
+#[derive(Clone, Reflect, Debug)]
+pub enum SpDeviceTypes {
+    V,
+    // I,
+    R,
+    // L,
+    // C,
+}
+
+impl SpDeviceTypes {
+    pub fn prefix(&self) -> &'static str {
+        match self {
+            SpDeviceTypes::V => V,
+            SpDeviceTypes::R => R,
+        }
+    }
+}
+
+/// spice id to identify a unique device
 #[derive(Component, Reflect, Clone)]
 #[reflect(Component)]
 pub struct SpId {
-    sptype: &'static str,
+    sptype: SpDeviceTypes,
     id: String,
 }
 
 impl SpId {
-    pub fn new(sptype: &'static str, id: String) -> Self {
+    pub fn new(sptype: SpDeviceTypes, id: String) -> Self {
         SpId { sptype, id }
+    }
+    pub fn get_sptype(&self) -> &SpDeviceTypes {
+        &self.sptype
     }
     pub fn get_id(&self) -> &str {
         &self.id
     }
     pub fn get_spid(&self) -> String {
-        self.sptype.to_owned() + &self.id
+        self.sptype.prefix().to_owned() + &self.id
+    }
+}
+
+/// net ids  identifying a spice net
+#[derive(Component, Reflect, Clone)]
+#[reflect(Component)]
+pub struct NetId {
+    id: String,
+}
+
+impl NetId {
+    pub fn new(id: String) -> Self {
+        Self { id }
+    }
+    pub fn get_id(&self) -> &str {
+        &self.id
     }
 }

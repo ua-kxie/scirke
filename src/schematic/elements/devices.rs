@@ -14,6 +14,7 @@
 use std::{iter, sync::Arc};
 
 use bevy::{
+    ecs::entity::MapEntities,
     prelude::*,
     sprite::{MaterialMesh2dBundle, Mesh2dHandle},
 };
@@ -58,7 +59,7 @@ impl FromWorld for DefaultDevices {
 
 #[derive(Event, Clone)]
 pub struct DeviceType {
-    spice_type: &'static str,
+    spice_type: spid::SpDeviceTypes,
     visuals: Mesh2dHandle,
     collider: Arc<dyn Pickable + Send + Sync + 'static>, // schematic element
     ports: Arc<[IVec2]>,                                 // offset of each port
@@ -109,7 +110,7 @@ impl DeviceType {
 
         let ports = Arc::new([IVec2::new(0, 3), IVec2::new(0, -3)]);
         DeviceType {
-            spice_type: &spid::V,
+            spice_type: spid::SpDeviceTypes::V,
             visuals: Mesh2dHandle(mesh_res),
             collider,
             ports,
@@ -164,7 +165,7 @@ impl DeviceType {
         let ports = Arc::new([IVec2::new(0, 3), IVec2::new(0, -3)]);
 
         DeviceType {
-            spice_type: &spid::R,
+            spice_type: spid::SpDeviceTypes::R,
             visuals: Mesh2dHandle(mesh_res),
             collider,
             ports,
@@ -176,6 +177,11 @@ impl DeviceType {
 struct Port {
     parent_device: Entity,
     offset: IVec2,
+}
+impl MapEntities for Port {
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
+        self.parent_device = entity_mapper.map_entity(self.parent_device);
+    }
 }
 
 #[derive(Bundle)]
@@ -205,10 +211,19 @@ impl PortBundle {
 struct Device {
     ports: Vec<Entity>,
 }
+impl MapEntities for Device {
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
+        self.ports = self
+            .ports
+            .iter()
+            .map(|e| entity_mapper.map_entity(*e))
+            .collect();
+    }
+}
 
 #[derive(Component, Reflect, Deref, Debug)]
 #[reflect(Component)]
-struct SpType(&'static str);
+struct SpType(spid::SpDeviceTypes);
 
 #[derive(Bundle)]
 struct DeviceBundle {
@@ -222,7 +237,7 @@ impl DeviceBundle {
     fn from_type(dtype: &DeviceType, eres: &ElementsRes, ports: Vec<Entity>) -> Self {
         Self {
             device: Device { ports },
-            sptype: SpType(dtype.spice_type),
+            sptype: SpType(dtype.spice_type.clone()),
             mat: MaterialMesh2dBundle {
                 mesh: dtype.visuals.clone(),
                 material: eres.mat_dflt.clone(),
@@ -289,6 +304,7 @@ fn update_port_location(
     }
 }
 
+/// inspert spid component for entities which have SpType but not spid
 fn insert_spid(
     q: Query<(Entity, &SpType), Without<SpId>>,
     mut commands: Commands,
@@ -296,15 +312,40 @@ fn insert_spid(
 ) {
     q.iter().for_each(|(e, sptype)| {
         let spid = match sptype.0 {
-            spid::R => SpId::new(spid::R, idtracker.new_r_id("")),
-            spid::V => SpId::new(spid::V, idtracker.new_v_id("")),
-            _ => {
-                panic!("received unknown type {:?}", sptype)
-            }
+            spid::SpDeviceTypes::V => SpId::new(spid::SpDeviceTypes::V, idtracker.new_v_id("")),
+            spid::SpDeviceTypes::R => SpId::new(spid::SpDeviceTypes::R, idtracker.new_r_id("")),
         };
         commands.entity(e).insert(spid);
     });
 }
+
+// /// this system iterates through cursor children
+// /// inserts non-refelct components for device type elements
+// /// useful for applying mesh handles and such after loading
+// fn insert_non_reflect(
+//     qc: Query<&Children, With<SchematicCursor>>,
+//     qd: Query<(&Device, &SpId)>,
+//     qp: Query<Entity, (With<Port>)>,
+//     default_devices: Res<DefaultDevices>,
+//     eres: Res<ElementsRes>,
+//     mut commands: Commands,
+// ) {
+//     let Ok(cursor_children) = qc.get_single() else {
+//         return
+//     };
+//     for c in cursor_children.iter() {
+//         let Ok((device, spid)) = qd.get(*c) else {
+//             continue
+//         };
+//         match spid.get_sptype() {
+//             spid::SpDeviceTypes::V => todo!(),
+//             spid::SpDeviceTypes::R => todo!(),
+//         }
+//         commands.entity(*c).insert(bundle)
+//     }
+//     // needs to insert: SchematicElement, mesh, material
+//     for
+// }
 
 pub struct DevicesPlugin;
 
