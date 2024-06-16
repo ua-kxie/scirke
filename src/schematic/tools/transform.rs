@@ -22,21 +22,36 @@ pub struct TransformToolPlugin;
 impl Plugin for TransformToolPlugin {
     fn build(&self, app: &mut App) {
         app.init_state::<TransformType>();
-        // app.add_systems(Startup, setup);
         app.add_systems(Update, main.run_if(in_state(SchematicToolState::Transform)));
         app.add_systems(OnEnter(SchematicToolState::Transform), prep.chain());
-        // app.add_systems(OnExit(SchematicToolState::Transform), cleanup);
+        app.add_systems(OnExit(SchematicToolState::Transform), clear_cursor_children);
+    }
+}
+
+
+/// this system clears cursor children
+/// runs upon entering idle state (exit transform tool)
+fn clear_cursor_children(
+    mut commands: Commands,
+    q: Query<(Entity, &Children), With<SchematicCursor>>,
+) {
+    let Ok((parent, cursor_children)) = q.get_single() else {
+        return;
+    };
+    commands.entity(parent).remove_children(&cursor_children);
+    for e in cursor_children {
+        commands.entity(*e).despawn();
     }
 }
 
 /// on entering transform toolstate:
-/// delete elements in preview, not selected
-/// delete vertices without branches
+/// delete pickable not selected elements in preview, 
+/// remove from cursor children: unpickable elements in preview
 fn prep(
     mut commands: Commands,
     qc: Query<Entity, With<SchematicCursor>>,
     q_unpicked: Query<Entity, (Without<Selected>, With<Preview>, With<PickableElement>)>,
-    q_ports: Query<Entity, (With<Preview>, Without<PickableElement>)>,
+    q_unpickable: Query<Entity, (With<Preview>, Without<PickableElement>)>,
 ) {
     let cursor = qc.single();
     // despawn pickable entities in preview not tagged as selected
@@ -50,7 +65,7 @@ fn prep(
     // remove non-pickable (ports) from cursor
     commands
         .entity(cursor)
-        .remove_children(&q_ports.iter().collect::<Box<[Entity]>>());
+        .remove_children(&q_unpickable.iter().collect::<Box<[Entity]>>());
 }
 
 /// all SchematicElements are copied in
@@ -101,7 +116,7 @@ fn main(
     mut q_transform: Query<(&mut Transform, &GlobalTransform)>,
     mut commands: Commands,
     st: Res<State<TransformType>>,
-    q_selected: Query<Entity, With<Selected>>,
+    q_selected_not_preview: Query<Entity, (With<Selected>, Without<Preview>)>,
     mut notify_changed: EventWriter<SchematicChanged>,
 ) {
     let (cursor_entity, Some(children)) = cursor_children.single() else {
@@ -117,12 +132,12 @@ fn main(
             }
             TransformType::Move => {
                 // delete all entities marked as selected
-                for e in q_selected.iter() {
+                for e in q_selected_not_preview.iter() {
                     commands.entity(e).despawn();
                 }
             }
         }
-
+        
         next_toolstate.set(SchematicToolState::Idle);
         // make all children of cursor not such, taking care of transforms, and unmark as preview
         commands.entity(cursor_entity).remove_children(children);

@@ -41,23 +41,7 @@ impl Plugin for ToolsPlugin {
             transform::TransformToolPlugin,
         ));
         app.add_systems(Update, exclusive_main);
-        app.add_systems(OnEnter(SchematicToolState::Idle), clear_cursor_children);
         app.init_state::<SchematicToolState>();
-    }
-}
-
-/// this system clears cursor children
-/// runs upon entering idle state (exit transform tool)
-fn clear_cursor_children(
-    mut commands: Commands,
-    q: Query<(Entity, &Children), With<SchematicCursor>>,
-) {
-    let Ok((parent, cursor_children)) = q.get_single() else {
-        return;
-    };
-    commands.entity(parent).remove_children(&cursor_children);
-    for e in cursor_children {
-        commands.entity(*e).despawn();
     }
 }
 

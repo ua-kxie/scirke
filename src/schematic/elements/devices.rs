@@ -27,9 +27,7 @@ use crate::{
 };
 
 use super::{
-    readable_idgen::IdTracker,
-    spid::{self},
-    ElementsRes, Pickable, PickableDevice, PickableElement, Preview, SchematicElement, SpDeviceId,
+    readable_idgen::IdTracker, spid, ElementsRes, Pickable, PickableDevice, PickableElement, Preview, SchematicElement, Selected, SpDeviceId
 };
 
 #[derive(Resource)]
@@ -284,6 +282,7 @@ pub fn spawn_preview_device_from_type(
     let device_bundle = (
         DeviceBundle::from_type(newtype, &eres, ports_entities.clone()),
         Preview,
+        Selected,
     );
     let port_iter = newtype
         .ports
@@ -382,8 +381,8 @@ impl Plugin for DevicesPlugin {
                 update_port_location,
                 insert_spid,
                 spawn_preview_device_from_type,
-                insert_non_reflect.run_if(on_event::<SchematicLoaded>()),
             ),
         );
+        app.add_systems(PreUpdate, insert_non_reflect.run_if(on_event::<SchematicLoaded>()));
     }
 }
