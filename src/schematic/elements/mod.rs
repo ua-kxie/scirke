@@ -10,13 +10,14 @@ use bevy::{
     prelude::*,
     render::{mesh::PrimitiveTopology, render_asset::RenderAssetUsages},
 };
-use devices::DeviceType;
+use devices::{DeviceType, PickablePort};
 mod devices;
 mod nets;
 pub use devices::DefaultDevices;
 use euclid::default::{Box2D, Point2D};
 pub use nets::{create_preview_lineseg, LineSegment, LineVertex};
 use nets::{PickableLineSeg, PickableVertex};
+use spid::SpDeviceTypes;
 
 use super::{
     infotext::InfoRes,
@@ -78,6 +79,8 @@ pub struct ElementsRes {
     pub se_linevertex: SchematicElement,
     /// devices schematic element
     pub se_device: SchematicElement,
+    /// ports 
+    pub se_port: SchematicElement,
 }
 
 const MAT_SEL_COLOR: Color = Color::YELLOW;
@@ -172,6 +175,9 @@ impl FromWorld for ElementsRes {
             se_linevertex: SchematicElement {
                 behavior: Arc::from(PickableVertex::default()),
             },
+            se_port: SchematicElement {
+                behavior: Arc::from(PickablePort::default()),
+            },
         }
     }
 }
@@ -221,6 +227,9 @@ impl Plugin for ElementsPlugin {
         app.register_type::<LineSegment>();
         app.register_type::<LineVertex>();
         app.register_type::<Selected>();
+        app.register_type::<SpId>();
+        app.register_type::<NetId>();
+        app.register_type::<SpDeviceTypes>();
         // app.register_type::<Device>();
         app.init_resource::<IdTracker>();
         // app.add_event::<NewDevice>();

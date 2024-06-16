@@ -11,7 +11,7 @@ use super::{
         DefaultDevices, ElementsRes, LineSegment, LineVertex, Preview, SchematicElement, Selected,
     },
     guides::SchematicCursor,
-    material::SchematicMaterial,
+    material::SchematicMaterial, FreshLoad, SchematicLoaded,
 };
 pub use sel::{NewPickingCollider, PickingCollider, SelectEvt};
 
@@ -106,6 +106,7 @@ fn exclusive_main(world: &mut World) {
                 } else {
                     TransformType::Copy
                 });
+                world.send_event(SchematicLoaded);
             } else if keys.just_released(WIRE_TOOL_KEY) {
                 let mut next_toolst = world.resource_mut::<NextState<SchematicToolState>>();
                 next_toolst.set(SchematicToolState::Wiring);
@@ -182,7 +183,7 @@ impl Pipeline for ToolsPreviewPipeline {
                 if entityref.contains::<LineSegment>() {
                     cmd.insert((mesh_unitx.clone(), mat.clone(), sels.clone()));
                 }
-                cmd.insert(Preview);
+                cmd.insert((Preview, FreshLoad));
                 cmd.set_parent(cursor_ent);
             })
             .apply()

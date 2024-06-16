@@ -23,7 +23,7 @@ use lyon_tessellation::{StrokeOptions, VertexBuffers};
 
 use crate::{
     bevyon::{self, build_mesh, stroke, StrokeTessellator},
-    schematic::{guides::SchematicCursor, material::SchematicMaterial},
+    schematic::{guides::SchematicCursor, material::SchematicMaterial, tools::PickingCollider, FreshLoad, SchematicLoaded},
 };
 
 use super::{
@@ -63,6 +63,12 @@ pub struct DeviceType {
     visuals: Mesh2dHandle,
     collider: Arc<dyn Pickable + Send + Sync + 'static>, // schematic element
     ports: Arc<[IVec2]>,                                 // offset of each port
+}
+
+impl DeviceType {
+    fn as_non_reflect_bundle(&self) -> impl Bundle {
+        (self.visuals.clone(), SchematicElement{ behavior: self.collider.clone() })
+    }
 }
 
 impl DeviceType {
@@ -173,7 +179,8 @@ impl DeviceType {
     }
 }
 
-#[derive(Component)]
+#[derive(Component, Reflect)]
+#[reflect(Component)]
 struct Port {
     parent_device: Entity,
     offset: IVec2,
@@ -184,10 +191,20 @@ impl MapEntities for Port {
     }
 }
 
+#[derive(Default)]
+pub struct PickablePort;
+
+impl Pickable for PickablePort {
+    fn collides(&self, _pc: &PickingCollider, _gt: Transform) -> bool {
+        false
+    }
+}
+
 #[derive(Bundle)]
 struct PortBundle {
     port: Port,
     mat: MaterialMesh2dBundle<SchematicMaterial>,
+    se: SchematicElement,
 }
 
 impl PortBundle {
@@ -202,6 +219,7 @@ impl PortBundle {
                 material: eres.mat_dflt.clone(),
                 ..Default::default()
             },
+            se: eres.se_port.clone(),
         }
     }
 }
@@ -319,44 +337,43 @@ fn insert_spid(
     });
 }
 
-// /// this system iterates through cursor children
-// /// inserts non-refelct components for device type elements
-// /// useful for applying mesh handles and such after loading
-// fn insert_non_reflect(
-//     qc: Query<&Children, With<SchematicCursor>>,
-//     qd: Query<(&Device, &SpId)>,
-//     qp: Query<Entity, (With<Port>)>,
-//     default_devices: Res<DefaultDevices>,
-//     eres: Res<ElementsRes>,
-//     mut commands: Commands,
-// ) {
-//     let Ok(cursor_children) = qc.get_single() else {
-//         return
-//     };
-//     for c in cursor_children.iter() {
-//         let Ok((device, spid)) = qd.get(*c) else {
-//             continue
-//         };
-//         match spid.get_sptype() {
-//             spid::SpDeviceTypes::V => todo!(),
-//             spid::SpDeviceTypes::R => todo!(),
-//         }
-//         commands.entity(*c).insert(bundle)
-//     }
-//     // needs to insert: SchematicElement, mesh, material
-//     for
-// }
+/// this system iterates through cursor children
+/// inserts non-refelct components for device type elements
+/// useful for applying mesh handles and such after loading
+fn insert_non_reflect(
+    qd: Query<(Entity, &Device, &SpId), With<FreshLoad>>,
+    default_devices: Res<DefaultDevices>,
+    eres: Res<ElementsRes>,
+    mut commands: Commands,
+) {
+    for (device_ent, device, spid) in qd.iter() {
+        let bundle = match spid.get_sptype() {
+            spid::SpDeviceTypes::V => (default_devices.v.as_non_reflect_bundle(), eres.mat_dflt.clone()),
+            spid::SpDeviceTypes::R => (default_devices.r.as_non_reflect_bundle(), eres.mat_dflt.clone()),
+        };
+        commands.entity(device_ent).insert(bundle);
+        commands.entity(device_ent).remove::<FreshLoad>();
+
+        for port_ent in device.ports.iter() {
+            commands.entity(*port_ent).insert((eres.mat_dflt.clone(), eres.mesh_port.clone(), eres.se_port.clone()));
+            commands.entity(*port_ent).remove::<FreshLoad>();
+        }
+    }
+}
 
 pub struct DevicesPlugin;
 
 impl Plugin for DevicesPlugin {
     fn build(&self, app: &mut App) {
+        app.register_type::<Port>();
+        app.register_type::<Device>();
         app.add_systems(
             Update,
             (
                 update_port_location,
                 insert_spid,
                 spawn_preview_device_from_type,
+                insert_non_reflect.run_if(on_event::<SchematicLoaded>())
             ),
         );
     }

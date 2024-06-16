@@ -64,6 +64,7 @@ impl Plugin for SchematicPlugin {
             SavePlugins,
         ));
         app.add_event::<SchematicChanged>();
+        app.add_event::<SchematicLoaded>();
     }
 }
 
@@ -136,6 +137,7 @@ impl Pipeline for SavePipeline {
                 if entity.contains::<LineSegment>() {
                     cmd.insert((mesh_unitx.clone(), mat.clone(), sels.clone()));
                 }
+                cmd.insert(FreshLoad);
             })
             .apply()
     }
@@ -177,3 +179,12 @@ fn process_checkpoints(world: &mut World) {
     //         .expect("Failed to rollforward");
     // }
 }
+
+/// event to fire when elements are loaded in through reflection
+/// systems should watch for this event and append non-reflect components
+#[derive(Event)]
+pub struct SchematicLoaded;
+
+/// component to tag entities that have just been loaded and need to append non-reflect components
+#[derive(Component)]
+pub struct FreshLoad;
