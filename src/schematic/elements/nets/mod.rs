@@ -10,10 +10,10 @@
 //! all elements share a material instance, except those picked, selected, or both
 //! (in which case all picked, selected, or both elements share a material instance)
 
-use crate::schematic::SchematicChanged;
+use crate::schematic::{FreshLoad, SchematicChanged, SchematicLoaded};
 
 use super::{spid, ElementsRes, Pickable, PickableElement, Preview, SchematicElement};
-use bevy::{ecs::entity::Entity, prelude::*};
+use bevy::{ecs::entity::Entity, prelude::*, sprite::Mesh2dHandle};
 mod prune;
 pub use prune::prune;
 mod graph;
@@ -89,7 +89,40 @@ impl Plugin for NetsPlugin {
                 .chain()
                 .run_if(on_event::<SchematicChanged>()),
         );
+        app.add_systems(
+            PreUpdate,
+            insert_non_reflect.run_if(on_event::<SchematicLoaded>()),
+        );
         app.register_type::<LineSegment>();
         app.register_type::<LineVertex>();
+    }
+}
+
+/// this system iterates through
+/// inserts non-refelct components for net type elements
+/// useful for applying mesh handles and such after loading
+fn insert_non_reflect(
+    qv: Query<Entity, (With<FreshLoad>, With<LineVertex>)>,
+    qs: Query<Entity, (With<FreshLoad>, With<LineSegment>)>,
+    eres: Res<ElementsRes>,
+    mut commands: Commands,
+) {
+    for lv in qv.iter() {
+        let bundle = (
+            eres.mat_dflt.clone(),
+            Mesh2dHandle(eres.mesh_dot.clone()),
+            eres.pe_linevertex.clone(),
+        );
+        commands.entity(lv).insert(bundle);
+        commands.entity(lv).remove::<FreshLoad>();
+    }
+    for ls in qs.iter() {
+        let bundle = (
+            eres.mat_dflt.clone(),
+            Mesh2dHandle(eres.mesh_unitx.clone()),
+            eres.pe_lineseg.clone(),
+        );
+        commands.entity(ls).insert(bundle);
+        commands.entity(ls).remove::<FreshLoad>();
     }
 }

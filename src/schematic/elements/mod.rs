@@ -14,7 +14,7 @@ mod devices;
 mod nets;
 pub use devices::DefaultDevices;
 use euclid::default::{Box2D, Point2D};
-pub use nets::{create_preview_lineseg, LineSegment, LineVertex};
+pub use nets::{create_preview_lineseg, LineVertex};
 use nets::{PickableLineSeg, PickableVertex};
 use spid::{SchType, SpDeviceType, SpType};
 

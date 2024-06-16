@@ -7,10 +7,7 @@ mod transform;
 mod wire;
 
 use super::{
-    elements::{
-        DefaultDevices, ElementsRes, LineSegment, LineVertex, PickableElement, Preview,
-        SchematicElement, Selected,
-    },
+    elements::{DefaultDevices, PickableElement, Preview, SchematicElement, Selected},
     guides::SchematicCursor,
     material::SchematicMaterial,
     FreshLoad, SchematicLoaded,
@@ -154,23 +151,12 @@ impl Pipeline for ToolsPreviewPipeline {
     /// spawning preview copies for previewing tools effect
     /// spawn as children of cursor
     fn apply(world: &mut World, snapshot: &Snapshot) -> Result<(), bevy_save::Error> {
-        let mesh_dot = Mesh2dHandle(world.resource::<ElementsRes>().mesh_dot.clone());
-        let mesh_unitx = Mesh2dHandle(world.resource::<ElementsRes>().mesh_unitx.clone());
-        let mat = world.resource::<ElementsRes>().mat_dflt.clone();
-        let sels = world.resource::<ElementsRes>().pe_lineseg.clone();
-        let selv = world.resource::<ElementsRes>().pe_linevertex.clone();
         let cursor_ent = world
             .query_filtered::<Entity, With<SchematicCursor>>()
             .single(&world);
         snapshot
             .applier(world)
-            .hook(move |entityref, cmd| {
-                if entityref.contains::<LineVertex>() {
-                    cmd.insert((mesh_dot.clone(), mat.clone(), selv.clone()));
-                }
-                if entityref.contains::<LineSegment>() {
-                    cmd.insert((mesh_unitx.clone(), mat.clone(), sels.clone()));
-                }
+            .hook(move |_entityref, cmd| {
                 cmd.insert((Preview, FreshLoad));
                 cmd.set_parent(cursor_ent);
             })

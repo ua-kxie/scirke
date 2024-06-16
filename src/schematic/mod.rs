@@ -7,7 +7,7 @@ use bevy::{
     sprite::{Material2dPlugin, Mesh2dHandle},
 };
 use bevy_save::prelude::*;
-use elements::{ElementsRes, LineSegment, LineVertex, SchematicElement};
+use elements::SchematicElement;
 
 mod camera;
 mod elements;
@@ -96,22 +96,10 @@ impl Pipeline for SavePipeline {
     }
 
     fn apply(world: &mut World, snapshot: &Snapshot) -> Result<(), bevy_save::Error> {
-        let mesh_dot = Mesh2dHandle(world.resource::<ElementsRes>().mesh_dot.clone());
-        let mesh_unitx = Mesh2dHandle(world.resource::<ElementsRes>().mesh_unitx.clone());
-        // let mesh_res = Mesh2dHandle(world.resource::<ElementsRes>().mesh_res.clone());
-        let mat = world.resource::<ElementsRes>().mat_dflt.clone();
-        let sels = world.resource::<ElementsRes>().pe_lineseg.clone();
-        let selv = world.resource::<ElementsRes>().pe_linevertex.clone();
         snapshot
             .applier(world)
             .despawn::<With<SchematicElement>>()
-            .hook(move |entity, cmd| {
-                if entity.contains::<LineVertex>() {
-                    cmd.insert((mesh_dot.clone(), mat.clone(), selv.clone()));
-                }
-                if entity.contains::<LineSegment>() {
-                    cmd.insert((mesh_unitx.clone(), mat.clone(), sels.clone()));
-                }
+            .hook(move |_entityref, cmd| {
                 cmd.insert(FreshLoad);
             })
             .apply()
@@ -130,10 +118,12 @@ fn process_checkpoints(world: &mut World) {
             world
                 .rollback::<SavePipeline>(-1)
                 .expect("Failed to rollforward");
+            world.send_event(SchematicLoaded);
         } else {
             world
                 .rollback::<SavePipeline>(1)
                 .expect("Failed to rollback");
+            world.send_event(SchematicLoaded);
         }
         // world.send_event(SchematicChanged);
     }
