@@ -3,7 +3,7 @@ use std::f32::consts::PI;
 use bevy::prelude::*;
 
 use crate::schematic::{
-    elements::{LineVertex, Preview, Selected},
+    elements::{LineVertex, PickableElement, Preview, Selected, SpDeviceId},
     guides::SchematicCursor,
     SchematicChanged,
 };
@@ -37,18 +37,23 @@ impl Plugin for TransformToolPlugin {
 /// delete vertices without branches
 fn prep(
     mut commands: Commands,
-    q: Query<Entity, (Without<Selected>, With<Preview>)>,
+    q: Query<Entity, (Without<Selected>, With<Preview>, With<PickableElement>)>,
     qc: Query<Entity, With<SchematicCursor>>,
+    // qports: Query<Entity, (With<Preview>, Without<PickableElement>)>,
 ) {
     let cursor = qc.single();
     // despawn linesegments not selected
     commands
         .entity(cursor)
         .remove_children(&q.iter().collect::<Box<[Entity]>>());
+    // // remove non-pickable (ports) from cursor
+    // commands
+    //     .entity(cursor)
+    //     .remove_children(&qports.iter().collect::<Box<[Entity]>>());
+    // despawn line vertices without valid branches
     for e in q.iter() {
         commands.entity(e).despawn();
     }
-    // despawn line vertices without valid branches
 }
 
 /// all SchematicElements are copied in
@@ -106,6 +111,21 @@ fn main(
         return;
     };
     if buttons.just_pressed(MouseButton::Left) {
+        match st.get() {
+            TransformType::Copy => {
+                // delete spid component on new copies
+                for c in children.iter() {
+                    commands.entity(*c).remove::<SpDeviceId>();
+                }
+            }
+            TransformType::Move => {
+                // delete all entities marked as selected
+                for e in q_selected.iter() {
+                    commands.entity(e).despawn();
+                }
+            }
+        }
+
         next_toolstate.set(SchematicToolState::Idle);
         // make all children of cursor not such, taking care of transforms, and unmark as preview
         commands.entity(cursor_entity).remove_children(children);
@@ -114,15 +134,7 @@ fn main(
             *t = gt.compute_transform();
             commands.entity(*c).remove::<Preview>();
         }
-        match st.get() {
-            TransformType::Copy => {}
-            TransformType::Move => {
-                // delete all entities marked as selected
-                for e in q_selected.iter() {
-                    commands.entity(e).despawn();
-                }
-            }
-        }
+
         notify_changed.send(SchematicChanged);
         return; // ignore other commands because its effects were never shown to user
     }

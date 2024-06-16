@@ -14,7 +14,7 @@
 use std::{iter, sync::Arc};
 
 use bevy::{
-    ecs::entity::MapEntities,
+    ecs::{entity::MapEntities, reflect::ReflectMapEntities},
     prelude::*,
     sprite::{MaterialMesh2dBundle, Mesh2dHandle},
 };
@@ -28,8 +28,8 @@ use crate::{
 
 use super::{
     readable_idgen::IdTracker,
-    spid::{self, SpDeviceType},
-    ElementsRes, Pickable, PickableDevice, PickableElement, Preview, SchematicElement, SpId,
+    spid::{self},
+    ElementsRes, Pickable, PickableDevice, PickableElement, Preview, SchematicElement, SpDeviceId,
 };
 
 #[derive(Resource)]
@@ -186,7 +186,7 @@ impl DeviceType {
 }
 
 #[derive(Component, Reflect)]
-#[reflect(Component)]
+#[reflect(Component, MapEntities)]
 struct Port {
     parent_device: Entity,
     offset: IVec2,
@@ -224,7 +224,7 @@ impl PortBundle {
 }
 
 #[derive(Component, Reflect)]
-#[reflect(Component)]
+#[reflect(Component, MapEntities)]
 struct Device {
     ports: Vec<Entity>,
 }
@@ -307,28 +307,28 @@ fn update_port_location(
         }
     }
     // update position of ports
-    for (gt, d) in q.iter() {
-        for pe in d.ports.iter() {
-            let Ok((_, mut t, port)) = q_p.get_mut(*pe) else {
+    for (device_gt, d) in q.iter() {
+        for port_entity in d.ports.iter() {
+            let Ok((_, mut port_t, port)) = q_p.get_mut(*port_entity) else {
                 continue;
             };
-            let mut newt = gt.transform_point(port.offset.extend(0).as_vec3());
+            let mut newt = device_gt.transform_point(port.offset.extend(0).as_vec3());
             newt.z = 0.01;
-            t.translation = newt;
+            port_t.translation = newt;
         }
     }
 }
 
 /// inspert spid component for entities which have SpDeviceType but not spid
 fn insert_spid(
-    q: Query<(Entity, &SpDeviceType), Without<SpId>>,
+    q: Query<(Entity, &SchematicElement), (Without<SpDeviceId>, With<Device>)>,
     mut commands: Commands,
     mut idtracker: ResMut<IdTracker>,
 ) {
-    q.iter().for_each(|(e, dtype)| {
-        let spid = match dtype {
-            spid::SpDeviceType::V => SpId::new(spid::SpDeviceType::V, idtracker.new_v_id("")),
-            spid::SpDeviceType::R => SpId::new(spid::SpDeviceType::R, idtracker.new_r_id("")),
+    q.iter().for_each(|(e, schtype)| {
+        let spid = match schtype.get_dtype().unwrap() {
+            spid::SpDeviceType::V => SpDeviceId::new(spid::SpDeviceType::V, idtracker.new_v_id("")),
+            spid::SpDeviceType::R => SpDeviceId::new(spid::SpDeviceType::R, idtracker.new_r_id("")),
         };
         commands.entity(e).insert(spid);
     });
@@ -360,7 +360,7 @@ fn insert_non_reflect(
         for port_ent in device.ports.iter() {
             commands.entity(*port_ent).insert((
                 eres.mat_dflt.clone(),
-                eres.mesh_port.clone(),
+                Mesh2dHandle(eres.mesh_port.clone()),
                 SchematicElement {
                     schtype: spid::SchType::Port,
                 },

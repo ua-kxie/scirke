@@ -28,7 +28,7 @@ use super::{
 mod readable_idgen;
 use readable_idgen::IdTracker;
 mod spid;
-pub use spid::{NetId, SpId};
+pub use spid::{NetId, SpDeviceId};
 /// marker component to mark entity as being previewed (constructed by an active tool)
 /// entities marked [`SchematicElement`] but without this marker is persistent
 #[derive(Component)]
@@ -241,7 +241,7 @@ impl Plugin for ElementsPlugin {
         app.register_type::<LineSegment>();
         app.register_type::<LineVertex>();
         app.register_type::<Selected>();
-        app.register_type::<SpId>();
+        app.register_type::<SpDeviceId>();
         app.register_type::<NetId>();
         app.register_type::<SchematicElement>();
         app.register_type::<SpDeviceType>();

@@ -58,14 +58,14 @@ pub enum SchType {
 /// spice id to identify a unique device
 #[derive(Component, Reflect, Clone)]
 #[reflect(Component)]
-pub struct SpId {
+pub struct SpDeviceId {
     sptype: SpDeviceType,
     id: String,
 }
 
-impl SpId {
+impl SpDeviceId {
     pub fn new(sptype: SpDeviceType, id: String) -> Self {
-        SpId { sptype, id }
+        SpDeviceId { sptype, id }
     }
     pub fn get_sptype(&self) -> &SpDeviceType {
         &self.sptype

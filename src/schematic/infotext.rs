@@ -2,7 +2,7 @@ use bevy::{prelude::*, reflect::Enum};
 
 use super::{
     camera::SchematicCamera,
-    elements::{NetId, SpId},
+    elements::{NetId, SpDeviceId},
     guides::SchematicCursor,
     tools::SchematicToolState,
     SnapSet,
@@ -84,7 +84,7 @@ fn update(
     mut infores: ResMut<InfoRes>,
     // devices: Res<Assets<DeviceType>>,
     // qd: Query<&Device>,
-    qspid: Query<&SpId>,
+    qspid: Query<&SpDeviceId>,
     qnetid: Query<&NetId>,
 ) {
     infores.cpos = cursor
