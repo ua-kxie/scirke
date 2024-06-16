@@ -2,7 +2,7 @@ use bevy::{prelude::*, reflect::Enum};
 
 use super::{
     camera::SchematicCamera,
-    elements::{NetId, SpDeviceId},
+    elements::{NetId, SchematicElement, SpDeviceId},
     guides::SchematicCursor,
     tools::SchematicToolState,
     SnapSet,
@@ -82,9 +82,7 @@ fn update(
     projection: Query<&OrthographicProjection, With<SchematicCamera>>,
     toolst: Res<State<SchematicToolState>>,
     mut infores: ResMut<InfoRes>,
-    // devices: Res<Assets<DeviceType>>,
-    // qd: Query<&Device>,
-    qspid: Query<&SpDeviceId>,
+    qspid: Query<(&SchematicElement, &SpDeviceId)>,
     qnetid: Query<&NetId>,
 ) {
     infores.cpos = cursor
@@ -99,7 +97,9 @@ fn update(
     let text = &mut text.sections[0].value;
     *text = infores.line();
 
-    if let Some(Ok(spid)) = infores.picked.map(|e| qspid.get(e).map(|op| op.get_spid())) {
+    if let Some(Ok(Some(spid))) = infores.picked.map(|e| qspid.get(e).map(|(se, op)| {
+        se.get_dtype().map(|x| x.prefix().to_owned() + op.get_id())
+    })) {
         text.push_str(&spid);
     }
     if let Some(Ok(netid)) = infores.picked.map(|e| qnetid.get(e).map(|op| op.get_id())) {

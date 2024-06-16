@@ -17,6 +17,7 @@ use euclid::default::{Box2D, Point2D};
 pub use nets::{create_preview_lineseg, LineVertex};
 use nets::{PickableLineSeg, PickableVertex};
 use spid::{SchType, SpDeviceType, SpType};
+pub use devices::DevicePorts;
 
 use super::{
     infotext::InfoRes,
@@ -190,7 +191,7 @@ pub struct PickableElement {
     behavior: Arc<dyn Pickable + Send + Sync + 'static>,
 }
 
-#[derive(Component, Clone, Reflect)]
+#[derive(Component, Clone, Reflect, Debug)]
 #[reflect(Component)]
 pub struct SchematicElement {
     schtype: SchType,

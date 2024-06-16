@@ -42,39 +42,33 @@ impl SpDeviceType {
 }
 
 /// spice types enumeration
-#[derive(Reflect, Clone)]
+#[derive(Reflect, Clone, Debug)]
 pub enum SpType {
     Net,
     Device(SpDeviceType),
 }
 
 /// schematic element types enumeration
-#[derive(Reflect, Clone)]
+#[derive(Reflect, Clone, Debug)]
 pub enum SchType {
     Spice(SpType),
     Port,
 }
 
 /// spice id to identify a unique device
-#[derive(Component, Reflect, Clone)]
+#[derive(Component, Reflect, Clone, Debug)]
 #[reflect(Component)]
 pub struct SpDeviceId {
-    sptype: SpDeviceType,
+    // sptype: SpDeviceType,
     id: String,
 }
 
 impl SpDeviceId {
-    pub fn new(sptype: SpDeviceType, id: String) -> Self {
-        SpDeviceId { sptype, id }
-    }
-    pub fn get_sptype(&self) -> &SpDeviceType {
-        &self.sptype
+    pub fn new(id: String) -> Self {
+        SpDeviceId { id }
     }
     pub fn get_id(&self) -> &str {
         &self.id
-    }
-    pub fn get_spid(&self) -> String {
-        self.sptype.prefix().to_owned() + &self.id
     }
 }
 

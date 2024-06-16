@@ -222,12 +222,45 @@ impl PortBundle {
     }
 }
 
+/// component to display param summary
 #[derive(Component, Reflect)]
 #[reflect(Component, MapEntities)]
-struct Device {
+pub struct DeviceLabel {
+    offset: IVec2,
+    device: Entity,
+}
+impl MapEntities for DeviceLabel {
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
+        self.device = entity_mapper.map_entity(self.device);
+    }
+}
+
+/// component storing device parameters
+/// TODO: want to use trait object for this but how to serialize?
+#[derive(Component, Reflect)]
+#[reflect(Component)]
+pub enum DeviceParams {
+    Raw(String),  // passed directly to ngspice
+    Float(f32),
+}
+
+// #[derive(Component, Reflect)]
+// #[reflect(Component)]
+// pub struct DeviceParams0 (
+//     Box<dyn Send + Sync + 'static>,  // params trait object
+// );
+
+#[derive(Component, Reflect)]
+#[reflect(Component, MapEntities)]
+pub struct DevicePorts {
     ports: Vec<Entity>,
 }
-impl MapEntities for Device {
+impl DevicePorts {
+    pub fn get_ports(&self) -> &Vec<Entity> {
+        &self.ports
+    }
+}
+impl MapEntities for DevicePorts {
     fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
         self.ports = self
             .ports
@@ -239,7 +272,7 @@ impl MapEntities for Device {
 
 #[derive(Bundle)]
 struct DeviceBundle {
-    device: Device,
+    device: DevicePorts,
     mat: MaterialMesh2dBundle<SchematicMaterial>,
     pe: PickableElement,
     se: SchematicElement,
@@ -248,7 +281,7 @@ struct DeviceBundle {
 impl DeviceBundle {
     fn from_type(dtype: &DeviceType, eres: &ElementsRes, ports: Vec<Entity>) -> Self {
         Self {
-            device: Device { ports },
+            device: DevicePorts { ports },
             mat: MaterialMesh2dBundle {
                 mesh: dtype.visuals.clone(),
                 material: eres.mat_dflt.clone(),
@@ -296,7 +329,7 @@ pub fn spawn_preview_device_from_type(
 }
 
 fn update_port_location(
-    q: Query<(&GlobalTransform, &Device)>,
+    q: Query<(&GlobalTransform, &DevicePorts)>,
     mut q_p: Query<(Entity, &mut Transform, &Port)>,
     mut commands: Commands,
 ) {
@@ -321,14 +354,14 @@ fn update_port_location(
 
 /// inspert spid component for entities which have SpDeviceType but not spid
 fn insert_spid(
-    q: Query<(Entity, &SchematicElement), (Without<SpDeviceId>, With<Device>)>,
+    q: Query<(Entity, &SchematicElement), (Without<SpDeviceId>, With<DevicePorts>)>,
     mut commands: Commands,
     mut idtracker: ResMut<IdTracker>,
 ) {
     q.iter().for_each(|(e, schtype)| {
         let spid = match schtype.get_dtype().unwrap() {
-            spid::SpDeviceType::V => SpDeviceId::new(spid::SpDeviceType::V, idtracker.new_v_id("")),
-            spid::SpDeviceType::R => SpDeviceId::new(spid::SpDeviceType::R, idtracker.new_r_id("")),
+            spid::SpDeviceType::V => SpDeviceId::new(idtracker.new_v_id("")),
+            spid::SpDeviceType::R => SpDeviceId::new(idtracker.new_r_id("")),
         };
         commands.entity(e).insert(spid);
     });
@@ -338,7 +371,7 @@ fn insert_spid(
 /// inserts non-refelct components for device type elements
 /// useful for applying mesh handles and such after loading
 fn insert_non_reflect(
-    qd: Query<(Entity, &Device, &SchematicElement), With<FreshLoad>>,
+    qd: Query<(Entity, &DevicePorts, &SchematicElement), With<FreshLoad>>,
     default_devices: Res<DefaultDevices>,
     eres: Res<ElementsRes>,
     mut commands: Commands,
@@ -375,7 +408,7 @@ pub struct DevicesPlugin;
 impl Plugin for DevicesPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<Port>();
-        app.register_type::<Device>();
+        app.register_type::<DevicePorts>();
         app.add_systems(
             Update,
             (
