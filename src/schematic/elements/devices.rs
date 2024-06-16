@@ -27,7 +27,8 @@ use crate::{
 };
 
 use super::{
-    readable_idgen::IdTracker, spid, ElementsRes, Pickable, PickableDevice, PickableElement, Preview, SchematicElement, Selected, SpDeviceId
+    readable_idgen::IdTracker, spid, ElementsRes, Pickable, PickableDevice, PickableElement,
+    Preview, SchematicElement, Selected, SpDeviceId,
 };
 
 #[derive(Resource)]
@@ -383,6 +384,11 @@ impl Plugin for DevicesPlugin {
                 spawn_preview_device_from_type,
             ),
         );
-        app.add_systems(PreUpdate, insert_non_reflect.run_if(on_event::<SchematicLoaded>()));
+        app.add_systems(
+            PreUpdate,
+            insert_non_reflect.run_if(on_event::<SchematicLoaded>()),
+        );
+        app.register_type::<SpDeviceId>();
+        app.add_event::<DeviceType>();
     }
 }

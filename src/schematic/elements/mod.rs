@@ -10,7 +10,6 @@ use bevy::{
     prelude::*,
     render::{mesh::PrimitiveTopology, render_asset::RenderAssetUsages},
 };
-use devices::DeviceType;
 mod devices;
 mod nets;
 pub use devices::DefaultDevices;
@@ -23,7 +22,6 @@ use super::{
     infotext::InfoRes,
     material::SchematicMaterial,
     tools::{NewPickingCollider, PickingCollider, SelectEvt},
-    SchematicChanged,
 };
 mod readable_idgen;
 use readable_idgen::IdTracker;
@@ -223,28 +221,19 @@ pub struct ElementsPlugin;
 
 impl Plugin for ElementsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, (nets::transform_lineseg, picking, selection));
+        app.add_systems(Update, (picking, selection));
         app.add_systems(PostUpdate, set_mat);
-        app.add_systems(
-            PostUpdate,
-            (nets::prune, nets::insert_netid, nets::connected_graphs)
-                .chain()
-                .run_if(on_event::<SchematicChanged>()),
-        );
         app.init_resource::<ElementsRes>();
         app.init_resource::<DefaultDevices>();
-        app.register_type::<LineSegment>();
-        app.register_type::<LineVertex>();
         app.register_type::<Selected>();
-        app.register_type::<SpDeviceId>();
         app.register_type::<NetId>();
         app.register_type::<SchematicElement>();
         app.register_type::<SpDeviceType>();
         app.register_type::<SchType>();
         app.register_type::<SpType>();
         app.init_resource::<IdTracker>();
-        app.add_event::<DeviceType>();
         app.add_plugins(devices::DevicesPlugin);
+        app.add_plugins(nets::NetsPlugin);
     }
 }
 

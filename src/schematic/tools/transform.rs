@@ -28,7 +28,6 @@ impl Plugin for TransformToolPlugin {
     }
 }
 
-
 /// this system clears cursor children
 /// runs upon entering idle state (exit transform tool)
 fn clear_cursor_children(
@@ -45,7 +44,7 @@ fn clear_cursor_children(
 }
 
 /// on entering transform toolstate:
-/// delete pickable not selected elements in preview, 
+/// delete pickable not selected elements in preview,
 /// remove from cursor children: unpickable elements in preview
 fn prep(
     mut commands: Commands,
@@ -137,7 +136,7 @@ fn main(
                 }
             }
         }
-        
+
         next_toolstate.set(SchematicToolState::Idle);
         // make all children of cursor not such, taking care of transforms, and unmark as preview
         commands.entity(cursor_entity).remove_children(children);
