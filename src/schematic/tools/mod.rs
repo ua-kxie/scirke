@@ -8,10 +8,12 @@ mod wire;
 
 use super::{
     elements::{
-        DefaultDevices, ElementsRes, LineSegment, LineVertex, Preview, SchematicElement, Selected,
+        DefaultDevices, ElementsRes, LineSegment, LineVertex, PickableElement, Preview,
+        SchematicElement, Selected,
     },
     guides::SchematicCursor,
-    material::SchematicMaterial, FreshLoad, SchematicLoaded,
+    material::SchematicMaterial,
+    FreshLoad, SchematicLoaded,
 };
 pub use sel::{NewPickingCollider, PickingCollider, SelectEvt};
 
@@ -129,7 +131,7 @@ fn exclusive_main(world: &mut World) {
                 let mut next_transst = world.resource_mut::<NextState<TransformType>>();
                 next_transst.set(TransformType::Copy);
             } else if keys.just_released(KeyCode::KeyA) {
-                let mut q_valid = world.query_filtered::<Entity, With<SchematicElement>>();
+                let mut q_valid = world.query_filtered::<Entity, With<PickableElement>>();
                 let valids = q_valid
                     .iter(&world)
                     .map(|e| (e, Selected))
@@ -159,6 +161,8 @@ impl Pipeline for ToolsPreviewPipeline {
         builder
             .deny::<Mesh2dHandle>()
             .deny::<Handle<SchematicMaterial>>()
+            // .deny::<SpId>() // should be kept for move, denied for copy
+            // .deny::<NetId>() // should be kept for move, denied for copy
             .extract_entities_matching(|e| e.contains::<SchematicElement>())
             .build()
     }
@@ -169,8 +173,8 @@ impl Pipeline for ToolsPreviewPipeline {
         let mesh_dot = Mesh2dHandle(world.resource::<ElementsRes>().mesh_dot.clone());
         let mesh_unitx = Mesh2dHandle(world.resource::<ElementsRes>().mesh_unitx.clone());
         let mat = world.resource::<ElementsRes>().mat_dflt.clone();
-        let sels = world.resource::<ElementsRes>().se_lineseg.clone();
-        let selv = world.resource::<ElementsRes>().se_linevertex.clone();
+        let sels = world.resource::<ElementsRes>().pe_lineseg.clone();
+        let selv = world.resource::<ElementsRes>().pe_linevertex.clone();
         let cursor_ent = world
             .query_filtered::<Entity, With<SchematicCursor>>()
             .single(&world);

@@ -12,7 +12,7 @@
 
 use std::{hash::Hasher, sync::Arc};
 
-use super::{ElementsRes, Pickable, Preview, SchematicElement};
+use super::{ElementsRes, Pickable, PickableElement, Preview, SchematicElement};
 use crate::schematic::{
     guides::ZoomInvariant, material::SchematicMaterial, tools::PickingCollider,
 };
@@ -179,7 +179,8 @@ impl Pickable for PickableVertex {
 #[derive(Bundle)]
 struct VertexBundle {
     vertex: LineVertex,
-    schematic_element: SchematicElement,
+    pe: PickableElement,
+    se: SchematicElement,
     mat: MaterialMesh2dBundle<SchematicMaterial>,
     zi: ZoomInvariant,
 }
@@ -189,7 +190,7 @@ impl VertexBundle {
             vertex: LineVertex {
                 branches: smallvec![branch],
             },
-            schematic_element: eres.se_linevertex.clone(),
+            pe: eres.pe_linevertex.clone(),
             mat: MaterialMesh2dBundle {
                 mesh: Mesh2dHandle(eres.mesh_dot.clone()),
                 material: eres.mat_dflt.clone(),
@@ -197,6 +198,7 @@ impl VertexBundle {
                 ..Default::default()
             },
             zi: ZoomInvariant,
+            se: SchematicElement,
         }
     }
 }
@@ -206,6 +208,7 @@ impl VertexBundle {
 struct LineSegBundle {
     ls: LineSegment,
     mat: MaterialMesh2dBundle<SchematicMaterial>,
+    pe: PickableElement,
     se: SchematicElement,
 }
 
@@ -223,10 +226,15 @@ impl LineSegBundle {
             ..Default::default()
         };
         let ls = LineSegment { a: a.0, b: b.0 };
-        let se = SchematicElement {
+        let pe = PickableElement {
             behavior: Arc::new(PickableLineSeg::default()),
         };
-        Self { ls, mat, se }
+        Self {
+            ls,
+            mat,
+            pe,
+            se: SchematicElement,
+        }
     }
 }
 

@@ -125,8 +125,8 @@ impl Pipeline for SavePipeline {
         let mesh_unitx = Mesh2dHandle(world.resource::<ElementsRes>().mesh_unitx.clone());
         // let mesh_res = Mesh2dHandle(world.resource::<ElementsRes>().mesh_res.clone());
         let mat = world.resource::<ElementsRes>().mat_dflt.clone();
-        let sels = world.resource::<ElementsRes>().se_lineseg.clone();
-        let selv = world.resource::<ElementsRes>().se_linevertex.clone();
+        let sels = world.resource::<ElementsRes>().pe_lineseg.clone();
+        let selv = world.resource::<ElementsRes>().pe_linevertex.clone();
         snapshot
             .applier(world)
             .despawn::<With<SchematicElement>>()

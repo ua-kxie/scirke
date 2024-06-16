@@ -23,12 +23,12 @@ use lyon_tessellation::{StrokeOptions, VertexBuffers};
 
 use crate::{
     bevyon::{self, build_mesh, stroke, StrokeTessellator},
-    schematic::{guides::SchematicCursor, material::SchematicMaterial, tools::PickingCollider, FreshLoad, SchematicLoaded},
+    schematic::{guides::SchematicCursor, material::SchematicMaterial, FreshLoad, SchematicLoaded},
 };
 
 use super::{
-    readable_idgen::IdTracker, spid, ElementsRes, Pickable, PickableDevice, Preview,
-    SchematicElement, SpId,
+    readable_idgen::IdTracker, spid, ElementsRes, Pickable, PickableDevice, PickableElement,
+    Preview, SchematicElement, SpId,
 };
 
 #[derive(Resource)]
@@ -67,7 +67,12 @@ pub struct DeviceType {
 
 impl DeviceType {
     fn as_non_reflect_bundle(&self) -> impl Bundle {
-        (self.visuals.clone(), SchematicElement{ behavior: self.collider.clone() })
+        (
+            self.visuals.clone(),
+            PickableElement {
+                behavior: self.collider.clone(),
+            },
+        )
     }
 }
 
@@ -191,15 +196,6 @@ impl MapEntities for Port {
     }
 }
 
-#[derive(Default)]
-pub struct PickablePort;
-
-impl Pickable for PickablePort {
-    fn collides(&self, _pc: &PickingCollider, _gt: Transform) -> bool {
-        false
-    }
-}
-
 #[derive(Bundle)]
 struct PortBundle {
     port: Port,
@@ -219,7 +215,7 @@ impl PortBundle {
                 material: eres.mat_dflt.clone(),
                 ..Default::default()
             },
-            se: eres.se_port.clone(),
+            se: SchematicElement,
         }
     }
 }
@@ -248,6 +244,7 @@ struct DeviceBundle {
     device: Device,
     sptype: SpType,
     mat: MaterialMesh2dBundle<SchematicMaterial>,
+    pe: PickableElement,
     se: SchematicElement,
 }
 
@@ -261,9 +258,10 @@ impl DeviceBundle {
                 material: eres.mat_dflt.clone(),
                 ..Default::default()
             },
-            se: SchematicElement {
+            pe: PickableElement {
                 behavior: dtype.collider.clone(),
             },
+            se: SchematicElement,
         }
     }
 }
@@ -348,14 +346,24 @@ fn insert_non_reflect(
 ) {
     for (device_ent, device, spid) in qd.iter() {
         let bundle = match spid.get_sptype() {
-            spid::SpDeviceTypes::V => (default_devices.v.as_non_reflect_bundle(), eres.mat_dflt.clone()),
-            spid::SpDeviceTypes::R => (default_devices.r.as_non_reflect_bundle(), eres.mat_dflt.clone()),
+            spid::SpDeviceTypes::V => (
+                default_devices.v.as_non_reflect_bundle(),
+                eres.mat_dflt.clone(),
+            ),
+            spid::SpDeviceTypes::R => (
+                default_devices.r.as_non_reflect_bundle(),
+                eres.mat_dflt.clone(),
+            ),
         };
         commands.entity(device_ent).insert(bundle);
         commands.entity(device_ent).remove::<FreshLoad>();
 
         for port_ent in device.ports.iter() {
-            commands.entity(*port_ent).insert((eres.mat_dflt.clone(), eres.mesh_port.clone(), eres.se_port.clone()));
+            commands.entity(*port_ent).insert((
+                eres.mat_dflt.clone(),
+                eres.mesh_port.clone(),
+                SchematicElement,
+            ));
             commands.entity(*port_ent).remove::<FreshLoad>();
         }
     }
@@ -373,7 +381,7 @@ impl Plugin for DevicesPlugin {
                 update_port_location,
                 insert_spid,
                 spawn_preview_device_from_type,
-                insert_non_reflect.run_if(on_event::<SchematicLoaded>())
+                insert_non_reflect.run_if(on_event::<SchematicLoaded>()),
             ),
         );
     }

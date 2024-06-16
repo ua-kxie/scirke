@@ -3,7 +3,7 @@ use std::{
     f32::consts::PI,
 };
 
-use super::{ElementsRes, LineSegBundle, LineSegment, LineVertex, Preview, SchematicElement};
+use super::{ElementsRes, LineSegBundle, LineSegment, LineVertex, PickableElement, Preview};
 use crate::schematic::tools::PickingCollider;
 use bevy::{ecs::entity::Entity, prelude::*, utils::smallvec::SmallVec};
 use euclid::approxeq::ApproxEq;
@@ -104,7 +104,7 @@ fn merge_overlapped_vertex(world: &mut World) {
 fn bisect(world: &mut World) {
     let mut qlv =
         world.query_filtered::<(Entity, &Transform), (With<LineVertex>, Without<Preview>)>();
-    let mut qls = world.query_filtered::<(Entity, &LineSegment, &Transform, &SchematicElement), (With<LineSegment>, Without<Preview>)>();
+    let mut qls = world.query_filtered::<(Entity, &LineSegment, &Transform, &PickableElement), (With<LineSegment>, Without<Preview>)>();
     let vcoords: Box<[(Entity, Vec3)]> = qlv
         .iter(&world)
         .map(|(e, gt)| (e, gt.translation))
@@ -113,8 +113,8 @@ fn bisect(world: &mut World) {
     for (this_v_entity, this_v_coords) in vcoords.iter() {
         let mut colliding_segments = vec![];
         // collect colliding segments
-        for (lse, seg, sgt, se) in qls.iter(&world) {
-            if se
+        for (lse, seg, sgt, pe) in qls.iter(&world) {
+            if pe
                 .behavior
                 .collides(&PickingCollider::Point(this_v_coords.truncate()), *sgt)
             {

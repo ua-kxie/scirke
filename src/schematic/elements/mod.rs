@@ -10,7 +10,7 @@ use bevy::{
     prelude::*,
     render::{mesh::PrimitiveTopology, render_asset::RenderAssetUsages},
 };
-use devices::{DeviceType, PickablePort};
+use devices::DeviceType;
 mod devices;
 mod nets;
 pub use devices::DefaultDevices;
@@ -74,13 +74,11 @@ pub struct ElementsRes {
 
     /// schematic elements
     /// lsse
-    pub se_lineseg: SchematicElement,
+    pub pe_lineseg: PickableElement,
     /// lvse
-    pub se_linevertex: SchematicElement,
+    pub pe_linevertex: PickableElement,
     /// devices schematic element
-    pub se_device: SchematicElement,
-    /// ports 
-    pub se_port: SchematicElement,
+    pub pe_device: PickableElement,
 }
 
 const MAT_SEL_COLOR: Color = Color::YELLOW;
@@ -166,17 +164,14 @@ impl FromWorld for ElementsRes {
                 color: MAT_SEL_COLOR + MAT_PCK_COLOR,
             }),
 
-            se_device: SchematicElement {
+            pe_device: PickableElement {
                 behavior: Arc::from(PickableDevice::_4x6()),
             },
-            se_lineseg: SchematicElement {
+            pe_lineseg: PickableElement {
                 behavior: Arc::from(PickableLineSeg::default()),
             },
-            se_linevertex: SchematicElement {
+            pe_linevertex: PickableElement {
                 behavior: Arc::from(PickableVertex::default()),
-            },
-            se_port: SchematicElement {
-                behavior: Arc::from(PickablePort::default()),
             },
         }
     }
@@ -193,9 +188,13 @@ pub struct Selected;
 
 /// different components that impl a given trait T with functions to compute picking collision
 #[derive(Component, Clone)]
-pub struct SchematicElement {
+pub struct PickableElement {
     behavior: Arc<dyn Pickable + Send + Sync + 'static>,
 }
+
+#[derive(Component, Clone, Reflect)]
+#[reflect(Component)]
+pub struct SchematicElement;
 
 /// Pickable trait to define how elements consider themselves "picked"
 /// function needs sufficient information to determine collision
@@ -229,6 +228,7 @@ impl Plugin for ElementsPlugin {
         app.register_type::<Selected>();
         app.register_type::<SpId>();
         app.register_type::<NetId>();
+        app.register_type::<SchematicElement>();
         app.register_type::<SpDeviceTypes>();
         // app.register_type::<Device>();
         app.init_resource::<IdTracker>();
@@ -246,7 +246,7 @@ impl Plugin for ElementsPlugin {
 fn picking(
     mut commands: Commands,
     mut e_newpck: EventReader<NewPickingCollider>,
-    mut q_wse: Query<(Entity, &GlobalTransform, &SchematicElement), Without<Preview>>,
+    mut q_wse: Query<(Entity, &GlobalTransform, &PickableElement), Without<Preview>>,
     mut colliding: Local<Vec<Entity>>,
     mut idx: Local<usize>,
     keys: Res<ButtonInput<KeyCode>>,
