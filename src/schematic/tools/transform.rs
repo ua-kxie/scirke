@@ -24,10 +24,7 @@ impl Plugin for TransformToolPlugin {
         app.init_state::<TransformType>();
         // app.add_systems(Startup, setup);
         app.add_systems(Update, main.run_if(in_state(SchematicToolState::Transform)));
-        app.add_systems(
-            OnEnter(SchematicToolState::Transform),
-            (prep, post_prep).chain(),
-        );
+        app.add_systems(OnEnter(SchematicToolState::Transform), prep.chain());
         // app.add_systems(OnExit(SchematicToolState::Transform), cleanup);
     }
 }
@@ -37,23 +34,23 @@ impl Plugin for TransformToolPlugin {
 /// delete vertices without branches
 fn prep(
     mut commands: Commands,
-    q: Query<Entity, (Without<Selected>, With<Preview>, With<PickableElement>)>,
     qc: Query<Entity, With<SchematicCursor>>,
-    // qports: Query<Entity, (With<Preview>, Without<PickableElement>)>,
+    q_unpicked: Query<Entity, (Without<Selected>, With<Preview>, With<PickableElement>)>,
+    q_ports: Query<Entity, (With<Preview>, Without<PickableElement>)>,
 ) {
     let cursor = qc.single();
-    // despawn linesegments not selected
+    // despawn pickable entities in preview not tagged as selected
     commands
         .entity(cursor)
-        .remove_children(&q.iter().collect::<Box<[Entity]>>());
-    // // remove non-pickable (ports) from cursor
-    // commands
-    //     .entity(cursor)
-    //     .remove_children(&qports.iter().collect::<Box<[Entity]>>());
-    // despawn line vertices without valid branches
-    for e in q.iter() {
+        .remove_children(&q_unpicked.iter().collect::<Box<[Entity]>>());
+    for e in q_unpicked.iter() {
         commands.entity(e).despawn();
     }
+
+    // remove non-pickable (ports) from cursor
+    commands
+        .entity(cursor)
+        .remove_children(&q_ports.iter().collect::<Box<[Entity]>>());
 }
 
 /// all SchematicElements are copied in

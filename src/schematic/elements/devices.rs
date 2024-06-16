@@ -334,7 +334,7 @@ fn insert_spid(
     });
 }
 
-/// this system iterates through cursor children
+/// this system iterates through
 /// inserts non-refelct components for device type elements
 /// useful for applying mesh handles and such after loading
 fn insert_non_reflect(

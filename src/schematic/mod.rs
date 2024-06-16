@@ -4,8 +4,7 @@ use self::{
 };
 use bevy::{
     prelude::*,
-    render::{mesh::PrimitiveTopology, render_asset::RenderAssetUsages},
-    sprite::{Material2dPlugin, MaterialMesh2dBundle, Mesh2dHandle},
+    sprite::{Material2dPlugin, Mesh2dHandle},
 };
 use bevy_save::prelude::*;
 use elements::{ElementsRes, LineSegment, LineVertex, SchematicElement};
@@ -73,30 +72,6 @@ fn snap(mut e: Query<(&mut Transform, &Snap), Changed<GlobalTransform>>) {
     for (mut t, s) in e.iter_mut() {
         t.translation = (t.translation / s.world_step).round() * s.world_step;
     }
-}
-
-/// helper system to test things quick and dirty
-fn setup(
-    mut commands: Commands,
-    mut materials: ResMut<Assets<SchematicMaterial>>,
-    mut meshes: ResMut<Assets<Mesh>>,
-) {
-    let mat_bundle = MaterialMesh2dBundle {
-        mesh: Mesh2dHandle(
-            meshes.add(
-                Mesh::new(PrimitiveTopology::LineList, RenderAssetUsages::RENDER_WORLD)
-                    .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, vec![Vec3::ZERO, Vec3::X])
-                    .with_inserted_attribute(Mesh::ATTRIBUTE_COLOR, vec![Vec4::ONE, Vec4::ONE])
-                    .with_inserted_indices(bevy::render::mesh::Indices::U32(vec![0, 1])),
-            ),
-        ),
-        material: materials.add(SchematicMaterial {
-            color: Color::BLACK.with_a(0.0),
-        }),
-        transform: Transform::from_scale(Vec3::splat(1.0)),
-        ..Default::default()
-    };
-    commands.spawn(mat_bundle);
 }
 
 struct SavePipeline;

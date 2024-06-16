@@ -227,12 +227,7 @@ impl Plugin for ElementsPlugin {
         app.add_systems(PostUpdate, set_mat);
         app.add_systems(
             PostUpdate,
-            (
-                nets::prune,
-                nets::insert_netid,
-                // devices::insert_spid,
-                nets::connected_graphs,
-            )
+            (nets::prune, nets::insert_netid, nets::connected_graphs)
                 .chain()
                 .run_if(on_event::<SchematicChanged>()),
         );
