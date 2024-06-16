@@ -1,35 +1,33 @@
 //! Device: defines circuit devices such as resistor, mos, etc.
 //!
-//! a device is comprised of its graphics, bounding box, ports
-//!
-//! DeviceType held as asset, create mesh asset if instanced at least once
-//! update mesh asset whenever projection scale changes
-//! for now, all device types are always loaded
-//!
-//! device ports are jank until bevy ecs relations
-//! show ports on device mesh
-//! devicetypes to keep track of list of ports and offsets
-//! manually make sure ports visual (mesh) and internals (in device types) match
+//! archetype     DevicePorts DeviceParam Port DeviceLabel
+//! device            *            *
+//! port                                   *
+//! device label                                   *
+
+
 
 use std::{iter, sync::Arc};
 
-use bevy::{
-    ecs::{entity::MapEntities, reflect::ReflectMapEntities},
-    prelude::*,
-    sprite::{MaterialMesh2dBundle, Mesh2dHandle},
-};
+use bevy::{prelude::*, sprite::Mesh2dHandle};
 use euclid::{default::Point2D, Angle, Vector2D};
 use lyon_tessellation::{StrokeOptions, VertexBuffers};
 
 use crate::{
     bevyon::{self, build_mesh, stroke, StrokeTessellator},
-    schematic::{guides::SchematicCursor, material::SchematicMaterial, FreshLoad, SchematicLoaded},
+    schematic::{guides::SchematicCursor, FreshLoad, SchematicLoaded},
 };
 
 use super::{
     readable_idgen::IdTracker, spid, ElementsRes, Pickable, PickableDevice, PickableElement,
     Preview, SchematicElement, Selected, SpDeviceId,
 };
+mod port;
+use port::{Port, PortBundle};
+mod device;
+use device::DeviceBundle;
+mod device_label;
+pub use device::DevicePorts;
 
 #[derive(Resource)]
 pub struct DefaultDevices {
@@ -184,119 +182,6 @@ impl DeviceType {
     }
 }
 
-#[derive(Component, Reflect)]
-#[reflect(Component, MapEntities)]
-struct Port {
-    parent_device: Entity,
-    offset: IVec2,
-}
-impl MapEntities for Port {
-    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
-        self.parent_device = entity_mapper.map_entity(self.parent_device);
-    }
-}
-
-#[derive(Bundle)]
-struct PortBundle {
-    port: Port,
-    mat: MaterialMesh2dBundle<SchematicMaterial>,
-    se: SchematicElement,
-}
-
-impl PortBundle {
-    fn new(deviceid: Entity, offset: IVec2, eres: &ElementsRes) -> Self {
-        PortBundle {
-            port: Port {
-                parent_device: deviceid,
-                offset,
-            },
-            mat: MaterialMesh2dBundle {
-                mesh: bevy::sprite::Mesh2dHandle(eres.mesh_port.clone()), // TODO create a mesh for port
-                material: eres.mat_dflt.clone(),
-                ..Default::default()
-            },
-            se: SchematicElement {
-                schtype: spid::SchType::Port,
-            },
-        }
-    }
-}
-
-/// component to display param summary
-#[derive(Component, Reflect)]
-#[reflect(Component, MapEntities)]
-pub struct DeviceLabel {
-    offset: IVec2,
-    device: Entity,
-}
-impl MapEntities for DeviceLabel {
-    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
-        self.device = entity_mapper.map_entity(self.device);
-    }
-}
-
-/// component storing device parameters
-/// TODO: want to use trait object for this but how to serialize?
-#[derive(Component, Reflect)]
-#[reflect(Component)]
-pub enum DeviceParams {
-    Raw(String),  // passed directly to ngspice
-    Float(f32),
-}
-
-// #[derive(Component, Reflect)]
-// #[reflect(Component)]
-// pub struct DeviceParams0 (
-//     Box<dyn Send + Sync + 'static>,  // params trait object
-// );
-
-#[derive(Component, Reflect)]
-#[reflect(Component, MapEntities)]
-pub struct DevicePorts {
-    ports: Vec<Entity>,
-}
-impl DevicePorts {
-    pub fn get_ports(&self) -> &Vec<Entity> {
-        &self.ports
-    }
-}
-impl MapEntities for DevicePorts {
-    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
-        self.ports = self
-            .ports
-            .iter()
-            .map(|e| entity_mapper.map_entity(*e))
-            .collect();
-    }
-}
-
-#[derive(Bundle)]
-struct DeviceBundle {
-    device: DevicePorts,
-    mat: MaterialMesh2dBundle<SchematicMaterial>,
-    pe: PickableElement,
-    se: SchematicElement,
-}
-
-impl DeviceBundle {
-    fn from_type(dtype: &DeviceType, eres: &ElementsRes, ports: Vec<Entity>) -> Self {
-        Self {
-            device: DevicePorts { ports },
-            mat: MaterialMesh2dBundle {
-                mesh: dtype.visuals.clone(),
-                material: eres.mat_dflt.clone(),
-                ..Default::default()
-            },
-            pe: PickableElement {
-                behavior: dtype.collider.clone(),
-            },
-            se: SchematicElement {
-                schtype: spid::SchType::Spice(spid::SpType::Device(dtype.spice_type.clone())),
-            },
-        }
-    }
-}
-
 pub fn spawn_preview_device_from_type(
     mut e: EventReader<DeviceType>,
     mut commands: Commands,
@@ -335,17 +220,17 @@ fn update_port_location(
 ) {
     // delete all ports without valid parent device
     for (e, _, port) in q_p.iter() {
-        if commands.get_entity(port.parent_device).is_none() {
+        if commands.get_entity(port.get_parent()).is_none() {
             commands.entity(e).despawn();
         }
     }
     // update position of ports
     for (device_gt, d) in q.iter() {
-        for port_entity in d.ports.iter() {
+        for port_entity in d.get_ports().iter() {
             let Ok((_, mut port_t, port)) = q_p.get_mut(*port_entity) else {
                 continue;
             };
-            let mut newt = device_gt.transform_point(port.offset.extend(0).as_vec3());
+            let mut newt = device_gt.transform_point(port.get_offset_vec3());
             newt.z = 0.01;
             port_t.translation = newt;
         }
@@ -390,7 +275,7 @@ fn insert_non_reflect(
         commands.entity(device_ent).insert(bundle);
         commands.entity(device_ent).remove::<FreshLoad>();
 
-        for port_ent in device.ports.iter() {
+        for port_ent in device.get_ports().iter() {
             commands.entity(*port_ent).insert((
                 eres.mat_dflt.clone(),
                 Mesh2dHandle(eres.mesh_port.clone()),

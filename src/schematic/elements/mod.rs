@@ -17,7 +17,8 @@ use euclid::default::{Box2D, Point2D};
 pub use nets::{create_preview_lineseg, LineVertex};
 use nets::{PickableLineSeg, PickableVertex};
 use spid::{SchType, SpDeviceType, SpType};
-pub use devices::DevicePorts;
+// pub use devices::DevicePorts;
+mod netlisting;
 
 use super::{
     infotext::InfoRes,

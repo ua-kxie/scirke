@@ -15,8 +15,6 @@ mod guides;
 mod infotext;
 mod material;
 mod tools;
-mod netlisting;
-
 // Snapped marker component: system to goes around snapping transform of such entities
 #[derive(Component)]
 pub struct Snap {

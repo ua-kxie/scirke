@@ -97,9 +97,11 @@ fn update(
     let text = &mut text.sections[0].value;
     *text = infores.line();
 
-    if let Some(Ok(Some(spid))) = infores.picked.map(|e| qspid.get(e).map(|(se, op)| {
-        se.get_dtype().map(|x| x.prefix().to_owned() + op.get_id())
-    })) {
+    if let Some(Ok(Some(spid))) = infores.picked.map(|e| {
+        qspid
+            .get(e)
+            .map(|(se, op)| se.get_dtype().map(|x| x.prefix().to_owned() + op.get_id()))
+    }) {
         text.push_str(&spid);
     }
     if let Some(Ok(netid)) = infores.picked.map(|e| qnetid.get(e).map(|op| op.get_id())) {

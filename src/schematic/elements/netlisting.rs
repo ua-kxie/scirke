@@ -1,6 +1,6 @@
 //! stuff for making a netlist from the drawn circuit
-//! example netlist: 
-//! 
+//! example netlist:
+//!
 //! Netlist Created by Circe
 //! .model MOSN NMOS level=1
 //! .model MOSP PMOS level=1
@@ -16,7 +16,8 @@
 //! for the most part, each line describes a device and its port connections
 use bevy::prelude::*;
 
-use super::elements::{DevicePorts, SchematicElement, SpDeviceId};
+use super::{devices::DevicePorts, SchematicElement, SpDeviceId};
+
 /*
 strat: loop through all devices
 */
@@ -24,7 +25,6 @@ strat: loop through all devices
 fn netlist(
     q_devices: Query<(&DevicePorts, &SchematicElement, &SpDeviceId)>,
     qt: Query<&GlobalTransform>,
-
 ) {
     for (d, se, spdid) in q_devices.iter() {
         let Some(spdid) = spice_id(se, spdid) else {
@@ -43,5 +43,6 @@ fn netlist(
 }
 
 fn spice_id(se: &SchematicElement, spdid: &SpDeviceId) -> Option<String> {
-    se.get_dtype().map(|x| {x.prefix().to_owned() + spdid.get_id()})
+    se.get_dtype()
+        .map(|x| x.prefix().to_owned() + spdid.get_id())
 }
