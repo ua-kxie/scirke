@@ -31,7 +31,7 @@ pub fn prune(world: &mut World) {
     // delete orphaned vertices or incomplete segments
     cull(world);
     //
-    merge_overlapped_vertex(world);
+    merge_overlapped_vertices(world);
     // bisect segments at vertices
     bisect(world);
     // removing overlapping segments should always come after bisection
@@ -40,50 +40,75 @@ pub fn prune(world: &mut World) {
     combine_parallel(world);
 }
 
-/// this function merges vertices occupying the same coordinate
-fn merge_overlapped_vertex(world: &mut World) {
-    /// merges two vertices by appending the branches of `old` to `new`
-    /// also goes through the branches of `old` and updates the references to `old` to `new`
-    /// both `new` and `old` must be valid entities with [`LineVertex`] component
-    fn merge_vertices(world: &mut World, new: Entity, old: Entity) {
-        // get the branches of old
-        let mut branches = world
-            .entity(old)
-            .get::<LineVertex>()
-            .unwrap()
-            .branches
-            .clone();
+/// merges two vertices by appending the branches of `old` to `new`
+/// also goes through the branches of `old` and updates the references to `old` to `new`
+/// both `new` and `old` must be valid entities with [`LineVertex`] component
+fn merge_old_new(world: &mut World, new: Entity, old: Entity) {
+    // get the branches of old
+    let mut branches = world
+        .entity(old)
+        .get::<LineVertex>()
+        .unwrap()
+        .branches
+        .clone();
 
-        for &branch in branches.iter() {
-            // if the branch is valid, update its references of `old` to `new`
-            let Some(mut esegref) = world.get_entity_mut(branch) else {
-                continue;
-            };
-            let mut seg = esegref.get_mut::<LineSegment>().unwrap();
-            if seg.a == old {
-                seg.a = new;
-            } else if seg.b == old {
-                seg.b = new;
-            } else {
-                panic!("misconnected line segment");
-            }
+    for &branch in branches.iter() {
+        // if the branch is valid, update its references of `old` to `new`
+        let Some(mut esegref) = world.get_entity_mut(branch) else {
+            continue;
+        };
+        let mut seg = esegref.get_mut::<LineSegment>().unwrap();
+        if seg.a == old {
+            seg.a = new;
+        } else if seg.b == old {
+            seg.b = new;
+        } else {
+            panic!("misconnected line segment");
         }
-
-        // update the branches on the new vertex
-        world
-            .entity_mut(new)
-            .get_mut::<LineVertex>()
-            .unwrap()
-            .branches
-            .append(&mut branches);
-        // delete the old vertex
-        world.despawn(old);
     }
 
-    // for every vertex v at coord:
-    // get existing at coord and merge into existing if existing is valid
+    // update the branches on the new vertex
+    world
+        .entity_mut(new)
+        .get_mut::<LineVertex>()
+        .unwrap()
+        .branches
+        .append(&mut branches);
+    // delete the old vertex
+    world.despawn(old);
+}
+
+/// this function merges vertices occupying the same coordinate
+fn merge_overlapped_vertices(world: &mut World) {
+    // for every port at coord:
+    // get existing at coord and connect with lineset
     // else put new into hashmap with coord as key
+    // for every vertex v at coord:
+    // get existing at coord and merge into existing,
+    // else put new into hashmap with coord as key, despawn old
+    // same hashmap between: vertices will get merged into ports
     let mut cehm: HashMap<IVec2, Entity> = HashMap::new();
+    let mut qp =
+        world.query_filtered::<(Entity, &Transform), (With<LineVertex>, Without<Preview>, With<DevicePort>)>();
+    let ports: Box<[(Entity, IVec2)]> = qp
+        .iter(&world)
+        .map(|x| (x.0, x.1.translation.truncate().as_ivec2()))
+        .collect();
+    let eres = world.resource::<ElementsRes>();
+    let eres = (*eres).clone();
+    for (this_port, c) in ports.into_iter() {
+        match cehm.insert(*c, *this_port) {
+            Some(existing_port) => {
+                let c3 = c.as_vec2().extend(0.0);
+                world.spawn(LineSegBundle::new(
+                    &eres,
+                    (existing_port, c3),
+                    (*this_port, c3),
+                ));
+            }
+            None => {}
+        }
+    }
     let mut q =
         world.query_filtered::<(Entity, &Transform), (With<LineVertex>, Without<Preview>, Without<DevicePort>)>();
     let vertices: Box<[(Entity, IVec2)]> = q
@@ -93,7 +118,7 @@ fn merge_overlapped_vertex(world: &mut World) {
     for (this_vertex, c) in vertices.into_iter() {
         match cehm.insert(*c, *this_vertex) {
             Some(existing_vertex) => {
-                merge_vertices(world, *this_vertex, existing_vertex);
+                merge_old_new(world, *this_vertex, existing_vertex);
             }
             None => {}
         }
@@ -136,7 +161,8 @@ fn bisect(world: &mut World) {
 
 fn combine_parallel(world: &mut World) {
     // remove vertices bisecting two parallel lines
-    let mut qlv = world.query_filtered::<Entity, (With<LineVertex>, Without<Preview>, Without<DevicePort>)>();
+    let mut qlv =
+        world.query_filtered::<Entity, (With<LineVertex>, Without<Preview>, Without<DevicePort>)>();
     let all_vertices: Box<[Entity]> = qlv.iter(&world).collect();
     for vertex in all_vertices.iter() {
         merge_parallel(world, *vertex);
@@ -158,7 +184,8 @@ fn cull(world: &mut World) {
         }
     }
     // delete lonesome vertices
-    let mut qlv = world.query_filtered::<Entity, (With<LineVertex>, Without<Preview>, Without<DevicePort>)>();
+    let mut qlv =
+        world.query_filtered::<Entity, (With<LineVertex>, Without<Preview>, Without<DevicePort>)>();
     let mut lves: Box<[Entity]> = qlv.iter(&world).collect();
     for vertex_entity in lves.iter_mut() {
         let cleaned_branches: SmallVec<[Entity; 8]> = world

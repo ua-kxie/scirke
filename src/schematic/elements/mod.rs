@@ -54,7 +54,7 @@ pub fn persist_preview(
     }
 }
 
-#[derive(Resource)]
+#[derive(Resource, Clone)]
 pub struct ElementsRes {
     /// unit x line mesh, transformed by scale, rotation and translation to visualize a line segment
     pub mesh_unitx: Handle<Mesh>,

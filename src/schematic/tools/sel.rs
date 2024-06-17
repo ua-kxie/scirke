@@ -7,6 +7,7 @@ use crate::{
         elements::Selected,
         guides::{NewSnappedCursorPos, SchematicCursor},
         material::SchematicMaterial,
+        SchematicChanged,
     },
 };
 
@@ -90,11 +91,13 @@ fn listener(
     keys: Res<ButtonInput<KeyCode>>,
     qc: Query<Entity, With<Selected>>,
     mut commands: Commands,
+    mut e_schchanged: EventWriter<SchematicChanged>,
 ) {
     if keys.just_released(KeyCode::Delete) {
         for e in qc.iter() {
             commands.entity(e).despawn();
         }
+        e_schchanged.send(SchematicChanged);
     }
 }
 

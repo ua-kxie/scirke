@@ -5,9 +5,7 @@
 //! port                                       *
 //! schematic label                                                 *
 
-
-
-use std::{iter, num::NonZeroU16, sync::Arc};
+use std::sync::Arc;
 
 use bevy::{prelude::*, sprite::Mesh2dHandle};
 use euclid::{default::Point2D, Angle, Vector2D};
@@ -23,13 +21,13 @@ use super::{
     Preview, SchematicElement, Selected, SpDeviceId,
 };
 mod port;
-use port::{update_port_location, PortBundle};
 pub use port::DevicePort;
+use port::{update_port_location, PortBundle};
 mod device;
 use device::{DeviceBundle, DeviceParams};
 mod device_label;
-pub use device::DevicePorts;
 use device::DeviceLabel;
+pub use device::DevicePorts;
 use device_label::{sch_label_update, SchematicLabel, SchematicLabelBundle};
 
 #[derive(Resource)]
@@ -219,8 +217,6 @@ pub fn spawn_preview_device_from_type(
     commands.entity(label_entity).insert(label_bundle);
     commands.insert_or_spawn_batch(ports_entities.into_iter().zip(port_iter.into_iter()));
 }
-
-
 
 /// inspert spid component for entities which have SpDeviceType but not spid
 fn insert_spid(

@@ -67,7 +67,12 @@ pub struct DeviceBundle {
 }
 
 impl DeviceBundle {
-    pub fn from_type(dtype: &DeviceType, eres: &ElementsRes, ports: Vec<Entity>, label: Entity) -> Self {
+    pub fn from_type(
+        dtype: &DeviceType,
+        eres: &ElementsRes,
+        ports: Vec<Entity>,
+        label: Entity,
+    ) -> Self {
         Self {
             label: DeviceLabel { label },
             params: DeviceParams::Raw("1".to_owned()),

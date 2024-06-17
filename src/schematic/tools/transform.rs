@@ -116,7 +116,7 @@ fn main(
     mut commands: Commands,
     st: Res<State<TransformType>>,
     q_selected_not_preview: Query<Entity, (With<Selected>, Without<Preview>)>,
-    mut q_previews: Query<Entity, With<Preview>>,
+    q_previews: Query<Entity, With<Preview>>,
     mut notify_changed: EventWriter<SchematicChanged>,
 ) {
     let (cursor_entity, Some(children)) = cursor_children.single() else {
@@ -131,7 +131,7 @@ fn main(
                 }
             }
             TransformType::Move => {
-                // delete all entities marked as selected
+                // delete all entities not in preview marked as selected
                 for e in q_selected_not_preview.iter() {
                     commands.entity(e).despawn();
                 }
@@ -146,8 +146,10 @@ fn main(
             *t = gt.compute_transform();
         }
         // unmark all entites as preview
-        q_previews.iter().for_each(|e| {commands.entity(e).remove::<Preview>();});
-        
+        q_previews.iter().for_each(|e| {
+            commands.entity(e).remove::<Preview>();
+        });
+
         notify_changed.send(SchematicChanged);
         return; // ignore other commands because its effects were never shown to user
     }

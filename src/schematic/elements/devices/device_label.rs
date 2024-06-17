@@ -5,8 +5,6 @@ use bevy::{
     prelude::*,
 };
 
-use crate::schematic::elements::{spid::SchType, SchematicElement};
-
 /// component to display param summary
 #[derive(Component, Reflect)]
 #[reflect(Component, MapEntities)]
@@ -31,16 +29,17 @@ impl SchematicLabelBundle {
     pub fn new(parent: Entity, offset: IVec2, value: String) -> Self {
         Self {
             selabel: SchematicLabel { offset, parent },
-            text: Text2dBundle{
-                text: Text::from_section(value,     
-                TextStyle {
-                    font_size: 20.0,
-                    color: Color::WHITE,
-                    ..default()
-                },
-            ),
-            transform: Transform::from_scale(Vec3::splat(0.1)),
-            ..default()
+            text: Text2dBundle {
+                text: Text::from_section(
+                    value,
+                    TextStyle {
+                        font_size: 20.0,
+                        color: Color::WHITE,
+                        ..default()
+                    },
+                ),
+                transform: Transform::from_scale(Vec3::splat(0.1)),
+                ..default()
             },
             // se: SchematicElement {schtype: SchType::Label}
         }

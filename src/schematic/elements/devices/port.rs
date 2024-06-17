@@ -6,7 +6,7 @@ use bevy::{
     sprite::MaterialMesh2dBundle,
 };
 
-use crate::schematic::{elements::{LineVertex, NetId}, material::SchematicMaterial};
+use crate::schematic::{elements::LineVertex, material::SchematicMaterial};
 
 use super::{spid, DevicePorts, ElementsRes, SchematicElement};
 
