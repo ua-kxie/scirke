@@ -17,6 +17,7 @@ use super::{
 };
 use bevy::{ecs::entity::Entity, prelude::*, sprite::Mesh2dHandle};
 mod prune;
+use lineseg::transform_lineseg;
 pub use prune::prune;
 mod graph;
 pub use graph::{connected_graphs, insert_netid};
@@ -55,38 +56,14 @@ pub fn create_preview_lineseg(
     spawn_vertex(commands, eres, lineseg_entity, dst_entity, dst_pt);
 }
 
-/// this system updates the transforms of all linesegments so that its unitx mesh reflects the position of its defining vertices
-/// TODO: for performance, this should only run at specific times
-pub fn transform_lineseg(
-    gt: Query<&Transform, Without<LineSegment>>,
-    mut lines: Query<(Entity, &LineSegment, &mut Transform)>,
-    mut commands: Commands,
-) {
-    for (ent, ls, mut t) in lines.iter_mut() {
-        let Ok(a) = gt.get(ls.get_a()) else {
-            // a vertex cannot be found
-            dbg!("4");
-            commands.entity(ent).despawn();
-            continue;
-        };
-        let Ok(b) = gt.get(ls.get_b()) else {
-            // a vertex cannot be found
-            dbg!("5");
-            commands.entity(ent).despawn();
-            continue;
-        };
-        // compute own transform to take unit X from (0, 0) -> (1, 0) to a -> b
-        let m10 = b.translation - a.translation;
-        *t = Transform::from_translation(a.translation)
-            .with_rotation(Quat::from_rotation_z(Vec2::X.angle_between(m10.truncate())))
-            .with_scale(Vec3::splat(m10.length()));
-    }
-}
 pub struct NetsPlugin;
 
 impl Plugin for NetsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, transform_lineseg);
+        app.add_systems(
+            Update,
+            transform_lineseg.run_if(on_event::<SchematicChanged>()),
+        );
         app.add_systems(
             PostUpdate,
             (prune, insert_netid, connected_graphs)
