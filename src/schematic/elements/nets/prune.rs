@@ -80,14 +80,32 @@ fn merge_old_new(world: &mut World, new: Entity, old: Entity) {
 
 /// this function merges vertices occupying the same coordinate
 fn merge_overlapped_vertices(world: &mut World) {
-    // for every port at coord:
-    // get existing at coord and connect with lineset
-    // else put new into hashmap with coord as key
     // for every vertex v at coord:
     // get existing at coord and merge into existing,
     // else put new into hashmap with coord as key, despawn old
+    // for every port at coord:
+    // get existing at coord and connect with lineset
+    // else put new into hashmap with coord as key
+
     // same hashmap between: vertices will get merged into ports
+    // previous gets removed and merged into newer
     let mut cehm: HashMap<IVec2, Entity> = HashMap::new();
+    // merge vertices
+    let mut q =
+        world.query_filtered::<(Entity, &Transform), (With<LineVertex>, Without<Preview>, Without<DevicePort>)>();
+    let vertices: Box<[(Entity, IVec2)]> = q
+        .iter(&world)
+        .map(|x| (x.0, x.1.translation.truncate().as_ivec2()))
+        .collect();
+    for (this_vertex, c) in vertices.into_iter() {
+        match cehm.insert(*c, *this_vertex) {
+            Some(existing_vertex) => {
+                merge_old_new(world, *this_vertex, existing_vertex);
+            }
+            None => {}
+        }
+    }
+    // merge ports
     let mut qp =
         world.query_filtered::<(Entity, &Transform), (With<LineVertex>, Without<Preview>, With<DevicePort>)>();
     let ports: Box<[(Entity, IVec2)]> = qp
@@ -105,20 +123,6 @@ fn merge_overlapped_vertices(world: &mut World) {
                     (existing_port, c3),
                     (*this_port, c3),
                 ));
-            }
-            None => {}
-        }
-    }
-    let mut q =
-        world.query_filtered::<(Entity, &Transform), (With<LineVertex>, Without<Preview>, Without<DevicePort>)>();
-    let vertices: Box<[(Entity, IVec2)]> = q
-        .iter(&world)
-        .map(|x| (x.0, x.1.translation.truncate().as_ivec2()))
-        .collect();
-    for (this_vertex, c) in vertices.into_iter() {
-        match cehm.insert(*c, *this_vertex) {
-            Some(existing_vertex) => {
-                merge_old_new(world, *this_vertex, existing_vertex);
             }
             None => {}
         }
