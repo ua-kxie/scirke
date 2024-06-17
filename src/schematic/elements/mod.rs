@@ -237,6 +237,7 @@ impl Plugin for ElementsPlugin {
         app.init_resource::<IdTracker>();
         app.add_plugins(devices::DevicesPlugin);
         app.add_plugins(nets::NetsPlugin);
+        app.add_plugins(netlisting::NetlistPlugin);
     }
 }
 

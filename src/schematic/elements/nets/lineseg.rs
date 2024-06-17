@@ -178,6 +178,7 @@ pub fn transform_lineseg(
             *transform = newt;
         } else {
             // dbg!("hiding infite lineseg", a, b);
+            // TODO: need to make it unselectable too
             *visible = Visibility::Hidden;
         }
     }

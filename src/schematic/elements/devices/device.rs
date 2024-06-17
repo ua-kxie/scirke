@@ -18,6 +18,18 @@ pub enum DeviceParams {
     Raw(String), // passed directly to ngspice
     Float(f32),
 }
+impl DeviceParams {
+    pub fn spice_param(&self) -> String {
+        match &self {
+            DeviceParams::Raw(r) => {
+                r.clone()
+            },
+            DeviceParams::Float(f) => {
+                f.to_string()
+            },
+        }
+    }
+}
 
 // #[derive(Component, Reflect)]
 // #[reflect(Component)]
