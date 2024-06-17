@@ -12,7 +12,9 @@
 
 use crate::schematic::{FreshLoad, SchematicChanged, SchematicLoaded};
 
-use super::{spid, ElementsRes, Pickable, PickableElement, Preview, SchematicElement};
+use super::{
+    devices::DevicePort, spid, ElementsRes, Pickable, PickableElement, Preview, SchematicElement,
+};
 use bevy::{ecs::entity::Entity, prelude::*, sprite::Mesh2dHandle};
 mod prune;
 pub use prune::prune;
@@ -63,11 +65,13 @@ pub fn transform_lineseg(
     for (ent, ls, mut t) in lines.iter_mut() {
         let Ok(a) = gt.get(ls.get_a()) else {
             // a vertex cannot be found
+            dbg!("4");
             commands.entity(ent).despawn();
             continue;
         };
         let Ok(b) = gt.get(ls.get_b()) else {
             // a vertex cannot be found
+            dbg!("5");
             commands.entity(ent).despawn();
             continue;
         };
@@ -102,7 +106,7 @@ impl Plugin for NetsPlugin {
 /// inserts non-refelct components for net type elements
 /// useful for applying mesh handles and such after loading
 fn insert_non_reflect(
-    qv: Query<Entity, (With<FreshLoad>, With<LineVertex>)>,
+    qv: Query<Entity, (With<FreshLoad>, With<LineVertex>, Without<DevicePort>)>,
     qs: Query<Entity, (With<FreshLoad>, With<LineSegment>)>,
     eres: Res<ElementsRes>,
     mut commands: Commands,

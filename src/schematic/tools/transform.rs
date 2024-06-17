@@ -29,7 +29,7 @@ impl Plugin for TransformToolPlugin {
 }
 
 /// this system clears cursor children
-/// runs upon entering idle state (exit transform tool)
+/// runs upon exiting transform tool
 fn clear_cursor_children(
     mut commands: Commands,
     q: Query<(Entity, &Children), With<SchematicCursor>>,
@@ -39,6 +39,7 @@ fn clear_cursor_children(
     };
     commands.entity(parent).remove_children(&cursor_children);
     for e in cursor_children {
+        dbg!("7");
         commands.entity(*e).despawn();
     }
 }
@@ -58,6 +59,7 @@ fn prep(
         .entity(cursor)
         .remove_children(&q_unpicked.iter().collect::<Box<[Entity]>>());
     for e in q_unpicked.iter() {
+        dbg!("8");
         commands.entity(e).despawn();
     }
 
@@ -92,6 +94,7 @@ fn post_prep(
 
             if lv.branches.is_empty() {
                 commands.entity(cursor).remove_children(&[e]);
+                dbg!("9");
                 commands.entity(e).despawn();
             }
         }
@@ -133,6 +136,7 @@ fn main(
             TransformType::Move => {
                 // delete all entities not in preview marked as selected
                 for e in q_selected_not_preview.iter() {
+                    dbg!("10");
                     commands.entity(e).despawn();
                 }
             }

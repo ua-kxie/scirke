@@ -95,6 +95,7 @@ fn listener(
 ) {
     if keys.just_released(KeyCode::Delete) {
         for e in qc.iter() {
+            dbg!("6");
             commands.entity(e).despawn();
         }
         e_schchanged.send(SchematicChanged);

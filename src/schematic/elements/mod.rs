@@ -40,6 +40,7 @@ pub fn despawn_preview(
     q: &Query<Entity, (With<SchematicElement>, With<Preview>)>,
 ) {
     for e in q.iter() {
+        dbg!("1");
         commands.entity(e).despawn();
     }
 }
