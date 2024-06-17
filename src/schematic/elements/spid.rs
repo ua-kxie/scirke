@@ -53,6 +53,7 @@ pub enum SpType {
 pub enum SchType {
     Spice(SpType),
     Port,
+    Label,
 }
 
 /// spice id to identify a unique device

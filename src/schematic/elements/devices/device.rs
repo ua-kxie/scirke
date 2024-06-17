@@ -45,9 +45,21 @@ impl MapEntities for DevicePorts {
     }
 }
 
+#[derive(Component, Reflect)]
+#[reflect(Component, MapEntities)]
+pub struct DeviceLabel {
+    label: Entity,
+}
+impl MapEntities for DeviceLabel {
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
+        self.label = entity_mapper.map_entity(self.label);
+    }
+}
+
 #[derive(Bundle)]
 pub struct DeviceBundle {
-    // params: DeviceParams,
+    label: DeviceLabel,
+    params: DeviceParams,
     ports: DevicePorts,
     mat: MaterialMesh2dBundle<SchematicMaterial>,
     pe: PickableElement,
@@ -55,8 +67,10 @@ pub struct DeviceBundle {
 }
 
 impl DeviceBundle {
-    pub fn from_type(dtype: &DeviceType, eres: &ElementsRes, ports: Vec<Entity>) -> Self {
+    pub fn from_type(dtype: &DeviceType, eres: &ElementsRes, ports: Vec<Entity>, label: Entity) -> Self {
         Self {
+            label: DeviceLabel { label },
+            params: DeviceParams::Raw("1".to_owned()),
             ports: DevicePorts { ports },
             mat: MaterialMesh2dBundle {
                 mesh: dtype.visuals.clone(),

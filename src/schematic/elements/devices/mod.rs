@@ -1,13 +1,13 @@
 //! Device: defines circuit devices such as resistor, mos, etc.
 //!
-//! archetype     DevicePorts DeviceParam Port DeviceLabel
-//! device            *            *
-//! port                                   *
-//! device label                                   *
+//! archetype        DevicePorts DeviceParam Port DeviceLabel SchematicLabel
+//! device                *            *               *
+//! port                                       *
+//! schematic label                                                 *
 
 
 
-use std::{iter, sync::Arc};
+use std::{iter, num::NonZeroU16, sync::Arc};
 
 use bevy::{prelude::*, sprite::Mesh2dHandle};
 use euclid::{default::Point2D, Angle, Vector2D};
@@ -23,11 +23,13 @@ use super::{
     Preview, SchematicElement, Selected, SpDeviceId,
 };
 mod port;
-use port::{Port, PortBundle};
+use port::{update_port_location, Port, PortBundle};
 mod device;
-use device::DeviceBundle;
+use device::{DeviceBundle, DeviceParams};
 mod device_label;
 pub use device::DevicePorts;
+use device::DeviceLabel;
+use device_label::{sch_label_update, SchematicLabel, SchematicLabelBundle};
 
 #[derive(Resource)]
 pub struct DefaultDevices {
@@ -198,44 +200,26 @@ pub fn spawn_preview_device_from_type(
         .iter()
         .map(|_| commands.spawn_empty().id())
         .collect::<Vec<Entity>>();
+    let label_entity = commands.spawn_empty().id();
     let device_bundle = (
-        DeviceBundle::from_type(newtype, &eres, ports_entities.clone()),
+        DeviceBundle::from_type(newtype, &eres, ports_entities.clone(), label_entity),
         Preview,
         Selected,
     );
+    let label_bundle = SchematicLabelBundle::new(device_entity, IVec2::splat(3), "test".to_owned());
     let port_iter = newtype
         .ports
         .iter()
         .map(|&offset| PortBundle::new(device_entity, offset, &eres))
         .collect::<Vec<PortBundle>>();
     commands.entity(cursor.single()).add_child(device_entity);
+
+    commands.entity(device_entity).insert(device_bundle);
+    commands.entity(label_entity).insert(label_bundle);
     commands.insert_or_spawn_batch(ports_entities.into_iter().zip(port_iter.into_iter()));
-    commands.insert_or_spawn_batch(iter::once((device_entity, device_bundle)));
 }
 
-fn update_port_location(
-    q: Query<(&GlobalTransform, &DevicePorts)>,
-    mut q_p: Query<(Entity, &mut Transform, &Port)>,
-    mut commands: Commands,
-) {
-    // delete all ports without valid parent device
-    for (e, _, port) in q_p.iter() {
-        if commands.get_entity(port.get_parent()).is_none() {
-            commands.entity(e).despawn();
-        }
-    }
-    // update position of ports
-    for (device_gt, d) in q.iter() {
-        for port_entity in d.get_ports().iter() {
-            let Ok((_, mut port_t, port)) = q_p.get_mut(*port_entity) else {
-                continue;
-            };
-            let mut newt = device_gt.transform_point(port.get_offset_vec3());
-            newt.z = 0.01;
-            port_t.translation = newt;
-        }
-    }
-}
+
 
 /// inspert spid component for entities which have SpDeviceType but not spid
 fn insert_spid(
@@ -292,14 +276,13 @@ pub struct DevicesPlugin;
 
 impl Plugin for DevicesPlugin {
     fn build(&self, app: &mut App) {
-        app.register_type::<Port>();
-        app.register_type::<DevicePorts>();
         app.add_systems(
             Update,
             (
                 update_port_location,
                 insert_spid,
                 spawn_preview_device_from_type,
+                sch_label_update,
             ),
         );
         app.add_systems(
@@ -307,6 +290,11 @@ impl Plugin for DevicesPlugin {
             insert_non_reflect.run_if(on_event::<SchematicLoaded>()),
         );
         app.register_type::<SpDeviceId>();
+        app.register_type::<DevicePorts>();
+        app.register_type::<DeviceParams>();
+        app.register_type::<DeviceLabel>();
+        app.register_type::<Port>();
+        app.register_type::<SchematicLabel>();
         app.add_event::<DeviceType>();
     }
 }

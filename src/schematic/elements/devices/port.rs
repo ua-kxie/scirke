@@ -8,7 +8,7 @@ use bevy::{
 
 use crate::schematic::material::SchematicMaterial;
 
-use super::{spid, ElementsRes, SchematicElement};
+use super::{spid, DevicePorts, ElementsRes, SchematicElement};
 
 #[derive(Component, Reflect)]
 #[reflect(Component, MapEntities)]
@@ -55,6 +55,30 @@ impl PortBundle {
             se: SchematicElement {
                 schtype: spid::SchType::Port,
             },
+        }
+    }
+}
+
+pub fn update_port_location(
+    q: Query<(&GlobalTransform, &DevicePorts)>,
+    mut q_p: Query<(Entity, &mut Transform, &Port)>,
+    mut commands: Commands,
+) {
+    // delete all ports without valid parent device
+    for (e, _, port) in q_p.iter() {
+        if commands.get_entity(port.get_parent()).is_none() {
+            commands.entity(e).despawn();
+        }
+    }
+    // update position of ports
+    for (device_gt, d) in q.iter() {
+        for port_entity in d.get_ports().iter() {
+            let Ok((_, mut port_t, port)) = q_p.get_mut(*port_entity) else {
+                continue;
+            };
+            let mut newt = device_gt.transform_point(port.get_offset_vec3());
+            newt.z = 0.01;
+            port_t.translation = newt;
         }
     }
 }
