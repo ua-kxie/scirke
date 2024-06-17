@@ -23,7 +23,8 @@ use super::{
     Preview, SchematicElement, Selected, SpDeviceId,
 };
 mod port;
-use port::{update_port_location, Port, PortBundle};
+use port::{update_port_location, PortBundle};
+pub use port::DevicePort;
 mod device;
 use device::{DeviceBundle, DeviceParams};
 mod device_label;
@@ -293,7 +294,7 @@ impl Plugin for DevicesPlugin {
         app.register_type::<DevicePorts>();
         app.register_type::<DeviceParams>();
         app.register_type::<DeviceLabel>();
-        app.register_type::<Port>();
+        app.register_type::<DevicePort>();
         app.register_type::<SchematicLabel>();
         app.add_event::<DeviceType>();
     }

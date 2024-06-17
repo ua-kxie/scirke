@@ -116,6 +116,7 @@ fn main(
     mut commands: Commands,
     st: Res<State<TransformType>>,
     q_selected_not_preview: Query<Entity, (With<Selected>, Without<Preview>)>,
+    mut q_previews: Query<Entity, With<Preview>>,
     mut notify_changed: EventWriter<SchematicChanged>,
 ) {
     let (cursor_entity, Some(children)) = cursor_children.single() else {
@@ -138,14 +139,15 @@ fn main(
         }
 
         next_toolstate.set(SchematicToolState::Idle);
-        // make all children of cursor not such, taking care of transforms, and unmark as preview
+        // make all children of cursor not such, taking care of transforms
         commands.entity(cursor_entity).remove_children(children);
         for c in children {
             let (mut t, gt) = q_transform.get_mut(*c).unwrap();
             *t = gt.compute_transform();
-            commands.entity(*c).remove::<Preview>();
         }
-
+        // unmark all entites as preview
+        q_previews.iter().for_each(|e| {commands.entity(e).remove::<Preview>();});
+        
         notify_changed.send(SchematicChanged);
         return; // ignore other commands because its effects were never shown to user
     }

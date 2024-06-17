@@ -4,7 +4,7 @@ use std::{
 };
 
 use super::{ElementsRes, LineSegBundle, LineSegment, LineVertex, PickableElement, Preview};
-use crate::schematic::tools::PickingCollider;
+use crate::schematic::{elements::devices::DevicePort, tools::PickingCollider};
 use bevy::{ecs::entity::Entity, prelude::*, utils::smallvec::SmallVec};
 use euclid::approxeq::ApproxEq;
 
@@ -85,7 +85,7 @@ fn merge_overlapped_vertex(world: &mut World) {
     // else put new into hashmap with coord as key
     let mut cehm: HashMap<IVec2, Entity> = HashMap::new();
     let mut q =
-        world.query_filtered::<(Entity, &Transform), (With<LineVertex>, Without<Preview>)>();
+        world.query_filtered::<(Entity, &Transform), (With<LineVertex>, Without<Preview>, Without<DevicePort>)>();
     let vertices: Box<[(Entity, IVec2)]> = q
         .iter(&world)
         .map(|x| (x.0, x.1.translation.truncate().as_ivec2()))
@@ -136,7 +136,7 @@ fn bisect(world: &mut World) {
 
 fn combine_parallel(world: &mut World) {
     // remove vertices bisecting two parallel lines
-    let mut qlv = world.query_filtered::<Entity, (With<LineVertex>, Without<Preview>)>();
+    let mut qlv = world.query_filtered::<Entity, (With<LineVertex>, Without<Preview>, Without<DevicePort>)>();
     let all_vertices: Box<[Entity]> = qlv.iter(&world).collect();
     for vertex in all_vertices.iter() {
         merge_parallel(world, *vertex);
@@ -158,7 +158,7 @@ fn cull(world: &mut World) {
         }
     }
     // delete lonesome vertices
-    let mut qlv = world.query_filtered::<Entity, (With<LineVertex>, Without<Preview>)>();
+    let mut qlv = world.query_filtered::<Entity, (With<LineVertex>, Without<Preview>, Without<DevicePort>)>();
     let mut lves: Box<[Entity]> = qlv.iter(&world).collect();
     for vertex_entity in lves.iter_mut() {
         let cleaned_branches: SmallVec<[Entity; 8]> = world
@@ -244,7 +244,7 @@ fn merge_parallel(world: &mut World, vertex: Entity) {
             // despawn replaced
             remove_lineseg(world, branches[0]);
             remove_lineseg(world, branches[1]);
-            world.despawn(vertex); // todo: this is a problem if one of the linesegs has both ends connected to same vertex
+            world.despawn(vertex); // todo: this may be a problem if one of the linesegs has both ends connected to same vertex
         }
     }
 }

@@ -6,17 +6,17 @@ use bevy::{
     sprite::MaterialMesh2dBundle,
 };
 
-use crate::schematic::material::SchematicMaterial;
+use crate::schematic::{elements::{LineVertex, NetId}, material::SchematicMaterial};
 
 use super::{spid, DevicePorts, ElementsRes, SchematicElement};
 
 #[derive(Component, Reflect)]
 #[reflect(Component, MapEntities)]
-pub struct Port {
+pub struct DevicePort {
     parent_device: Entity,
     offset: IVec2,
 }
-impl Port {
+impl DevicePort {
     pub fn get_parent(&self) -> Entity {
         self.parent_device
     }
@@ -27,7 +27,7 @@ impl Port {
         self.offset.extend(0).as_vec3()
     }
 }
-impl MapEntities for Port {
+impl MapEntities for DevicePort {
     fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
         self.parent_device = entity_mapper.map_entity(self.parent_device);
     }
@@ -35,7 +35,9 @@ impl MapEntities for Port {
 
 #[derive(Bundle)]
 pub struct PortBundle {
-    port: Port,
+    // netid: NetId, // added by electrical graph module, keep to note that DevicePort archetype is a part of electrical net (ENet/enet)
+    vertex: LineVertex,
+    port: DevicePort,
     mat: MaterialMesh2dBundle<SchematicMaterial>,
     se: SchematicElement,
 }
@@ -43,7 +45,8 @@ pub struct PortBundle {
 impl PortBundle {
     pub fn new(deviceid: Entity, offset: IVec2, eres: &ElementsRes) -> Self {
         PortBundle {
-            port: Port {
+            vertex: LineVertex::default(),
+            port: DevicePort {
                 parent_device: deviceid,
                 offset,
             },
@@ -61,7 +64,7 @@ impl PortBundle {
 
 pub fn update_port_location(
     q: Query<(&GlobalTransform, &DevicePorts)>,
-    mut q_p: Query<(Entity, &mut Transform, &Port)>,
+    mut q_p: Query<(Entity, &mut Transform, &DevicePort)>,
     mut commands: Commands,
 ) {
     // delete all ports without valid parent device
