@@ -6,6 +6,8 @@ use bevy::{
     prelude::*,
 };
 
+use crate::schematic::guides::ZoomInvariant;
+
 /// component to display param summary
 #[derive(Component, Reflect)]
 #[reflect(Component, MapEntities)]
@@ -29,6 +31,7 @@ pub struct SchematicLabelBundle {
     selabel: SchematicLabel,
     text: Text2dBundle,
     // se: SchematicElement,  // saving of ui nodes broken until 0.14
+    zi: ZoomInvariant,
 }
 
 impl SchematicLabelBundle {
@@ -39,14 +42,15 @@ impl SchematicLabelBundle {
                 text: Text::from_section(
                     value,
                     TextStyle {
-                        font_size: 20.0,
+                        font_size: 32.0,
                         color: Color::WHITE,
                         ..default()
                     },
                 ),
-                transform: Transform::from_scale(Vec3::splat(0.1)),
+                text_anchor: bevy::sprite::Anchor::TopLeft,
                 ..default()
             },
+            zi: ZoomInvariant,
             // se: SchematicElement {schtype: SchType::Label}
         }
     }
