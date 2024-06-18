@@ -12,12 +12,11 @@
 
 use crate::schematic::{FreshLoad, SchematicChanged, SchematicLoaded};
 
-use super::{
-    devices::DevicePort, spid, ElementsRes, Pickable, PickableElement, Preview, SchematicElement,
-};
+use super::{spid, ElementsRes, Pickable, PickableElement, Preview, SchematicElement};
 use bevy::{ecs::entity::Entity, prelude::*, sprite::Mesh2dHandle};
 mod prune;
 use lineseg::transform_lineseg;
+use port::update_port_location;
 pub use prune::prune;
 mod graph;
 pub use graph::{connected_graphs, insert_netid};
@@ -25,6 +24,8 @@ mod lineseg;
 pub use lineseg::{LineSegBundle, LineSegment, PickableLineSeg};
 mod linevertex;
 pub use linevertex::{LineVertex, PickableVertex, VertexBundle};
+mod port;
+pub use port::{DevicePort, PortBundle, PortLabel};
 
 /// creates a preview (missing schematicElement marker) lineseg from src to dst
 /// a lineseg consists of 3 entities: 2 vertices and 1 segment.
@@ -62,7 +63,7 @@ impl Plugin for NetsPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            transform_lineseg.run_if(on_event::<SchematicChanged>()),
+            (transform_lineseg, update_port_location).run_if(on_event::<SchematicChanged>()),
         );
         app.add_systems(
             PostUpdate,
@@ -76,6 +77,7 @@ impl Plugin for NetsPlugin {
         );
         app.register_type::<LineSegment>();
         app.register_type::<LineVertex>();
+        app.register_type::<DevicePort>();
     }
 }
 

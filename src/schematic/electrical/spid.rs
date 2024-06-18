@@ -12,10 +12,11 @@ macro_rules! sptype_prefix {
     };
 }
 
+// see Ngspice manual table 2.1
 sptype_prefix!(
     R, L, C, // resistor, inductor, capacitor
     V, I, // independent voltage/current source
-    D, Q, M, X // diode, bjt, mosfet
+    D, Q, M, X // diode, bjt, mosfet, subcircuit
 );
 
 // pub const L: &str = "L";  // what the above macro does for each spice device type

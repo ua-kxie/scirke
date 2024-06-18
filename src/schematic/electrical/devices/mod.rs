@@ -17,16 +17,13 @@ use crate::{
 };
 
 use super::{
-    label::SchematicLabelBundle, readable_idgen::IdTracker, spid, ElementsRes, Pickable,
-    PickableDevice, PickableElement, Preview, SchematicElement, Selected, SpDeviceId,
+    label::SchematicLabelBundle, nets::PortBundle, readable_idgen::IdTracker, spid, ElementsRes,
+    Pickable, PickableDevice, PickableElement, Preview, SchematicElement, Selected, SpDeviceId,
 };
-mod port;
-pub use port::DevicePort;
-use port::{update_port_location, PortBundle};
 mod device;
 use device::{DeviceBundle, DeviceLabel};
 pub use device::{DeviceParams, DevicePorts};
-pub use port::PortLabel;
+
 #[derive(Resource)]
 pub struct DefaultDevices {
     v: DeviceType,
@@ -135,28 +132,18 @@ impl DeviceType {
         let devicecolor = Color::GREEN.rgba_linear_to_vec4();
         let mut stroke_tess = world.resource_mut::<StrokeTessellator>();
         let mut path_builder = bevyon::path_builder().with_svg();
-        path_builder.move_to(Point2D::new(1.00, -0.25));
-        path_builder.line_to(Point2D::new(-1.00, -0.75));
-        path_builder.move_to(Point2D::new(-1.00, -0.75));
-        path_builder.line_to(Point2D::new(1.00, -1.25));
-        path_builder.move_to(Point2D::new(1.00, -1.25));
-        path_builder.line_to(Point2D::new(-1.00, -1.75));
-        path_builder.move_to(Point2D::new(0.00, -2.00));
-        path_builder.line_to(Point2D::new(0.00, -3.00));
-        path_builder.move_to(Point2D::new(-1.00, -1.75));
-        path_builder.line_to(Point2D::new(0.00, -2.00));
-        path_builder.move_to(Point2D::new(1.00, 1.75));
-        path_builder.line_to(Point2D::new(-1.00, 1.25));
-        path_builder.move_to(Point2D::new(1.00, 0.75));
-        path_builder.line_to(Point2D::new(-1.00, 0.25));
-        path_builder.move_to(Point2D::new(-1.00, 1.25));
-        path_builder.line_to(Point2D::new(1.00, 0.75));
         path_builder.move_to(Point2D::new(0.00, 3.00));
         path_builder.line_to(Point2D::new(0.00, 2.00));
-        path_builder.move_to(Point2D::new(0.00, 2.00));
         path_builder.line_to(Point2D::new(1.00, 1.75));
-        path_builder.move_to(Point2D::new(-1.00, 0.25));
+        path_builder.line_to(Point2D::new(-1.00, 1.25));
+        path_builder.line_to(Point2D::new(1.00, 0.75));
+        path_builder.line_to(Point2D::new(-1.00, 0.25));
         path_builder.line_to(Point2D::new(1.00, -0.25));
+        path_builder.line_to(Point2D::new(-1.00, -0.75));
+        path_builder.line_to(Point2D::new(1.00, -1.25));
+        path_builder.line_to(Point2D::new(-1.00, -1.75));
+        path_builder.line_to(Point2D::new(0.00, -2.00));
+        path_builder.line_to(Point2D::new(0.00, -3.00));
         let path = path_builder.build();
         let mut buffers = VertexBuffers::new();
         stroke(
@@ -324,14 +311,7 @@ pub struct DevicesPlugin;
 
 impl Plugin for DevicesPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            Update,
-            (
-                update_port_location,
-                insert_spid,
-                spawn_preview_device_from_type,
-            ),
-        );
+        app.add_systems(Update, (insert_spid, spawn_preview_device_from_type));
         app.add_systems(
             PreUpdate,
             insert_non_reflect.run_if(on_event::<SchematicLoaded>()),
@@ -340,7 +320,7 @@ impl Plugin for DevicesPlugin {
         app.register_type::<DevicePorts>();
         app.register_type::<DeviceParams>();
         app.register_type::<DeviceLabel>();
-        app.register_type::<DevicePort>();
+
         app.add_event::<DeviceType>();
     }
 }

@@ -3,8 +3,10 @@ use std::{
     f32::consts::PI,
 };
 
-use super::{ElementsRes, LineSegBundle, LineSegment, LineVertex, PickableElement, Preview};
-use crate::schematic::{electrical::devices::DevicePort, tools::PickingCollider};
+use super::{
+    port::DevicePort, ElementsRes, LineSegBundle, LineSegment, LineVertex, PickableElement, Preview,
+};
+use crate::schematic::tools::PickingCollider;
 use bevy::{ecs::entity::Entity, prelude::*, utils::smallvec::SmallVec};
 use euclid::approxeq::ApproxEq;
 

@@ -13,11 +13,10 @@ use bevy::{
 mod devices;
 mod nets;
 pub use devices::DefaultDevices;
-use devices::PortLabel;
 use euclid::default::{Box2D, Point2D};
 use label::{sch_label_update, SchematicLabel};
 pub use nets::{create_preview_lineseg, LineVertex};
-use nets::{PickableLineSeg, PickableVertex};
+use nets::{PickableLineSeg, PickableVertex, PortLabel};
 use spid::{SchType, SpDeviceType, SpType};
 mod console;
 mod spmanager;

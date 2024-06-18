@@ -6,9 +6,12 @@ use bevy::{
     sprite::MaterialMesh2dBundle,
 };
 
-use crate::schematic::{electrical::LineVertex, material::SchematicMaterial};
+use crate::schematic::{
+    electrical::{devices::DevicePorts, LineVertex},
+    material::SchematicMaterial,
+};
 
-use super::{spid, DevicePorts, ElementsRes, SchematicElement};
+use super::{spid, ElementsRes, SchematicElement};
 
 #[derive(Component, Reflect)]
 #[reflect(Component, MapEntities)]

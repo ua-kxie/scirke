@@ -21,8 +21,9 @@ use bevy_egui::egui::Color32;
 
 use super::{
     console::PrintConsoleLine,
-    devices::{DeviceParams, DevicePort, DevicePorts, PortLabel},
+    devices::{DeviceParams, DevicePorts},
     label::SchematicLabelBundle,
+    nets::{DevicePort, PortLabel},
     spmanager::SPRes,
     NetId, SchematicElement, SpDeviceId,
 };
