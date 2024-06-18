@@ -25,7 +25,9 @@ use linevertex::VertexBundle;
 use port::update_port_location;
 use prune::prune;
 
-use super::{spid, ElementsRes, Pickable, PickableElement, Preview, SchematicElement};
+use super::{
+    spid, ElectricalSet, ElementsRes, Pickable, PickableElement, Preview, SchematicElement,
+};
 use crate::schematic::{FreshLoad, SchematicChanged, SchematicLoaded};
 use bevy::{ecs::entity::Entity, prelude::*, sprite::Mesh2dHandle};
 
@@ -66,15 +68,18 @@ impl Plugin for NetsPlugin {
         app.add_systems(
             Update,
             (
-                update_port_location,
-                transform_lineseg.run_if(on_event::<SchematicChanged>()),
+                update_port_location.in_set(ElectricalSet::React),
+                transform_lineseg
+                    .in_set(ElectricalSet::React)
+                    .run_if(on_event::<SchematicChanged>()),
             ),
         );
         app.add_systems(
-            PostUpdate,
+            Update,
             (prune, insert_netid, connected_graphs)
                 .chain()
-                .run_if(on_event::<SchematicChanged>()),
+                .run_if(on_event::<SchematicChanged>())
+                .in_set(ElectricalSet::Prune),
         );
         app.add_systems(
             PreUpdate,

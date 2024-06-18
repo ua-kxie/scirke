@@ -16,7 +16,7 @@ pub use nets::{create_preview_lineseg, LineVertex};
 pub use spid::{NetId, SpDeviceId};
 
 use label::{sch_label_update, SchematicLabel};
-use nets::{PickableLineSeg, PickableVertex, PortLabel};
+use nets::{PickableLineSeg, PickableVertex};
 use readable_idgen::IdTracker;
 use spid::{SchType, SpDeviceType, SpType};
 use spmanager::SPManagerPlugin;
@@ -226,6 +226,19 @@ trait Pickable {
     fn collides(&self, pc: &PickingCollider, transform: Transform) -> bool;
 }
 
+#[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
+/// The SystemSet for console/command related systems
+pub enum ElectricalSet {
+    /// systems directly responding to user input/events
+    Direct,
+
+    /// systems which react to a changed schematic
+    React,
+
+    /// prune set: wire pruning, netid assignment
+    Prune,
+}
+
 pub struct ElementsPlugin;
 
 impl Plugin for ElementsPlugin {
@@ -246,6 +259,14 @@ impl Plugin for ElementsPlugin {
         app.add_plugins(nets::NetsPlugin);
         app.add_plugins(netlisting::NetlistPlugin);
         app.add_plugins(SPManagerPlugin);
+        app.configure_sets(
+            Update,
+            (
+                ElectricalSet::Direct,
+                ElectricalSet::React.after(ElectricalSet::Direct),
+                ElectricalSet::Prune.after(ElectricalSet::React),
+            ),
+        );
     }
 }
 
@@ -402,4 +423,3 @@ impl Pickable for PickableDevice {
         }
     }
 }
-

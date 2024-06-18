@@ -50,13 +50,13 @@ impl Plugin for SchematicPlugin {
             PostUpdate,
             SnapSet.before(bevy::transform::TransformSystem::TransformPropagate),
         );
-        app.add_systems(PostUpdate, snap.in_set(SnapSet));
+        app.add_systems(Update, snap.in_set(SnapSet));
         app.add_systems(PostStartup, register_checkpoint); // so we can rollback to initial state
         app.add_systems(
             Update,
             register_checkpoint.run_if(on_event::<SchematicChanged>()),
         );
-        app.add_systems(Update, process_checkpoints);
+        app.add_systems(Last, process_checkpoints);
         app.add_plugins((
             // Bevy Save
             SavePlugins,

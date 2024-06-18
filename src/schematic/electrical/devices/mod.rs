@@ -7,8 +7,9 @@ pub use device::{DeviceParams, DevicePorts};
 use device::{DeviceBundle, DeviceLabel};
 
 use super::{
-    label::SchematicLabelBundle, nets::PortBundle, readable_idgen::IdTracker, spid, ElementsRes,
-    Pickable, PickableDevice, PickableElement, Preview, SchematicElement, Selected, SpDeviceId,
+    label::SchematicLabelBundle, nets::PortBundle, readable_idgen::IdTracker, spid, ElectricalSet,
+    ElementsRes, Pickable, PickableDevice, PickableElement, Preview, SchematicElement, Selected,
+    SpDeviceId,
 };
 use crate::{
     bevyon::{self, build_mesh, stroke, StrokeTessellator},
@@ -234,7 +235,8 @@ pub fn spawn_preview_device_from_type(
         Preview,
         Selected,
     );
-    let label_bundle = SchematicLabelBundle::new(device_entity, IVec2::new(2, 3), "test".to_owned());
+    let label_bundle =
+        SchematicLabelBundle::new(device_entity, IVec2::new(2, 3), "test".to_owned());
     let port_iter = newtype
         .ports
         .iter()
@@ -307,7 +309,10 @@ pub struct DevicesPlugin;
 
 impl Plugin for DevicesPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, (insert_spid, spawn_preview_device_from_type));
+        app.add_systems(
+            Update,
+            (insert_spid, spawn_preview_device_from_type).in_set(ElectricalSet::Direct),
+        );
         app.add_systems(
             PreUpdate,
             insert_non_reflect.run_if(on_event::<SchematicLoaded>()),

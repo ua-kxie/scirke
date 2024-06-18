@@ -141,8 +141,6 @@ pub struct BevyonPlugin;
 
 impl Plugin for BevyonPlugin {
     fn build(&self, app: &mut App) {
-        // let fill_tess = tess::FillTessellator::new();
-        // let stroke_tess = tess::StrokeTessellator::new();
         app.insert_resource(FillTessellator::default())
             .insert_resource(StrokeTessellator::default())
             .insert_resource(EmptyMesh::default());
@@ -151,7 +149,6 @@ impl Plugin for BevyonPlugin {
             BuildShapes.after(bevy::transform::TransformSystem::TransformPropagate),
         )
         .add_systems(PostUpdate, update_mesh.in_set(BuildShapes));
-        // app.add_systems(PreStartup, setup);
     }
 }
 

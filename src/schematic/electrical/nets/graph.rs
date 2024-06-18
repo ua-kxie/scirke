@@ -39,6 +39,7 @@ pub fn connected_graphs(
     mut idtracker: ResMut<IdTracker>,
 ) {
     let mut nodesset = q_nodeids.iter().collect::<HashSet<Entity>>();
+    dbg!(&nodesset);
     let mut subgraphs: Vec<Vec<(Entity, String)>> = Vec::with_capacity(nodesset.len()); // subgraph(nodes, paths)
     loop {
         let Some(node) = nodesset.iter().next() else {
