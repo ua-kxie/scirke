@@ -7,7 +7,7 @@ mod transform;
 mod wire;
 
 use super::{
-    elements::{DefaultDevices, PickableElement, Preview, SchematicElement, Selected},
+    electrical::{DefaultDevices, PickableElement, Preview, SchematicElement, Selected},
     guides::SchematicCursor,
     material::SchematicMaterial,
     FreshLoad, SchematicLoaded,

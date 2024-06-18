@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use bevy::{prelude::*, utils::hashbrown::HashSet};
 
-use crate::schematic::elements::{readable_idgen::IdTracker, spid::NetId};
+use crate::schematic::electrical::{readable_idgen::IdTracker, spid::NetId};
 
 use super::{LineSegment, LineVertex};
 

@@ -2,7 +2,7 @@ use bevy::{prelude::*, reflect::Enum};
 
 use super::{
     camera::SchematicCamera,
-    elements::{NetId, SchematicElement, SpDeviceId},
+    electrical::{NetId, SchematicElement, SpDeviceId},
     guides::SchematicCursor,
     tools::SchematicToolState,
     SnapSet,

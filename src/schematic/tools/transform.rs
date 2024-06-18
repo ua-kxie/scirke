@@ -3,7 +3,7 @@ use std::f32::consts::PI;
 use bevy::prelude::*;
 
 use crate::schematic::{
-    elements::{LineVertex, PickableElement, Preview, Selected, SpDeviceId},
+    electrical::{LineVertex, PickableElement, Preview, Selected, SpDeviceId},
     guides::SchematicCursor,
     SchematicChanged,
 };

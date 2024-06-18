@@ -5,7 +5,7 @@ tool for drawing wires
 use bevy::prelude::*;
 
 use crate::schematic::{
-    elements::{self, ElementsRes, Preview, SchematicElement},
+    electrical::{self, ElementsRes, Preview, SchematicElement},
     guides::{NewSnappedCursorPos, SchematicCursor},
     SchematicChanged,
 };
@@ -52,7 +52,7 @@ fn main(
     let sc = qc.single();
     let Some(coords) = &sc.coords else { return };
     if keys.just_released(KeyCode::Escape) {
-        elements::despawn_preview(&mut commands, &eqsp);
+        electrical::despawn_preview(&mut commands, &eqsp);
         next_schematictoolstate.set(SchematicToolState::Idle);
         return;
     }
@@ -65,11 +65,11 @@ fn main(
         }
         WireToolState::Drawing(src) => {
             if buttons.just_pressed(MouseButton::Left) {
-                elements::persist_preview(&mut commands, &eqsp);
+                electrical::persist_preview(&mut commands, &eqsp);
                 next_wiretoolstate.set(WireToolState::Drawing(coords.get_snapped_coords()));
                 notify_changed.send(SchematicChanged);
             } else if let Some(NewSnappedCursorPos(Some(c))) = e_newsc.read().last() {
-                elements::despawn_preview(&mut commands, &eqsp);
+                electrical::despawn_preview(&mut commands, &eqsp);
                 compute_preview(&mut commands, eres, *src, c.get_snapped_coords());
             }
         }
@@ -104,7 +104,7 @@ fn compute_preview(mut commands: &mut Commands, eres: Res<ElementsRes>, src: IVe
     simple_path.push(*path.last().unwrap());
 
     for i in 1..simple_path.len() {
-        elements::create_preview_lineseg(
+        electrical::create_preview_lineseg(
             &mut commands,
             &eres,
             simple_path[i - 1].as_vec2().extend(0.0),

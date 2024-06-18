@@ -4,7 +4,7 @@ use std::{
 };
 
 use super::{ElementsRes, LineSegBundle, LineSegment, LineVertex, PickableElement, Preview};
-use crate::schematic::{elements::devices::DevicePort, tools::PickingCollider};
+use crate::schematic::{electrical::devices::DevicePort, tools::PickingCollider};
 use bevy::{ecs::entity::Entity, prelude::*, utils::smallvec::SmallVec};
 use euclid::approxeq::ApproxEq;
 

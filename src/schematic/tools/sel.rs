@@ -4,7 +4,7 @@ use crate::{
     bevyon::{self, CompositeMeshData, SubMesh, TessInData},
     schematic::{
         camera::SchematicCamera,
-        elements::Selected,
+        electrical::Selected,
         guides::{NewSnappedCursorPos, SchematicCursor},
         material::SchematicMaterial,
         SchematicChanged,

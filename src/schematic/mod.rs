@@ -1,5 +1,5 @@
 use self::{
-    camera::CameraPlugin, elements::ElementsPlugin, guides::GuidesPlugin, infotext::InfoPlugin,
+    camera::CameraPlugin, electrical::ElementsPlugin, guides::GuidesPlugin, infotext::InfoPlugin,
     material::SchematicMaterial, tools::ToolsPlugin,
 };
 use bevy::{
@@ -7,10 +7,10 @@ use bevy::{
     sprite::{Material2dPlugin, Mesh2dHandle},
 };
 use bevy_save::prelude::*;
-use elements::SchematicElement;
+use electrical::SchematicElement;
 
 mod camera;
-mod elements;
+mod electrical;
 mod guides;
 mod infotext;
 mod material;
