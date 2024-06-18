@@ -17,18 +17,16 @@ use crate::{
 };
 
 use super::{
-    readable_idgen::IdTracker, spid, ElementsRes, Pickable, PickableDevice, PickableElement,
-    Preview, SchematicElement, Selected, SpDeviceId,
+    label::SchematicLabelBundle, readable_idgen::IdTracker, spid, ElementsRes, Pickable,
+    PickableDevice, PickableElement, Preview, SchematicElement, Selected, SpDeviceId,
 };
 mod port;
 pub use port::DevicePort;
 use port::{update_port_location, PortBundle};
 mod device;
-use device::DeviceBundle;
-mod device_label;
-use device::DeviceLabel;
+use device::{DeviceBundle, DeviceLabel};
 pub use device::{DeviceParams, DevicePorts};
-use device_label::{sch_label_update, SchematicLabel, SchematicLabelBundle};
+pub use port::PortLabel;
 #[derive(Resource)]
 pub struct DefaultDevices {
     v: DeviceType,
@@ -183,7 +181,7 @@ impl DeviceType {
 
         DeviceType {
             params: DeviceParams::Raw("1k".to_owned()),
-            spice_type: spid::SpDeviceType::V,
+            spice_type: spid::SpDeviceType::R,
             visuals: Mesh2dHandle(mesh_res),
             collider,
             ports,
@@ -295,7 +293,7 @@ fn insert_non_reflect(
         let bundle = match spid.get_dtype().unwrap() {
             spid::SpDeviceType::Gnd => (
                 default_devices.g.as_non_reflect_bundle(),
-                eres.mat_dflt.clone(), 
+                eres.mat_dflt.clone(),
             ),
             spid::SpDeviceType::V => (
                 default_devices.v.as_non_reflect_bundle(),
@@ -332,7 +330,6 @@ impl Plugin for DevicesPlugin {
                 update_port_location,
                 insert_spid,
                 spawn_preview_device_from_type,
-                sch_label_update,
             ),
         );
         app.add_systems(
@@ -344,7 +341,6 @@ impl Plugin for DevicesPlugin {
         app.register_type::<DeviceParams>();
         app.register_type::<DeviceLabel>();
         app.register_type::<DevicePort>();
-        app.register_type::<SchematicLabel>();
         app.add_event::<DeviceType>();
     }
 }

@@ -13,10 +13,16 @@ use bevy::{
 mod devices;
 mod nets;
 pub use devices::DefaultDevices;
+use devices::PortLabel;
 use euclid::default::{Box2D, Point2D};
+use label::{sch_label_update, SchematicLabel};
 pub use nets::{create_preview_lineseg, LineVertex};
 use nets::{PickableLineSeg, PickableVertex};
 use spid::{SchType, SpDeviceType, SpType};
+mod console;
+mod spmanager;
+use spmanager::SPManagerPlugin;
+mod label;
 // pub use devices::DevicePorts;
 mod netlisting;
 
@@ -224,7 +230,7 @@ pub struct ElementsPlugin;
 
 impl Plugin for ElementsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, (picking, selection));
+        app.add_systems(Update, (picking, selection, sch_label_update));
         app.add_systems(PostUpdate, set_mat);
         app.init_resource::<ElementsRes>();
         app.init_resource::<DefaultDevices>();
@@ -234,10 +240,12 @@ impl Plugin for ElementsPlugin {
         app.register_type::<SpDeviceType>();
         app.register_type::<SchType>();
         app.register_type::<SpType>();
+        app.register_type::<SchematicLabel>();
         app.init_resource::<IdTracker>();
         app.add_plugins(devices::DevicesPlugin);
         app.add_plugins(nets::NetsPlugin);
         app.add_plugins(netlisting::NetlistPlugin);
+        app.add_plugins(SPManagerPlugin);
     }
 }
 
@@ -393,4 +401,13 @@ impl Pickable for PickableDevice {
             )),
         }
     }
+}
+
+pub fn port_label_pair(port_entity: Entity, label_entity: Entity, mut commands: Commands) {
+    commands
+        .entity(port_entity)
+        .insert(PortLabel::new(label_entity));
+    commands
+        .entity(label_entity)
+        .insert(SchematicLabel::new(port_entity, IVec2::splat(1)));
 }

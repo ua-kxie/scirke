@@ -14,12 +14,16 @@
 //! VGND1 net_0 0 0
 //!
 //! for the most part, each line describes a device and its port connections
-use std::fs;
+use std::{collections::HashMap, fs};
 
 use bevy::{input::common_conditions::input_just_pressed, prelude::*};
+use bevy_egui::egui::Color32;
 
 use super::{
-    devices::{DeviceParams, DevicePorts},
+    console::PrintConsoleLine,
+    devices::{DeviceParams, DevicePort, DevicePorts, PortLabel},
+    label::SchematicLabelBundle,
+    spmanager::SPRes,
     NetId, SchematicElement, SpDeviceId,
 };
 
@@ -33,7 +37,9 @@ impl Plugin for NetlistPlugin {
         app.add_event::<Netlist>();
         app.add_systems(
             PreUpdate,
-            netlist.run_if(input_just_pressed(KeyCode::Space)),
+            (netlist, pksim)
+                .chain()
+                .run_if(input_just_pressed(KeyCode::Space)),
         ); // preupdate: run on schematic that has been seen
     }
 }
@@ -72,4 +78,45 @@ fn netlist(
 fn spice_id(se: &SchematicElement, spdid: &SpDeviceId) -> Option<String> {
     se.get_dtype()
         .map(|x| x.prefix().to_owned() + spdid.get_id())
+}
+
+fn pksim(
+    mut e_console_rgstr: EventWriter<PrintConsoleLine>,
+    q_ports: Query<(Entity, &NetId), With<DevicePort>>,
+    q_labeled_ports: Query<(Entity, &PortLabel), With<DevicePort>>,
+    spres: Res<SPRes>,
+    mut commands: Commands,
+) {
+    // clear all port labels
+    for (e, p) in q_labeled_ports.iter() {
+        commands.entity(p.get_label_entity()).despawn();
+        commands.entity(e).remove::<PortLabel>();
+    }
+    // run sim
+    e_console_rgstr.send(PrintConsoleLine::new(
+        "source out/netlist.cir".to_owned(),
+        Color32::GRAY,
+    ));
+    spres.command("source out/netlist.cir");
+    e_console_rgstr.send(PrintConsoleLine::new("op".to_owned(), Color32::GRAY));
+    spres.command("op");
+
+    // get results, display as port labels
+    if let Some(pkvecvaluesall) = spres.get_spm().vecvals_pop() {
+        let mut results = HashMap::<String, f32>::new();
+        for v in pkvecvaluesall.vecsa {
+            results.insert(v.name, v.creal as f32);
+        }
+        for (ent, netid) in q_ports.iter() {
+            let val = results.get(netid.get_id()).unwrap();
+            insert_new_label(ent, &mut commands, format! {"{:+.2e}", val});
+        }
+    }
+}
+
+fn insert_new_label(parent: Entity, commands: &mut Commands, val: String) {
+    let label_entity = commands
+        .spawn(SchematicLabelBundle::new(parent, IVec2::splat(1), val))
+        .id();
+    commands.entity(parent).insert(PortLabel::new(label_entity));
 }

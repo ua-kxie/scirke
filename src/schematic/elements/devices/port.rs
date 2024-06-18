@@ -33,6 +33,27 @@ impl MapEntities for DevicePort {
     }
 }
 
+#[derive(Component, Reflect)]
+#[reflect(Component, MapEntities)]
+pub struct PortLabel {
+    label: Entity,
+}
+impl PortLabel {
+    pub fn new(label_entity: Entity) -> Self {
+        Self {
+            label: label_entity,
+        }
+    }
+    pub fn get_label_entity(&self) -> Entity {
+        self.label
+    }
+}
+impl MapEntities for PortLabel {
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
+        self.label = entity_mapper.map_entity(self.label);
+    }
+}
+
 #[derive(Bundle)]
 pub struct PortBundle {
     // netid: NetId, // added by electrical graph module, keep to note that DevicePort archetype is a part of electrical net (ENet/enet)

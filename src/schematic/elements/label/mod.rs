@@ -1,4 +1,5 @@
-//! components for the device_label archetype
+//! schematic labels to display text in 2d world
+//!
 
 use bevy::{
     ecs::{entity::MapEntities, reflect::ReflectMapEntities},
@@ -11,6 +12,11 @@ use bevy::{
 pub struct SchematicLabel {
     offset: IVec2,
     parent: Entity,
+}
+impl SchematicLabel {
+    pub fn new(parent: Entity, offset: IVec2) -> Self {
+        Self { parent, offset }
+    }
 }
 impl MapEntities for SchematicLabel {
     fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {

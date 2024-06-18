@@ -8,7 +8,7 @@ use std::{
 };
 /// Spice Manager to facillitate interaction with NgSpice
 #[derive(Debug, Default)]
-struct SpManager {
+pub struct SpManager {
     sharedres: Arc<RwLock<VecDeque<(String, Color32)>>>,
     vecvals: Mutex<Vec<PkVecvaluesall>>,
     vecinfo: Option<PkVecinfoall>,
@@ -17,6 +17,9 @@ struct SpManager {
 impl SpManager {
     fn new() -> Self {
         SpManager::default()
+    }
+    pub fn vecvals_pop(&self) -> Option<PkVecvaluesall> {
+        self.vecvals.try_lock().unwrap().pop()
     }
 }
 
@@ -52,11 +55,20 @@ impl paprika::PkSpiceManager for SpManager {
 }
 
 #[derive(Resource)]
-struct SPRes {
+pub struct SPRes {
     /// spice manager
     spm: Arc<SpManager>,
     /// ngspice library
     lib: PkSpice<SpManager>,
+}
+
+impl SPRes {
+    pub fn get_spm(&self) -> &SpManager {
+        &self.spm
+    }
+    pub fn command(&self, cmdstr: &str) {
+        self.lib.command(cmdstr);
+    }
 }
 
 impl Default for SPRes {

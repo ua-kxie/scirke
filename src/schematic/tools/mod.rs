@@ -99,7 +99,13 @@ fn exclusive_main(world: &mut World) {
             } else if newr || newg || newvs {
                 // spawn a resistor device as child of cursor
                 let dd = world.get_resource::<DefaultDevices>().unwrap();
-                let _ = world.send_event(if newr {dd.resistor()} else if newg {dd.gnd()} else {dd.voltage_source()});
+                let _ = world.send_event(if newr {
+                    dd.resistor()
+                } else if newg {
+                    dd.gnd()
+                } else {
+                    dd.voltage_source()
+                });
 
                 let mut next_toolst = world.resource_mut::<NextState<SchematicToolState>>();
                 next_toolst.set(SchematicToolState::Transform);
