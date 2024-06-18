@@ -1,28 +1,24 @@
 //! Device: defines circuit devices such as resistor, mos, etc.
 //!
-//! archetype        DevicePorts DeviceParam Port DeviceLabel SchematicLabel
-//! device                *            *               *
-//! port                                       *
-//! schematic label                                                 *
+mod device;
 
-use std::sync::Arc;
+pub use device::{DeviceParams, DevicePorts};
 
-use bevy::{prelude::*, sprite::Mesh2dHandle};
-use euclid::{default::Point2D, Angle, Vector2D};
-use lyon_tessellation::{StrokeOptions, VertexBuffers};
-
-use crate::{
-    bevyon::{self, build_mesh, stroke, StrokeTessellator},
-    schematic::{guides::SchematicCursor, FreshLoad, SchematicLoaded},
-};
+use device::{DeviceBundle, DeviceLabel};
 
 use super::{
     label::SchematicLabelBundle, nets::PortBundle, readable_idgen::IdTracker, spid, ElementsRes,
     Pickable, PickableDevice, PickableElement, Preview, SchematicElement, Selected, SpDeviceId,
 };
-mod device;
-use device::{DeviceBundle, DeviceLabel};
-pub use device::{DeviceParams, DevicePorts};
+use crate::{
+    bevyon::{self, build_mesh, stroke, StrokeTessellator},
+    schematic::{guides::SchematicCursor, FreshLoad, SchematicLoaded},
+};
+
+use std::sync::Arc;
+use bevy::{prelude::*, sprite::Mesh2dHandle};
+use euclid::{default::Point2D, Angle, Vector2D};
+use lyon_tessellation::{StrokeOptions, VertexBuffers};
 
 #[derive(Resource)]
 pub struct DefaultDevices {

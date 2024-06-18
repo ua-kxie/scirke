@@ -4,7 +4,7 @@ use std::{
 };
 
 use super::{
-    port::DevicePort, ElementsRes, LineSegBundle, LineSegment, LineVertex, PickableElement, Preview,
+    port::Port, ElementsRes, LineSegBundle, LineSegment, LineVertex, PickableElement, Preview,
 };
 use crate::schematic::tools::PickingCollider;
 use bevy::{ecs::entity::Entity, prelude::*, utils::smallvec::SmallVec};
@@ -94,7 +94,7 @@ fn merge_overlapped_vertices(world: &mut World) {
     let mut cehm: HashMap<IVec2, Entity> = HashMap::new();
     // merge vertices
     let mut q =
-        world.query_filtered::<(Entity, &Transform), (With<LineVertex>, Without<Preview>, Without<DevicePort>)>();
+        world.query_filtered::<(Entity, &Transform), (With<LineVertex>, Without<Preview>, Without<Port>)>();
     let vertices: Box<[(Entity, IVec2)]> = q
         .iter(&world)
         .map(|x| (x.0, x.1.translation.truncate().as_ivec2()))
@@ -108,8 +108,8 @@ fn merge_overlapped_vertices(world: &mut World) {
         }
     }
     // merge ports -- might be connecting vertex to port instead of merging
-    let mut qp =
-        world.query_filtered::<(Entity, &Transform), (With<LineVertex>, Without<Preview>, With<DevicePort>)>();
+    let mut qp = world
+        .query_filtered::<(Entity, &Transform), (With<LineVertex>, Without<Preview>, With<Port>)>();
     let ports: Box<[(Entity, IVec2)]> = qp
         .iter(&world)
         .map(|x| (x.0, x.1.translation.truncate().as_ivec2()))
@@ -161,7 +161,7 @@ fn bisect(world: &mut World) {
 fn combine_parallel(world: &mut World) {
     // remove vertices bisecting two parallel lines
     let mut qlv =
-        world.query_filtered::<Entity, (With<LineVertex>, Without<Preview>, Without<DevicePort>)>();
+        world.query_filtered::<Entity, (With<LineVertex>, Without<Preview>, Without<Port>)>();
     let all_vertices: Box<[Entity]> = qlv.iter(&world).collect();
     for vertex in all_vertices.iter() {
         merge_parallel(world, *vertex);
@@ -184,7 +184,7 @@ fn cull(world: &mut World) {
     }
     // delete lonesome vertices
     let mut qlv =
-        world.query_filtered::<Entity, (With<LineVertex>, Without<Preview>, Without<DevicePort>)>();
+        world.query_filtered::<Entity, (With<LineVertex>, Without<Preview>, Without<Port>)>();
     let mut lves: Box<[Entity]> = qlv.iter(&world).collect();
     for vertex_entity in lves.iter_mut() {
         let cleaned_branches: SmallVec<[Entity; 8]> = world

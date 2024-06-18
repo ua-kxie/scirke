@@ -23,7 +23,7 @@ use super::{
     console::PrintConsoleLine,
     devices::{DeviceParams, DevicePorts},
     label::SchematicLabelBundle,
-    nets::{DevicePort, PortLabel},
+    nets::{Port, PortLabel},
     spmanager::SPRes,
     NetId, SchematicElement, SpDeviceId,
 };
@@ -83,8 +83,8 @@ fn spice_id(se: &SchematicElement, spdid: &SpDeviceId) -> Option<String> {
 
 fn pksim(
     mut e_console_rgstr: EventWriter<PrintConsoleLine>,
-    q_ports: Query<(Entity, &NetId), With<DevicePort>>,
-    q_labeled_ports: Query<(Entity, &PortLabel), With<DevicePort>>,
+    q_ports: Query<(Entity, &NetId), With<Port>>,
+    q_labeled_ports: Query<(Entity, &PortLabel), With<Port>>,
     spres: Res<SPRes>,
     mut commands: Commands,
 ) {

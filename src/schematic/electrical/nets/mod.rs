@@ -9,23 +9,26 @@
 //! hence, all line segments are rendered from the same unit-X mesh transformed to arbitrary location
 //! all elements share a material instance, except those picked, selected, or both
 //! (in which case all picked, selected, or both elements share a material instance)
+mod graph;
+mod lineseg;
+mod linevertex;
+mod port;
+mod prune;
 
-use crate::schematic::{FreshLoad, SchematicChanged, SchematicLoaded};
+pub use lineseg::PickableLineSeg;
+pub use linevertex::{LineVertex, PickableVertex};
+pub use port::{Port, PortBundle, PortLabel};
+
+use graph::{connected_graphs, insert_netid};
+use lineseg::{transform_lineseg, LineSegBundle, LineSegment};
+use linevertex::VertexBundle;
+use port::update_port_location;
+use prune::prune;
 
 use super::{spid, ElementsRes, Pickable, PickableElement, Preview, SchematicElement};
+use crate::schematic::{FreshLoad, SchematicChanged, SchematicLoaded};
 use bevy::{ecs::entity::Entity, prelude::*, sprite::Mesh2dHandle};
-mod prune;
-use lineseg::transform_lineseg;
-use port::update_port_location;
-pub use prune::prune;
-mod graph;
-pub use graph::{connected_graphs, insert_netid};
-mod lineseg;
-pub use lineseg::{LineSegBundle, LineSegment, PickableLineSeg};
-mod linevertex;
-pub use linevertex::{LineVertex, PickableVertex, VertexBundle};
-mod port;
-pub use port::{DevicePort, PortBundle, PortLabel};
+
 
 /// creates a preview (missing schematicElement marker) lineseg from src to dst
 /// a lineseg consists of 3 entities: 2 vertices and 1 segment.
@@ -77,7 +80,7 @@ impl Plugin for NetsPlugin {
         );
         app.register_type::<LineSegment>();
         app.register_type::<LineVertex>();
-        app.register_type::<DevicePort>();
+        app.register_type::<Port>();
     }
 }
 
@@ -85,7 +88,7 @@ impl Plugin for NetsPlugin {
 /// inserts non-refelct components for net type elements
 /// useful for applying mesh handles and such after loading
 fn insert_non_reflect(
-    qv: Query<Entity, (With<FreshLoad>, With<LineVertex>, Without<DevicePort>)>,
+    qv: Query<Entity, (With<FreshLoad>, With<LineVertex>, Without<Port>)>,
     qs: Query<Entity, (With<FreshLoad>, With<LineSegment>)>,
     eres: Res<ElementsRes>,
     mut commands: Commands,

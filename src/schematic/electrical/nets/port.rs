@@ -15,11 +15,11 @@ use super::{spid, ElementsRes, SchematicElement};
 
 #[derive(Component, Reflect)]
 #[reflect(Component, MapEntities)]
-pub struct DevicePort {
+pub struct Port {
     parent_device: Entity,
     offset: IVec2,
 }
-impl DevicePort {
+impl Port {
     pub fn get_parent(&self) -> Entity {
         self.parent_device
     }
@@ -30,7 +30,7 @@ impl DevicePort {
         self.offset.extend(0).as_vec3()
     }
 }
-impl MapEntities for DevicePort {
+impl MapEntities for Port {
     fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
         self.parent_device = entity_mapper.map_entity(self.parent_device);
     }
@@ -61,7 +61,7 @@ impl MapEntities for PortLabel {
 pub struct PortBundle {
     // netid: NetId, // added by electrical graph module, keep to note that DevicePort archetype is a part of electrical net (ENet/enet)
     vertex: LineVertex,
-    port: DevicePort,
+    port: Port,
     mat: MaterialMesh2dBundle<SchematicMaterial>,
     se: SchematicElement,
 }
@@ -70,7 +70,7 @@ impl PortBundle {
     pub fn new(deviceid: Entity, offset: IVec2, eres: &ElementsRes) -> Self {
         PortBundle {
             vertex: LineVertex::default(),
-            port: DevicePort {
+            port: Port {
                 parent_device: deviceid,
                 offset,
             },
@@ -88,7 +88,7 @@ impl PortBundle {
 
 pub fn update_port_location(
     q: Query<(&GlobalTransform, &DevicePorts)>,
-    mut q_p: Query<(Entity, &mut Transform, &DevicePort)>,
+    mut q_p: Query<(Entity, &mut Transform, &Port)>,
     mut commands: Commands,
 ) {
     // delete all ports without valid parent device

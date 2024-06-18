@@ -2,38 +2,40 @@
 //! a schematic element may be reused in a circuit or device designer context (or more)
 //! must support: picking by point/ray, by area intersect, by area contained
 //! picking by point/ray should only ever mark 1 entity as picked
-
-use std::sync::Arc;
-
-use bevy::{
-    math::bounding::{Aabb2d, BoundingVolume, IntersectsVolume},
-    prelude::*,
-    render::{mesh::PrimitiveTopology, render_asset::RenderAssetUsages},
-};
 mod devices;
 mod nets;
-pub use devices::DefaultDevices;
-use euclid::default::{Box2D, Point2D};
-use label::{sch_label_update, SchematicLabel};
-pub use nets::{create_preview_lineseg, LineVertex};
-use nets::{PickableLineSeg, PickableVertex, PortLabel};
-use spid::{SchType, SpDeviceType, SpType};
 mod console;
 mod spmanager;
-use spmanager::SPManagerPlugin;
 mod label;
-// pub use devices::DevicePorts;
 mod netlisting;
+mod readable_idgen;
+mod spid;
+
+pub use devices::DefaultDevices;
+pub use nets::{create_preview_lineseg, LineVertex};
+pub use spid::{NetId, SpDeviceId};
+
+use label::{sch_label_update, SchematicLabel};
+use nets::{PickableLineSeg, PickableVertex, PortLabel};
+use spid::{SchType, SpDeviceType, SpType};
+use spmanager::SPManagerPlugin;
+use readable_idgen::IdTracker;
 
 use super::{
     infotext::InfoRes,
     material::SchematicMaterial,
     tools::{NewPickingCollider, PickingCollider, SelectEvt},
 };
-mod readable_idgen;
-use readable_idgen::IdTracker;
-mod spid;
-pub use spid::{NetId, SpDeviceId};
+
+use bevy::{
+    math::bounding::{Aabb2d, BoundingVolume, IntersectsVolume},
+    prelude::*,
+    render::{mesh::PrimitiveTopology, render_asset::RenderAssetUsages},
+};
+use std::sync::Arc;
+use euclid::default::{Box2D, Point2D};
+
+
 /// marker component to mark entity as being previewed (constructed by an active tool)
 /// entities marked [`SchematicElement`] but without this marker is persistent
 #[derive(Component)]
