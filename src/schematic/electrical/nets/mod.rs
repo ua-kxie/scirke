@@ -29,7 +29,6 @@ use super::{spid, ElementsRes, Pickable, PickableElement, Preview, SchematicElem
 use crate::schematic::{FreshLoad, SchematicChanged, SchematicLoaded};
 use bevy::{ecs::entity::Entity, prelude::*, sprite::Mesh2dHandle};
 
-
 /// creates a preview (missing schematicElement marker) lineseg from src to dst
 /// a lineseg consists of 3 entities: 2 vertices and 1 segment.
 pub fn create_preview_lineseg(
@@ -66,7 +65,10 @@ impl Plugin for NetsPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            (transform_lineseg, update_port_location).run_if(on_event::<SchematicChanged>()),
+            (
+                update_port_location,
+                transform_lineseg.run_if(on_event::<SchematicChanged>()),
+            ),
         );
         app.add_systems(
             PostUpdate,

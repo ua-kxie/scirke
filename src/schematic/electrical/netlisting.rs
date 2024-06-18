@@ -117,7 +117,7 @@ fn pksim(
 
 fn insert_new_label(parent: Entity, commands: &mut Commands, val: String) {
     let label_entity = commands
-        .spawn(SchematicLabelBundle::new(parent, IVec2::splat(1), val))
+        .spawn(SchematicLabelBundle::new(parent, IVec2::splat(0), val))
         .id();
     commands.entity(parent).insert(PortLabel::new(label_entity));
 }

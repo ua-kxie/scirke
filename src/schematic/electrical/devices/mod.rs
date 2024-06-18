@@ -15,10 +15,10 @@ use crate::{
     schematic::{guides::SchematicCursor, FreshLoad, SchematicLoaded},
 };
 
-use std::sync::Arc;
 use bevy::{prelude::*, sprite::Mesh2dHandle};
 use euclid::{default::Point2D, Angle, Vector2D};
 use lyon_tessellation::{StrokeOptions, VertexBuffers};
+use std::sync::Arc;
 
 #[derive(Resource)]
 pub struct DefaultDevices {
@@ -234,7 +234,7 @@ pub fn spawn_preview_device_from_type(
         Preview,
         Selected,
     );
-    let label_bundle = SchematicLabelBundle::new(device_entity, IVec2::splat(3), "test".to_owned());
+    let label_bundle = SchematicLabelBundle::new(device_entity, IVec2::new(2, 3), "test".to_owned());
     let port_iter = newtype
         .ports
         .iter()

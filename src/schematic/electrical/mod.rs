@@ -2,14 +2,14 @@
 //! a schematic element may be reused in a circuit or device designer context (or more)
 //! must support: picking by point/ray, by area intersect, by area contained
 //! picking by point/ray should only ever mark 1 entity as picked
-mod devices;
-mod nets;
 mod console;
-mod spmanager;
+mod devices;
 mod label;
 mod netlisting;
+mod nets;
 mod readable_idgen;
 mod spid;
+mod spmanager;
 
 pub use devices::DefaultDevices;
 pub use nets::{create_preview_lineseg, LineVertex};
@@ -17,9 +17,9 @@ pub use spid::{NetId, SpDeviceId};
 
 use label::{sch_label_update, SchematicLabel};
 use nets::{PickableLineSeg, PickableVertex, PortLabel};
+use readable_idgen::IdTracker;
 use spid::{SchType, SpDeviceType, SpType};
 use spmanager::SPManagerPlugin;
-use readable_idgen::IdTracker;
 
 use super::{
     infotext::InfoRes,
@@ -32,9 +32,8 @@ use bevy::{
     prelude::*,
     render::{mesh::PrimitiveTopology, render_asset::RenderAssetUsages},
 };
-use std::sync::Arc;
 use euclid::default::{Box2D, Point2D};
-
+use std::sync::Arc;
 
 /// marker component to mark entity as being previewed (constructed by an active tool)
 /// entities marked [`SchematicElement`] but without this marker is persistent
@@ -404,11 +403,3 @@ impl Pickable for PickableDevice {
     }
 }
 
-pub fn port_label_pair(port_entity: Entity, label_entity: Entity, mut commands: Commands) {
-    commands
-        .entity(port_entity)
-        .insert(PortLabel::new(label_entity));
-    commands
-        .entity(label_entity)
-        .insert(SchematicLabel::new(port_entity, IVec2::splat(1)));
-}

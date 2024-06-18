@@ -120,7 +120,6 @@ fn dfs_recurs(
     for branch in &lv.branches {
         let (segment, vid) = q_paths.get(*branch).unwrap();
         if visited_paths.insert(*branch, vid.get_id().into()).is_some() {
-            // if !visited_paths.insert(*branch) {
             // already visited this node
             continue;
         }
