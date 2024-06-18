@@ -357,6 +357,12 @@ impl PickableDevice {
             Point2D::new(2.0, 3.0),
         ]))
     }
+    fn _2x4() -> Self {
+        Self(Box2D::from_points([
+            Point2D::new(-1.0, -2.0),
+            Point2D::new(1.0, 2.0),
+        ]))
+    }
 }
 impl Pickable for PickableDevice {
     fn collides(&self, pc: &PickingCollider, gt: Transform) -> bool {

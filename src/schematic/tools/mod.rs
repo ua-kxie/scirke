@@ -55,6 +55,9 @@ fn exclusive_main(world: &mut World) {
         SchematicToolState::Idle => {
             let is_move = keys.just_pressed(MOVE_KEY);
             let is_copy = keys.just_pressed(COPY_KEY);
+            let newvs = keys.just_pressed(KeyCode::KeyV);
+            let newr = keys.just_pressed(KeyCode::KeyR);
+            let newg = keys.just_pressed(KeyCode::KeyG);
             if is_move || is_copy {
                 world
                     .save(ToolsPreviewPipeline)
@@ -93,19 +96,10 @@ fn exclusive_main(world: &mut World) {
             } else if keys.just_released(WIRE_TOOL_KEY) {
                 let mut next_toolst = world.resource_mut::<NextState<SchematicToolState>>();
                 next_toolst.set(SchematicToolState::Wiring);
-            } else if keys.just_released(KeyCode::KeyR) {
+            } else if newr || newg || newvs {
                 // spawn a resistor device as child of cursor
                 let dd = world.get_resource::<DefaultDevices>().unwrap();
-                let _ = world.send_event(dd.resistor());
-
-                let mut next_toolst = world.resource_mut::<NextState<SchematicToolState>>();
-                next_toolst.set(SchematicToolState::Transform);
-                let mut next_transst = world.resource_mut::<NextState<TransformType>>();
-                next_transst.set(TransformType::Copy);
-            } else if keys.just_released(KeyCode::KeyV) {
-                // spawn a voltage source as child of cursor
-                let dd = world.get_resource::<DefaultDevices>().unwrap();
-                let _ = world.send_event(dd.voltage_source());
+                let _ = world.send_event(if newr {dd.resistor()} else if newg {dd.gnd()} else {dd.voltage_source()});
 
                 let mut next_toolst = world.resource_mut::<NextState<SchematicToolState>>();
                 next_toolst.set(SchematicToolState::Transform);

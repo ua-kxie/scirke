@@ -25,6 +25,7 @@ const NET: &str = "";
 #[derive(Component, Reflect, Debug, Clone)]
 #[reflect(Component)]
 pub enum SpDeviceType {
+    Gnd,
     V,
     // I,
     R,
@@ -35,6 +36,7 @@ pub enum SpDeviceType {
 impl SpDeviceType {
     pub fn prefix(&self) -> &'static str {
         match self {
+            SpDeviceType::Gnd => V,
             SpDeviceType::V => V,
             SpDeviceType::R => R,
         }

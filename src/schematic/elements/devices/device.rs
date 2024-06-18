@@ -12,7 +12,7 @@ use super::{spid, DeviceType, ElementsRes, PickableElement, SchematicElement};
 
 /// component storing device parameters
 /// TODO: want to use trait object for this but how to serialize?
-#[derive(Component, Reflect)]
+#[derive(Component, Reflect, Clone)]
 #[reflect(Component)]
 pub enum DeviceParams {
     Raw(String), // passed directly to ngspice
@@ -83,7 +83,7 @@ impl DeviceBundle {
     ) -> Self {
         Self {
             label: DeviceLabel { label },
-            params: DeviceParams::Raw("1".to_owned()),
+            params: dtype.params.clone(),
             ports: DevicePorts { ports },
             mat: MaterialMesh2dBundle {
                 mesh: dtype.visuals.clone(),

@@ -34,6 +34,7 @@ pub struct DefaultDevices {
     v: DeviceType,
     // i: DeviceType0,
     r: DeviceType,
+    g: DeviceType,
 }
 
 impl DefaultDevices {
@@ -44,6 +45,10 @@ impl DefaultDevices {
     pub fn resistor(&self) -> DeviceType {
         self.r.clone()
     }
+
+    pub fn gnd(&self) -> DeviceType {
+        self.g.clone()
+    }
 }
 
 impl FromWorld for DefaultDevices {
@@ -51,12 +56,14 @@ impl FromWorld for DefaultDevices {
         DefaultDevices {
             v: DeviceType::type_v(world),
             r: DeviceType::type_r(world),
+            g: DeviceType::type_gnd(world),
         }
     }
 }
 
 #[derive(Event, Clone)]
 pub struct DeviceType {
+    params: DeviceParams,
     spice_type: spid::SpDeviceType,
     visuals: Mesh2dHandle,
     collider: Arc<dyn Pickable + Send + Sync + 'static>, // schematic element
@@ -108,19 +115,20 @@ impl DeviceType {
                 .with_line_cap(lyon_tessellation::LineCap::Round),
             &mut buffers,
         );
-        let res_mesh = build_mesh(&buffers).with_inserted_attribute(
+        let vmesh = build_mesh(&buffers).with_inserted_attribute(
             Mesh::ATTRIBUTE_COLOR,
             vec![devicecolor; buffers.vertices.len()],
         );
         let mut meshes = world.resource_mut::<Assets<Mesh>>();
-        let mesh_res = meshes.add(res_mesh);
+        let mesh = meshes.add(vmesh);
 
         let collider = Arc::new(PickableDevice::_4x6());
 
         let ports = Arc::new([IVec2::new(0, 3), IVec2::new(0, -3)]);
         DeviceType {
+            params: DeviceParams::Raw("3.3".to_owned()),
             spice_type: spid::SpDeviceType::V,
-            visuals: Mesh2dHandle(mesh_res),
+            visuals: Mesh2dHandle(mesh),
             collider,
             ports,
         }
@@ -174,7 +182,48 @@ impl DeviceType {
         let ports = Arc::new([IVec2::new(0, 3), IVec2::new(0, -3)]);
 
         DeviceType {
-            spice_type: spid::SpDeviceType::R,
+            params: DeviceParams::Raw("1k".to_owned()),
+            spice_type: spid::SpDeviceType::V,
+            visuals: Mesh2dHandle(mesh_res),
+            collider,
+            ports,
+        }
+    }
+    fn type_gnd(world: &mut World) -> Self {
+        let devicecolor = Color::GREEN.rgba_linear_to_vec4();
+        let mut stroke_tess = world.resource_mut::<StrokeTessellator>();
+        let mut path_builder = bevyon::path_builder().with_svg();
+        path_builder.move_to(Point2D::new(0., 2.));
+        path_builder.line_to(Point2D::new(0., -1.));
+        path_builder.move_to(Point2D::new(0., -2.));
+        path_builder.line_to(Point2D::new(1., -1.));
+        path_builder.line_to(Point2D::new(-1., -1.));
+        path_builder.line_to(Point2D::new(0., -2.));
+        let path = path_builder.build();
+        let mut buffers = VertexBuffers::new();
+        stroke(
+            &mut *stroke_tess,
+            &path,
+            &StrokeOptions::DEFAULT
+                .with_line_width(0.1)
+                .with_tolerance(0.01)
+                .with_line_cap(lyon_tessellation::LineCap::Round),
+            &mut buffers,
+        );
+        let gnd_mesh = build_mesh(&buffers).with_inserted_attribute(
+            Mesh::ATTRIBUTE_COLOR,
+            vec![devicecolor; buffers.vertices.len()],
+        );
+        let mut meshes = world.resource_mut::<Assets<Mesh>>();
+        let mesh_res = meshes.add(gnd_mesh);
+
+        let collider = Arc::new(PickableDevice::_2x4());
+
+        let ports = Arc::new([IVec2::new(0, 2)]);
+
+        DeviceType {
+            params: DeviceParams::Raw("0 0".to_owned()),
+            spice_type: spid::SpDeviceType::Gnd,
             visuals: Mesh2dHandle(mesh_res),
             collider,
             ports,
@@ -225,6 +274,7 @@ fn insert_spid(
 ) {
     q.iter().for_each(|(e, schtype)| {
         let spid = match schtype.get_dtype().unwrap() {
+            spid::SpDeviceType::Gnd => SpDeviceId::new(idtracker.new_v_id("Gnd")),
             spid::SpDeviceType::V => SpDeviceId::new(idtracker.new_v_id("")),
             spid::SpDeviceType::R => SpDeviceId::new(idtracker.new_r_id("")),
         };
@@ -243,6 +293,10 @@ fn insert_non_reflect(
 ) {
     for (device_ent, device, spid) in qd.iter() {
         let bundle = match spid.get_dtype().unwrap() {
+            spid::SpDeviceType::Gnd => (
+                default_devices.g.as_non_reflect_bundle(),
+                eres.mat_dflt.clone(), 
+            ),
             spid::SpDeviceType::V => (
                 default_devices.v.as_non_reflect_bundle(),
                 eres.mat_dflt.clone(),
