@@ -105,24 +105,17 @@ fn merge_overlapped_vertices(world: &mut World) {
             None => {}
         }
     }
-    // merge ports
+    // merge ports -- might be connecting vertex to port instead of merging
     let mut qp =
         world.query_filtered::<(Entity, &Transform), (With<LineVertex>, Without<Preview>, With<DevicePort>)>();
     let ports: Box<[(Entity, IVec2)]> = qp
         .iter(&world)
         .map(|x| (x.0, x.1.translation.truncate().as_ivec2()))
         .collect();
-    let eres = world.resource::<ElementsRes>();
-    let eres = (*eres).clone();
     for (this_port, c) in ports.into_iter() {
         match cehm.insert(*c, *this_port) {
             Some(existing_port) => {
-                let c3 = c.as_vec2().extend(0.0);
-                world.spawn(LineSegBundle::new(
-                    &eres,
-                    (existing_port, c3),
-                    (*this_port, c3),
-                ));
+                add_lineseg(world, existing_port, *this_port);
             }
             None => {}
         }

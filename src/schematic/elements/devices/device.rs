@@ -21,12 +21,8 @@ pub enum DeviceParams {
 impl DeviceParams {
     pub fn spice_param(&self) -> String {
         match &self {
-            DeviceParams::Raw(r) => {
-                r.clone()
-            },
-            DeviceParams::Float(f) => {
-                f.to_string()
-            },
+            DeviceParams::Raw(r) => r.clone(),
+            DeviceParams::Float(f) => f.to_string(),
         }
     }
 }

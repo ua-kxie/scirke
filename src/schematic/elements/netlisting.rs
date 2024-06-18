@@ -18,7 +18,10 @@ use std::fs;
 
 use bevy::{input::common_conditions::input_just_pressed, prelude::*};
 
-use super::{devices::{DeviceParams, DevicePorts}, NetId, SchematicElement, SpDeviceId};
+use super::{
+    devices::{DeviceParams, DevicePorts},
+    NetId, SchematicElement, SpDeviceId,
+};
 
 #[derive(Event)]
 pub struct Netlist;
@@ -28,7 +31,10 @@ pub struct NetlistPlugin;
 impl Plugin for NetlistPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<Netlist>();
-        app.add_systems(PreUpdate, netlist.run_if(input_just_pressed(KeyCode::Space))); // preupdate: run on schematic that has been seen
+        app.add_systems(
+            PreUpdate,
+            netlist.run_if(input_just_pressed(KeyCode::Space)),
+        ); // preupdate: run on schematic that has been seen
     }
 }
 

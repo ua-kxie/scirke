@@ -24,12 +24,11 @@ mod port;
 pub use port::DevicePort;
 use port::{update_port_location, PortBundle};
 mod device;
-use device::{DeviceBundle};
+use device::DeviceBundle;
 mod device_label;
 use device::DeviceLabel;
-pub use device::DevicePorts;
+pub use device::{DeviceParams, DevicePorts};
 use device_label::{sch_label_update, SchematicLabel, SchematicLabelBundle};
-pub use device::DeviceParams;
 #[derive(Resource)]
 pub struct DefaultDevices {
     v: DeviceType,
