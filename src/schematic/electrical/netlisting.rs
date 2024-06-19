@@ -87,30 +87,50 @@ fn pksim(
     q_labeled_ports: Query<(Entity, &PortLabel), With<Port>>,
     spres: Res<SPRes>,
     mut commands: Commands,
+    keys: Res<ButtonInput<KeyCode>>,
 ) {
     // clear all port labels
     for (e, p) in q_labeled_ports.iter() {
         commands.entity(p.get_label_entity()).despawn();
         commands.entity(e).remove::<PortLabel>();
     }
+
     // run sim
     e_console_rgstr.send(PrintConsoleLine::new(
         "source out/netlist.cir".to_owned(),
         Color32::GRAY,
     ));
     spres.command("source out/netlist.cir");
-    e_console_rgstr.send(PrintConsoleLine::new("op".to_owned(), Color32::GRAY));
-    spres.command("op");
+    let cmd;
+    if keys.pressed(KeyCode::ControlLeft) {
+        // run acop
+        let hz = 60.0;
+        // ac step_type step_size start end (start and end are inclusive)
+        // since dcop, start and end can be same
+        cmd = format!("ac lin 0 {} {}", hz, hz);
+    } else {
+        // run dcop
+        cmd = "op".to_owned();
+    }
+    // send to ngspice
+    spres.command(&cmd);
+    // send to console for posterity
+    e_console_rgstr.send(PrintConsoleLine::new(cmd, Color32::GRAY));
 
     // get results, display as port labels
     if let Some(pkvecvaluesall) = spres.get_spm().vecvals_pop() {
-        let mut results = HashMap::<String, f32>::new();
+        let mut results = HashMap::<String, String>::new();
         for v in pkvecvaluesall.vecsa {
-            results.insert(v.name, v.creal as f32);
+            if v.is_complex {
+                let cv = num::complex::Complex::new(v.creal, v.cimag);
+                results.insert(v.name, format! {"{:+.2e}", cv});
+            } else {
+                results.insert(v.name, format! {"{:+.2e}", v.creal});
+            }
         }
         for (ent, netid) in q_ports.iter() {
             let val = results.get(netid.get_id()).unwrap();
-            insert_new_label(ent, &mut commands, format! {"{:+.2e}", val});
+            insert_new_label(ent, &mut commands, val.clone());
         }
     }
 }

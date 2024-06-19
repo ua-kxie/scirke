@@ -3742,6 +3742,7 @@ dependencies = [
  "colored",
  "euclid",
  "lyon_tessellation",
+ "num",
  "paprika",
  "serde",
 ]

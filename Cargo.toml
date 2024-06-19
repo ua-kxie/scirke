@@ -16,6 +16,7 @@ paprika = { path = "./paprika", features = ["serde"] }
 bevy_save = { path = "./bevy_save" }
 colored = "2.0"
 bevy_egui = "0.27.1"
+num = "0.4.3"
 
 [workspace]
 members = [
