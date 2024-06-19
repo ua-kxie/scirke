@@ -28,10 +28,10 @@ const NET: &str = "";
 pub enum SpDeviceType {
     Gnd,
     V,
-    // I,
+    I,
     R,
-    // L,
-    // C,
+    L,
+    C,
 }
 
 impl SpDeviceType {
@@ -39,7 +39,10 @@ impl SpDeviceType {
         match self {
             SpDeviceType::Gnd => V,
             SpDeviceType::V => V,
+            SpDeviceType::I => I,
             SpDeviceType::R => R,
+            SpDeviceType::L => L,
+            SpDeviceType::C => C,
         }
     }
 }

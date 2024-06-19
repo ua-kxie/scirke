@@ -26,16 +26,23 @@ pub struct IdTracker {
 }
 
 impl IdTracker {
-    pub fn new_r_id(&mut self, prefix: &str) -> String {
-        self.r.get_id(prefix)
+    pub fn new_net_id(&mut self) -> String {
+        self.nets.get_id("net_")
     }
-
     pub fn new_v_id(&mut self, prefix: &str) -> String {
         self.v.get_id(prefix)
     }
-
-    pub fn new_net_id(&mut self) -> String {
-        self.nets.get_id("net_")
+    pub fn new_i_id(&mut self, prefix: &str) -> String {
+        self.i.get_id(prefix)
+    }
+    pub fn new_r_id(&mut self, prefix: &str) -> String {
+        self.r.get_id(prefix)
+    }
+    pub fn new_l_id(&mut self, prefix: &str) -> String {
+        self.l.get_id(prefix)
+    }
+    pub fn new_c_id(&mut self, prefix: &str) -> String {
+        self.c.get_id(prefix)
     }
 }
 

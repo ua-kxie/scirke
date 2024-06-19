@@ -26,32 +26,44 @@ use std::sync::Arc;
 
 #[derive(Resource)]
 pub struct DefaultDevices {
+    g: DeviceType, // ground
     v: DeviceType,
-    // i: DeviceType0,
+    i: DeviceType,
     r: DeviceType,
-    g: DeviceType,
+    l: DeviceType,
+    c: DeviceType,
 }
 
 impl DefaultDevices {
+    pub fn gnd(&self) -> DeviceType {
+        self.g.clone()
+    }
     pub fn voltage_source(&self) -> DeviceType {
         self.v.clone()
     }
-
+    pub fn current_source(&self) -> DeviceType {
+        self.i.clone()
+    }
     pub fn resistor(&self) -> DeviceType {
         self.r.clone()
     }
-
-    pub fn gnd(&self) -> DeviceType {
-        self.g.clone()
+    pub fn inductor(&self) -> DeviceType {
+        self.l.clone()
+    }
+    pub fn capacitor(&self) -> DeviceType {
+        self.c.clone()
     }
 }
 
 impl FromWorld for DefaultDevices {
     fn from_world(world: &mut World) -> Self {
         DefaultDevices {
-            v: DeviceType::type_v(world),
-            r: DeviceType::type_r(world),
             g: DeviceType::type_gnd(world),
+            v: DeviceType::type_v(world),
+            i: DeviceType::type_i(world),
+            r: DeviceType::type_r(world),
+            l: DeviceType::type_l(world),
+            c: DeviceType::type_c(world),
         }
     }
 }
@@ -76,9 +88,45 @@ impl DeviceType {
     }
 }
 
+const DEVICE_COLOR: Color = Color::GREEN;
+const STROKE_OPTIONS: StrokeOptions = StrokeOptions::DEFAULT
+    .with_line_width(0.1)
+    .with_tolerance(0.001)
+    .with_line_cap(lyon_tessellation::LineCap::Round);
+
 impl DeviceType {
+    fn type_gnd(world: &mut World) -> Self {
+        let mut stroke_tess = world.resource_mut::<StrokeTessellator>();
+        let mut path_builder = bevyon::path_builder().with_svg();
+        path_builder.move_to(Point2D::new(0., 2.));
+        path_builder.line_to(Point2D::new(0., -1.));
+        path_builder.move_to(Point2D::new(0., -2.));
+        path_builder.line_to(Point2D::new(1., -1.));
+        path_builder.line_to(Point2D::new(-1., -1.));
+        path_builder.line_to(Point2D::new(0., -2.));
+        let path = path_builder.build();
+        let mut buffers = VertexBuffers::new();
+        stroke(&mut *stroke_tess, &path, &STROKE_OPTIONS, &mut buffers);
+        let gnd_mesh = build_mesh(&buffers).with_inserted_attribute(
+            Mesh::ATTRIBUTE_COLOR,
+            vec![DEVICE_COLOR.rgba_linear_to_vec4(); buffers.vertices.len()],
+        );
+        let mut meshes = world.resource_mut::<Assets<Mesh>>();
+        let mesh_res = meshes.add(gnd_mesh);
+
+        let collider = Arc::new(PickableDevice::_2x4());
+
+        let ports = Arc::new([IVec2::new(0, 2)]);
+
+        DeviceType {
+            params: DeviceParams::Raw("0 0".to_owned()),
+            spice_type: spid::SpDeviceType::Gnd,
+            visuals: Mesh2dHandle(mesh_res),
+            collider,
+            ports,
+        }
+    }
     fn type_v(world: &mut World) -> Self {
-        let devicecolor = Color::GREEN.rgba_linear_to_vec4();
         let mut stroke_tess = world.resource_mut::<StrokeTessellator>();
         let mut path_builder = bevyon::path_builder().with_svg();
         let r = 1.2;
@@ -86,12 +134,7 @@ impl DeviceType {
         path_builder.line_to(Point2D::new(0.0, -r));
         path_builder.move_to(Point2D::new(0.0, 3.0));
         path_builder.line_to(Point2D::new(0.0, r));
-        path_builder.move_to(Point2D::new(0.0, 1.0));
-        path_builder.line_to(Point2D::new(0.0, 0.2));
-        path_builder.move_to(Point2D::new(-0.4, 0.6));
-        path_builder.line_to(Point2D::new(0.4, 0.6));
-        path_builder.move_to(Point2D::new(-0.4, -0.6));
-        path_builder.line_to(Point2D::new(0.4, -0.6));
+
         path_builder.move_to(Point2D::new(0.0, -r));
         path_builder.arc(
             Point2D::zero(),
@@ -99,20 +142,19 @@ impl DeviceType {
             Angle::two_pi(),
             Angle::zero(),
         );
+        // +/- signs
+        path_builder.move_to(Point2D::new(0.0, 1.0));
+        path_builder.line_to(Point2D::new(0.0, 0.2));
+        path_builder.move_to(Point2D::new(-0.4, 0.6));
+        path_builder.line_to(Point2D::new(0.4, 0.6));
+        path_builder.move_to(Point2D::new(-0.4, -0.6));
+        path_builder.line_to(Point2D::new(0.4, -0.6));
         let path = path_builder.build();
         let mut buffers = VertexBuffers::new();
-        stroke(
-            &mut *stroke_tess,
-            &path,
-            &StrokeOptions::DEFAULT
-                .with_line_width(0.1)
-                .with_tolerance(0.01)
-                .with_line_cap(lyon_tessellation::LineCap::Round),
-            &mut buffers,
-        );
+        stroke(&mut *stroke_tess, &path, &STROKE_OPTIONS, &mut buffers);
         let vmesh = build_mesh(&buffers).with_inserted_attribute(
             Mesh::ATTRIBUTE_COLOR,
-            vec![devicecolor; buffers.vertices.len()],
+            vec![DEVICE_COLOR.rgba_linear_to_vec4(); buffers.vertices.len()],
         );
         let mut meshes = world.resource_mut::<Assets<Mesh>>();
         let mesh = meshes.add(vmesh);
@@ -128,8 +170,50 @@ impl DeviceType {
             ports,
         }
     }
+    fn type_i(world: &mut World) -> Self {
+        let mut stroke_tess = world.resource_mut::<StrokeTessellator>();
+        let mut path_builder = bevyon::path_builder().with_svg();
+        let r = 1.2;
+        path_builder.move_to(Point2D::new(0.0, -3.0));
+        path_builder.line_to(Point2D::new(0.0, -r));
+        path_builder.move_to(Point2D::new(0.0, 3.0));
+        path_builder.line_to(Point2D::new(0.0, r));
+
+        path_builder.move_to(Point2D::new(0.0, -r));
+        path_builder.arc(
+            Point2D::zero(),
+            Vector2D::splat(r),
+            Angle::two_pi(),
+            Angle::zero(),
+        );
+        // -> arrow pointing in direction of current flow
+        path_builder.move_to(Point2D::new(0.0, -0.8));
+        path_builder.line_to(Point2D::new(0.0, 0.8));
+        path_builder.move_to(Point2D::new(0.3, -0.5));
+        path_builder.line_to(Point2D::new(0.0, -0.8));
+        path_builder.line_to(Point2D::new(-0.3, -0.5));
+        let path = path_builder.build();
+        let mut buffers = VertexBuffers::new();
+        stroke(&mut *stroke_tess, &path, &STROKE_OPTIONS, &mut buffers);
+        let vmesh = build_mesh(&buffers).with_inserted_attribute(
+            Mesh::ATTRIBUTE_COLOR,
+            vec![DEVICE_COLOR.rgba_linear_to_vec4(); buffers.vertices.len()],
+        );
+        let mut meshes = world.resource_mut::<Assets<Mesh>>();
+        let mesh = meshes.add(vmesh);
+
+        let collider = Arc::new(PickableDevice::_4x6());
+
+        let ports = Arc::new([IVec2::new(0, 3), IVec2::new(0, -3)]);
+        DeviceType {
+            params: DeviceParams::Raw("1u".to_owned()),
+            spice_type: spid::SpDeviceType::I,
+            visuals: Mesh2dHandle(mesh),
+            collider,
+            ports,
+        }
+    }
     fn type_r(world: &mut World) -> Self {
-        let devicecolor = Color::GREEN.rgba_linear_to_vec4();
         let mut stroke_tess = world.resource_mut::<StrokeTessellator>();
         let mut path_builder = bevyon::path_builder().with_svg();
         path_builder.move_to(Point2D::new(0.00, 3.00));
@@ -146,18 +230,10 @@ impl DeviceType {
         path_builder.line_to(Point2D::new(0.00, -3.00));
         let path = path_builder.build();
         let mut buffers = VertexBuffers::new();
-        stroke(
-            &mut *stroke_tess,
-            &path,
-            &StrokeOptions::DEFAULT
-                .with_line_width(0.1)
-                .with_tolerance(0.01)
-                .with_line_cap(lyon_tessellation::LineCap::Round),
-            &mut buffers,
-        );
+        stroke(&mut *stroke_tess, &path, &STROKE_OPTIONS, &mut buffers);
         let res_mesh = build_mesh(&buffers).with_inserted_attribute(
             Mesh::ATTRIBUTE_COLOR,
-            vec![devicecolor; buffers.vertices.len()],
+            vec![DEVICE_COLOR.rgba_linear_to_vec4(); buffers.vertices.len()],
         );
         let mut meshes = world.resource_mut::<Assets<Mesh>>();
         let mesh_res = meshes.add(res_mesh);
@@ -174,41 +250,111 @@ impl DeviceType {
             ports,
         }
     }
-    fn type_gnd(world: &mut World) -> Self {
-        let devicecolor = Color::GREEN.rgba_linear_to_vec4();
+    fn type_l(world: &mut World) -> Self {
         let mut stroke_tess = world.resource_mut::<StrokeTessellator>();
         let mut path_builder = bevyon::path_builder().with_svg();
-        path_builder.move_to(Point2D::new(0., 2.));
-        path_builder.line_to(Point2D::new(0., -1.));
-        path_builder.move_to(Point2D::new(0., -2.));
-        path_builder.line_to(Point2D::new(1., -1.));
-        path_builder.line_to(Point2D::new(-1., -1.));
-        path_builder.line_to(Point2D::new(0., -2.));
+        path_builder.move_to(Point2D::new(0.00, 3.00));
+        path_builder.line_to(Point2D::new(0.00, 2.00));
+        path_builder.line_to(Point2D::new(0.25, 2.00));
+        path_builder.move_to(Point2D::new(0.25, 1.00));
+        path_builder.line_to(Point2D::new(0.00, 1.00));
+        path_builder.move_to(Point2D::new(0.25, 0.00));
+        path_builder.line_to(Point2D::new(0.00, 0.00));
+        path_builder.move_to(Point2D::new(0.25, -1.00));
+        path_builder.line_to(Point2D::new(0.00, -1.00));
+        path_builder.move_to(Point2D::new(0.25, -2.00));
+        path_builder.line_to(Point2D::new(0.00, -2.00));
+        path_builder.line_to(Point2D::new(0.00, -3.00));
+        path_builder.move_to(Point2D::new(0.25, 2.00));
+        path_builder.arc(
+            Point2D::new(0.25, 1.50),
+            Vector2D::splat(0.5),
+            -Angle::pi(),
+            Angle::zero(),
+        );
+        path_builder.move_to(Point2D::new(0.25, 1.00));
+        path_builder.arc(
+            Point2D::new(0.25, 0.50),
+            Vector2D::splat(0.5),
+            -Angle::pi(),
+            Angle::zero(),
+        );
+        path_builder.move_to(Point2D::new(0.25, 0.00));
+        path_builder.arc(
+            Point2D::new(0.25, -0.50),
+            Vector2D::splat(0.5),
+            -Angle::pi(),
+            Angle::zero(),
+        );
+        path_builder.move_to(Point2D::new(0.25, -1.00));
+        path_builder.arc(
+            Point2D::new(0.25, -1.50),
+            Vector2D::splat(0.5),
+            -Angle::pi(),
+            Angle::zero(),
+        );
         let path = path_builder.build();
         let mut buffers = VertexBuffers::new();
-        stroke(
-            &mut *stroke_tess,
-            &path,
-            &StrokeOptions::DEFAULT
-                .with_line_width(0.1)
-                .with_tolerance(0.01)
-                .with_line_cap(lyon_tessellation::LineCap::Round),
-            &mut buffers,
-        );
+        stroke(&mut *stroke_tess, &path, &STROKE_OPTIONS, &mut buffers);
         let gnd_mesh = build_mesh(&buffers).with_inserted_attribute(
             Mesh::ATTRIBUTE_COLOR,
-            vec![devicecolor; buffers.vertices.len()],
+            vec![DEVICE_COLOR.rgba_linear_to_vec4(); buffers.vertices.len()],
         );
         let mut meshes = world.resource_mut::<Assets<Mesh>>();
         let mesh_res = meshes.add(gnd_mesh);
 
-        let collider = Arc::new(PickableDevice::_2x4());
+        let collider = Arc::new(PickableDevice::_4x6());
 
-        let ports = Arc::new([IVec2::new(0, 2)]);
+        let ports = Arc::new([IVec2::new(0, 3), IVec2::new(0, -3)]);
 
         DeviceType {
-            params: DeviceParams::Raw("0 0".to_owned()),
-            spice_type: spid::SpDeviceType::Gnd,
+            params: DeviceParams::Raw("1n".to_owned()),
+            spice_type: spid::SpDeviceType::L,
+            visuals: Mesh2dHandle(mesh_res),
+            collider,
+            ports,
+        }
+    }
+    fn type_c(world: &mut World) -> Self {
+        let mut stroke_tess = world.resource_mut::<StrokeTessellator>();
+        let mut path_builder = bevyon::path_builder().with_svg();
+        path_builder.move_to(Point2D::new(0.00, 3.00));
+        path_builder.line_to(Point2D::new(0.00, 0.50));
+        path_builder.move_to(Point2D::new(-1.00, 0.50));
+        path_builder.line_to(Point2D::new(1.00, 0.50));
+        path_builder.move_to(Point2D::new(0.00, -0.25));
+        path_builder.line_to(Point2D::new(0.00, -3.00));
+        path_builder.move_to(Point2D::new(0.00, -0.25));
+        path_builder.arc(
+            Point2D::new(0.00, -2.00),
+            Vector2D::splat(1.75),
+            Angle { radians: 0.6 },
+            Angle::zero(),
+        );
+        path_builder.move_to(Point2D::new(0.00, -0.25));
+        path_builder.arc(
+            Point2D::new(0.00, -2.00),
+            Vector2D::splat(1.75),
+            Angle { radians: -0.6 },
+            Angle::zero(),
+        );
+        let path = path_builder.build();
+        let mut buffers = VertexBuffers::new();
+        stroke(&mut *stroke_tess, &path, &STROKE_OPTIONS, &mut buffers);
+        let gnd_mesh = build_mesh(&buffers).with_inserted_attribute(
+            Mesh::ATTRIBUTE_COLOR,
+            vec![DEVICE_COLOR.rgba_linear_to_vec4(); buffers.vertices.len()],
+        );
+        let mut meshes = world.resource_mut::<Assets<Mesh>>();
+        let mesh_res = meshes.add(gnd_mesh);
+
+        let collider = Arc::new(PickableDevice::_4x6());
+
+        let ports = Arc::new([IVec2::new(0, 3), IVec2::new(0, -3)]);
+
+        DeviceType {
+            params: DeviceParams::Raw("1p".to_owned()),
+            spice_type: spid::SpDeviceType::C,
             visuals: Mesh2dHandle(mesh_res),
             collider,
             ports,
@@ -262,7 +408,10 @@ fn insert_spid(
         let spid = match schtype.get_dtype().unwrap() {
             spid::SpDeviceType::Gnd => SpDeviceId::new(idtracker.new_v_id("Gnd")),
             spid::SpDeviceType::V => SpDeviceId::new(idtracker.new_v_id("")),
+            spid::SpDeviceType::I => SpDeviceId::new(idtracker.new_i_id("")),
             spid::SpDeviceType::R => SpDeviceId::new(idtracker.new_r_id("")),
+            spid::SpDeviceType::L => SpDeviceId::new(idtracker.new_l_id("")),
+            spid::SpDeviceType::C => SpDeviceId::new(idtracker.new_c_id("")),
         };
         commands.entity(e).insert(spid);
     });
@@ -287,8 +436,20 @@ fn insert_non_reflect(
                 default_devices.v.as_non_reflect_bundle(),
                 eres.mat_dflt.clone(),
             ),
+            spid::SpDeviceType::I => (
+                default_devices.i.as_non_reflect_bundle(),
+                eres.mat_dflt.clone(),
+            ),
             spid::SpDeviceType::R => (
                 default_devices.r.as_non_reflect_bundle(),
+                eres.mat_dflt.clone(),
+            ),
+            spid::SpDeviceType::L => (
+                default_devices.l.as_non_reflect_bundle(),
+                eres.mat_dflt.clone(),
+            ),
+            spid::SpDeviceType::C => (
+                default_devices.c.as_non_reflect_bundle(),
                 eres.mat_dflt.clone(),
             ),
         };
