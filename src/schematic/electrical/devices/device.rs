@@ -66,7 +66,7 @@ impl MapEntities for DeviceLabel {
 
 #[derive(Bundle)]
 pub struct DeviceBundle {
-    label: DeviceLabel,
+    // label: DeviceLabel,
     params: DeviceParams,
     ports: DevicePorts,
     mat: MaterialMesh2dBundle<SchematicMaterial>,
@@ -79,10 +79,10 @@ impl DeviceBundle {
         dtype: &DeviceType,
         eres: &ElementsRes,
         ports: Vec<Entity>,
-        label: Entity,
+        // label: Entity,
     ) -> Self {
         Self {
-            label: DeviceLabel { label },
+            // label: DeviceLabel { label },
             params: dtype.params.clone(),
             ports: DevicePorts { ports },
             mat: MaterialMesh2dBundle {

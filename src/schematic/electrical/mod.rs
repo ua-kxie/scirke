@@ -318,7 +318,7 @@ fn picking(
         }
     }
     // if cycle command is pressed and colliding vector is not empty
-    if !colliding.is_empty() && keys.just_pressed(KeyCode::KeyC) {
+    if !colliding.is_empty() && keys.just_pressed(KeyCode::KeyS) {
         commands.entity(colliding[*idx]).remove::<Picked>();
         *idx = (*idx + 1) % colliding.len();
         commands.entity(colliding[*idx]).insert(Picked);

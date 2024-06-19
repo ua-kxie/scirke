@@ -124,14 +124,22 @@ pub struct LineSegBundle {
 impl LineSegBundle {
     pub fn new(eres: &ElementsRes, a: (Entity, Vec3), b: (Entity, Vec3)) -> Self {
         let m10 = b.1 - a.1;
-        let transform = Transform::from_translation(a.1)
+        let mut transform = Transform::from_translation(a.1)
             .with_rotation(Quat::from_rotation_z(Vec2::X.angle_between(m10.truncate())))
             .with_scale(Vec3::splat(m10.length()));
+        let visible;
+        if transform.is_finite() {
+            visible = Visibility::Inherited;
+        } else {
+            visible = Visibility::Hidden;
+            transform = Transform::default();
+        }
 
         let mat = MaterialMesh2dBundle {
             mesh: Mesh2dHandle(eres.mesh_unitx.clone()),
             material: eres.mat_dflt.clone(),
             transform: transform,
+            visibility: visible,
             ..Default::default()
         };
         let ls = LineSegment { a: a.0, b: b.0 };
@@ -178,7 +186,6 @@ pub fn transform_lineseg(
             *transform = newt;
         } else {
             // dbg!("hiding infite lineseg", a, b);
-            // TODO: need to make it unselectable too
             *visible = Visibility::Hidden;
         }
     }
