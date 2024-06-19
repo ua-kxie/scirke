@@ -221,7 +221,6 @@ pub fn console_ui(
             })
             .show(ctx, |ui| {
                 ui.style_mut().visuals.extreme_bg_color = config.background_color;
-                // ui.style_mut().visuals.override_text_color = Some(config.foreground_color);
 
                 ui.vertical(|ui| {
                     let scroll_height = ui.available_height() - 30.0;

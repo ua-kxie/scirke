@@ -41,6 +41,9 @@ impl InfoRes {
     pub fn set_picked(&mut self, e: Option<Entity>) {
         self.picked = e
     }
+    pub fn get_picked(&self) -> Option<Entity> {
+        self.picked
+    }
 }
 
 #[derive(Component)]
