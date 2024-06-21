@@ -66,7 +66,7 @@ impl MapEntities for DeviceLabel {
 
 #[derive(Bundle)]
 pub struct DeviceBundle {
-    // label: DeviceLabel,
+    label: DeviceLabel,
     params: DeviceParams,
     ports: DevicePorts,
     mat: MaterialMesh2dBundle<SchematicMaterial>,
@@ -79,10 +79,10 @@ impl DeviceBundle {
         dtype: &DeviceType,
         eres: &ElementsRes,
         ports: Vec<Entity>,
-        // label: Entity,
+        label: Entity,
     ) -> Self {
         Self {
-            // label: DeviceLabel { label },
+            label: DeviceLabel { label },
             params: dtype.params.clone(),
             ports: DevicePorts { ports },
             mat: MaterialMesh2dBundle {
@@ -97,5 +97,21 @@ impl DeviceBundle {
                 schtype: spid::SchType::Spice(spid::SpType::Device(dtype.spice_type.clone())),
             },
         }
+    }
+}
+
+pub fn update_device_param_labels(q: Query<(&DeviceParams, &DeviceLabel)>, mut commands: Commands) {
+    for (p, l) in q.iter() {
+        commands
+            .get_entity(l.label)
+            .unwrap()
+            .insert(Text::from_section(
+                p.spice_param(),
+                TextStyle {
+                    font_size: 18.0,
+                    color: Color::WHITE,
+                    ..default()
+                },
+            ));
     }
 }

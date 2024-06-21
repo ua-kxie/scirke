@@ -8,11 +8,12 @@ use bevy_egui::{
 };
 pub use device::{DeviceParams, DevicePorts};
 
-use device::{DeviceBundle, DeviceLabel};
+use device::{update_device_param_labels, DeviceBundle, DeviceLabel};
 
 use super::{
-    nets::PortBundle, readable_idgen::IdTracker, spid, ElectricalSet, ElementsRes, Pickable,
-    PickableDevice, PickableElement, Preview, SchematicElement, Selected, SpDeviceId,
+    label::SchematicLabelBundle, nets::PortBundle, readable_idgen::IdTracker, spid, ElectricalSet,
+    ElementsRes, Pickable, PickableDevice, PickableElement, Preview, SchematicElement, Selected,
+    SpDeviceId,
 };
 use crate::{
     bevyon::{self, build_mesh, stroke, StrokeTessellator},
@@ -378,14 +379,13 @@ pub fn spawn_preview_device_from_type(
         .iter()
         .map(|_| commands.spawn_empty().id())
         .collect::<Vec<Entity>>();
-    // let label_entity = commands.spawn_empty().id();
+    let label_entity = commands.spawn_empty().id();
     let device_bundle = (
-        DeviceBundle::from_type(newtype, &eres, ports_entities.clone()),
+        DeviceBundle::from_type(newtype, &eres, ports_entities.clone(), label_entity),
         Preview,
         Selected,
     );
-    // let label_bundle =
-    //     SchematicLabelBundle::new(device_entity, IVec2::new(2, 3), "test".to_owned());
+    let label_bundle = SchematicLabelBundle::new(device_entity, IVec2::new(1, 0), "".to_owned());
     let port_iter = newtype
         .ports
         .iter()
@@ -394,7 +394,7 @@ pub fn spawn_preview_device_from_type(
     commands.entity(cursor.single()).add_child(device_entity);
 
     commands.entity(device_entity).insert(device_bundle);
-    // commands.entity(label_entity).insert(label_bundle);
+    commands.entity(label_entity).insert(label_bundle);
     commands.insert_or_spawn_batch(ports_entities.into_iter().zip(port_iter.into_iter()));
 }
 
@@ -476,6 +476,10 @@ impl Plugin for DevicesPlugin {
         app.add_systems(
             Update,
             (insert_spid, spawn_preview_device_from_type).in_set(ElectricalSet::Direct),
+        );
+        app.add_systems(
+            Update,
+            (update_device_param_labels).in_set(ElectricalSet::React),
         );
         app.add_systems(
             PreUpdate,
