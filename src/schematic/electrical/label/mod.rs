@@ -42,7 +42,7 @@ impl SchematicLabelBundle {
                 text: Text::from_section(
                     value,
                     TextStyle {
-                        font_size: 32.0,
+                        font_size: 18.0,
                         color: Color::WHITE,
                         ..default()
                     },

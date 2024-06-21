@@ -1,4 +1,4 @@
-use bevy::{prelude::*, window::PrimaryWindow};
+use bevy::{asset::load_internal_binary_asset, prelude::*, window::PrimaryWindow};
 use bevy_egui::EguiPlugin;
 use bevyon::BevyonPlugin;
 use schematic::SchematicPlugin;
@@ -8,15 +8,21 @@ mod schematic;
 pub use bevyon::{FillOptions, StrokeOptions};
 
 fn main() {
-    App::new()
-        .add_plugins(DefaultPlugins.set(WindowPlugin {
-            primary_window: Some(Window {
-                resolution: (800., 600.).into(),
-                ..default()
-            }),
+    let mut app = App::new();
+    app.add_plugins(DefaultPlugins.set(WindowPlugin {
+        primary_window: Some(Window {
+            resolution: (800., 600.).into(),
             ..default()
-        }))
-        .add_plugins(BevyonPlugin)
+        }),
+        ..default()
+    }));
+    load_internal_binary_asset!(
+        app,
+        TextStyle::default().font,
+        "../assets/MonaspaceNeon-Regular.otf",
+        |bytes: &[u8], _path: String| { Font::try_from_bytes(bytes.to_vec()).unwrap() }
+    );
+    app.add_plugins(BevyonPlugin)
         .add_plugins(SchematicPlugin)
         .add_systems(Startup, hide_cursor)
         .add_plugins(EguiPlugin)
