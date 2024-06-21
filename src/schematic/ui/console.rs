@@ -9,6 +9,8 @@ use bevy_egui::{
 };
 use std::collections::VecDeque;
 
+use crate::schematic::electrical::SPRes;
+
 /// Console plugin.
 pub struct ConsolePlugin;
 
@@ -60,6 +62,20 @@ impl Plugin for ConsolePlugin {
             Update,
             block_inputs_on_console_focus.in_set(ConsoleSet::PostCommands),
         );
+        app.add_systems(Update, write_to_console.after(ConsoleSet::ConsoleUI));
+        app.add_systems(Update, pass_to_ngspice.after(ConsoleSet::Commands));
+    }
+}
+
+fn write_to_console(mut console_line: EventWriter<PrintConsoleLine>, sres: Res<SPRes>) {
+    for s in sres.get_spm().drain() {
+        console_line.send(PrintConsoleLine::new(s.0, s.1));
+    }
+}
+
+fn pass_to_ngspice(mut console_line: EventReader<ConsoleCommandEntered>, sres: Res<SPRes>) {
+    for ConsoleCommandEntered { command } in console_line.read() {
+        sres.command(command);
     }
 }
 
@@ -233,17 +249,6 @@ pub fn console_ui(
                         .show(ui, |ui| {
                             ui.vertical(|ui| {
                                 for line in &state.scrollback {
-                                    // let mut text = LayoutJob::default();
-
-                                    // text.append(
-                                    //     &line.to_string(),
-                                    //     0f32,
-                                    //     TextFormat::simple(
-                                    //         FontId::monospace(14f32),
-                                    //         config.foreground_color,
-                                    //     ),
-                                    // );
-
                                     ui.label(line.clone());
                                 }
                             });

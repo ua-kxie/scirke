@@ -1,6 +1,5 @@
+use super::super::ui::console::Color32;
 use bevy::prelude::*;
-// use bevy_console::{Color32, ConsoleCommandEntered, ConsolePlugin, ConsoleSet, PrintConsoleLine};
-use super::console::{Color32, ConsoleCommandEntered, ConsolePlugin, ConsoleSet, PrintConsoleLine};
 use paprika::*;
 use std::{
     collections::VecDeque,
@@ -20,6 +19,13 @@ impl SpManager {
     }
     pub fn vecvals_pop(&self) -> Option<PkVecvaluesall> {
         self.vecvals.try_lock().unwrap().pop()
+    }
+    pub fn drain(&self) -> impl IntoIterator<Item = (String, Color32)> {
+        self.sharedres
+            .write()
+            .unwrap()
+            .drain(..)
+            .collect::<Vec<_>>()
     }
 }
 
@@ -120,21 +126,6 @@ pub struct SPManagerPlugin;
 
 impl Plugin for SPManagerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(ConsolePlugin);
         app.init_resource::<SPRes>();
-        app.add_systems(Update, write_to_console.after(ConsoleSet::ConsoleUI));
-        app.add_systems(Update, pass_to_ngspice.after(ConsoleSet::Commands));
-    }
-}
-
-fn write_to_console(mut console_line: EventWriter<PrintConsoleLine>, sres: Res<SPRes>) {
-    for s in sres.spm.sharedres.write().unwrap().drain(..) {
-        console_line.send(PrintConsoleLine::new(s.0, s.1));
-    }
-}
-
-fn pass_to_ngspice(mut console_line: EventReader<ConsoleCommandEntered>, sres: Res<SPRes>) {
-    for ConsoleCommandEntered { command } in console_line.read() {
-        sres.lib.command(command);
     }
 }

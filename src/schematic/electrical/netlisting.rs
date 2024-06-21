@@ -19,8 +19,9 @@ use std::{collections::HashMap, fs};
 use bevy::{input::common_conditions::input_just_pressed, prelude::*};
 use bevy_egui::egui::Color32;
 
+use crate::schematic::ui::console::PrintConsoleLine;
+
 use super::{
-    console::PrintConsoleLine,
     devices::{DeviceParams, DevicePorts},
     label::SchematicLabelBundle,
     nets::{Port, PortLabel},

@@ -8,6 +8,7 @@ use bevy::{
 };
 use bevy_save::prelude::*;
 use electrical::SchematicElement;
+use ui::SchematicUiPlugin;
 
 mod camera;
 mod electrical;
@@ -15,6 +16,7 @@ mod guides;
 mod infotext;
 mod material;
 mod tools;
+mod ui;
 // Snapped marker component: system to goes around snapping transform of such entities
 #[derive(Component)]
 pub struct Snap {
@@ -45,6 +47,7 @@ impl Plugin for SchematicPlugin {
             GuidesPlugin,
             ElementsPlugin,
             ToolsPlugin,
+            SchematicUiPlugin,
         ));
         app.configure_sets(
             PostUpdate,
