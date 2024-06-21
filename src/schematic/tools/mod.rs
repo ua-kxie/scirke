@@ -2,12 +2,13 @@ use bevy::{prelude::*, sprite::Mesh2dHandle};
 use bevy_save::prelude::*;
 use transform::TransformType;
 
+mod devicespawn;
 mod sel;
 mod transform;
 mod wire;
 
 use super::{
-    electrical::{DefaultDevices, PickableElement, Preview, SchematicElement, Selected},
+    electrical::{PickableElement, Preview, SchematicElement, Selected},
     guides::SchematicCursor,
     material::SchematicMaterial,
     FreshLoad, SchematicLoaded,
@@ -15,6 +16,7 @@ use super::{
 pub use sel::{NewPickingCollider, PickingCollider, SelectEvt};
 
 const WIRE_TOOL_KEY: KeyCode = KeyCode::KeyW;
+const DEVICE_SPAWN_TOOL_KEY: KeyCode = KeyCode::KeyD;
 const MOVE_KEY: KeyCode = KeyCode::KeyM;
 const COPY_KEY: KeyCode = KeyCode::KeyC;
 
@@ -22,10 +24,11 @@ const COPY_KEY: KeyCode = KeyCode::KeyC;
 pub enum SchematicToolState {
     #[default]
     Idle, // also select
-    Wiring, // for drawing wires
+    Wiring,    // for drawing wires
     Transform, // moving elements around,
-            // Label,   // wire/net labeling
-            // Comment, // plain text comment with basic formatting options
+    DeviceSpawn, // for spawning a new device,
+               // Label,   // wire/net labeling
+               // Comment, // plain text comment with basic formatting options
 }
 
 pub struct ToolsPlugin;
@@ -36,6 +39,7 @@ impl Plugin for ToolsPlugin {
             wire::WireToolPlugin,
             sel::SelToolPlugin,
             transform::TransformToolPlugin,
+            devicespawn::DeviceSpawnToolPlugin,
         ));
         app.add_systems(Update, exclusive_main);
         app.init_state::<SchematicToolState>();
@@ -55,13 +59,6 @@ fn exclusive_main(world: &mut World) {
         SchematicToolState::Idle => {
             let is_move = keys.just_pressed(MOVE_KEY);
             let is_copy = keys.just_pressed(COPY_KEY);
-            let newg = keys.just_pressed(KeyCode::KeyG);
-            let newvs = keys.just_pressed(KeyCode::KeyV);
-            let newis = keys.just_pressed(KeyCode::KeyI);
-            let newr = keys.just_pressed(KeyCode::KeyR);
-            let newl = keys.just_pressed(KeyCode::KeyL);
-            let newc = keys.just_pressed(KeyCode::KeyK);
-
             if is_move || is_copy {
                 world
                     .save(ToolsPreviewPipeline)
@@ -100,27 +97,9 @@ fn exclusive_main(world: &mut World) {
             } else if keys.just_released(WIRE_TOOL_KEY) {
                 let mut next_toolst = world.resource_mut::<NextState<SchematicToolState>>();
                 next_toolst.set(SchematicToolState::Wiring);
-            } else if newg || newvs || newis || newr || newl || newc {
-                // spawn a resistor device as child of cursor
-                let dd = world.get_resource::<DefaultDevices>().unwrap();
-                let _ = world.send_event(if newvs {
-                    dd.voltage_source()
-                } else if newis {
-                    dd.current_source()
-                } else if newr {
-                    dd.resistor()
-                } else if newl {
-                    dd.inductor()
-                } else if newc {
-                    dd.capacitor()
-                } else {
-                    dd.gnd()
-                });
-
+            } else if keys.just_released(DEVICE_SPAWN_TOOL_KEY) {
                 let mut next_toolst = world.resource_mut::<NextState<SchematicToolState>>();
-                next_toolst.set(SchematicToolState::Transform);
-                let mut next_transst = world.resource_mut::<NextState<TransformType>>();
-                next_transst.set(TransformType::Copy);
+                next_toolst.set(SchematicToolState::DeviceSpawn);
             } else if keys.just_released(KeyCode::KeyA) {
                 let mut q_valid = world.query_filtered::<Entity, With<PickableElement>>();
                 let valids = q_valid
@@ -132,6 +111,7 @@ fn exclusive_main(world: &mut World) {
         }
         SchematicToolState::Wiring => {}
         SchematicToolState::Transform => {}
+        SchematicToolState::DeviceSpawn => {}
     }
 }
 struct ToolsPreviewPipeline;

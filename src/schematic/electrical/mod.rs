@@ -11,7 +11,7 @@ mod readable_idgen;
 mod spid;
 mod spmanager;
 
-pub use devices::DefaultDevices;
+pub use devices::{DefaultDevices, DeviceType};
 pub use nets::{create_preview_lineseg, LineVertex};
 pub use spid::{NetId, SpDeviceId};
 
