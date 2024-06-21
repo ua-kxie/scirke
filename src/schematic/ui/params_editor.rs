@@ -6,12 +6,7 @@ use bevy_egui::{
 
 use crate::schematic::electrical::{DeviceParams, Selected};
 
-pub fn params_ui(
-    mut egui_context: EguiContexts,
-    mut qs: Query<&mut DeviceParams, With<Selected>>,
-    mut keys: ResMut<ButtonInput<KeyCode>>,
-    mut mouse: ResMut<ButtonInput<MouseButton>>,
-) {
+pub fn params_ui(mut egui_context: EguiContexts, mut qs: Query<&mut DeviceParams, With<Selected>>) {
     let ctx = egui_context.ctx_mut();
     egui::Window::new("params editor").show(ctx, |ui| {
         let mut temp = qs.get_single_mut();
@@ -30,10 +25,4 @@ pub fn params_ui(
             DeviceParams::Float(_f) => todo!(), // not supported yet
         }
     });
-    if ctx.wants_keyboard_input() {
-        keys.reset_all();
-    }
-    if ctx.wants_pointer_input() {
-        mouse.reset_all();
-    }
 }

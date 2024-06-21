@@ -11,6 +11,7 @@ mod spid;
 mod spmanager;
 
 pub use devices::{DefaultDevices, DeviceParams, DeviceType};
+pub use netlisting::SimAcHz;
 pub use nets::{create_preview_lineseg, LineVertex};
 pub use spid::{NetId, SpDeviceId};
 pub use spmanager::SPRes;

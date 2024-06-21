@@ -160,7 +160,7 @@ impl DeviceType {
 
         let ports = Arc::new([IVec2::new(0, 3), IVec2::new(0, -3)]);
         DeviceType {
-            params: DeviceParams::Raw("3.3".to_owned()),
+            params: DeviceParams::Raw("AC 1 SIN(3.3 1 2k 0 0)".to_owned()),
             spice_type: spid::SpDeviceType::V,
             visuals: Mesh2dHandle(mesh),
             collider,

@@ -35,14 +35,14 @@ impl Plugin for ConsolePlugin {
             .add_event::<PrintConsoleLine>()
             .add_event::<ConsoleCommandEntered>()
             .add_systems(
-                Update,
+                PreUpdate,
                 (
                     console_ui.in_set(ConsoleSet::ConsoleUI),
                     receive_console_line.in_set(ConsoleSet::PostCommands),
                 ),
             );
-        app.add_systems(Update, write_to_console.in_set(super::UiSet::Ui));
-        app.add_systems(Update, pass_to_ngspice.in_set(super::UiSet::PostUi));
+        app.add_systems(PreUpdate, write_to_console.in_set(super::UiSet::Ui));
+        app.add_systems(PreUpdate, pass_to_ngspice.in_set(super::UiSet::PostUi));
     }
 }
 

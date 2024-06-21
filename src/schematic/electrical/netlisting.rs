@@ -29,6 +29,15 @@ use super::{
     NetId, SchematicElement, SpDeviceId,
 };
 
+#[derive(Resource, Deref, DerefMut)]
+pub struct SimAcHz(pub f32);
+
+impl Default for SimAcHz {
+    fn default() -> Self {
+        Self(60.0)
+    }
+}
+
 #[derive(Event)]
 pub struct Netlist;
 
@@ -43,6 +52,7 @@ impl Plugin for NetlistPlugin {
                 .chain()
                 .run_if(input_just_pressed(KeyCode::Space)),
         ); // preupdate: run on schematic that has been seen
+        app.init_resource::<SimAcHz>();
     }
 }
 
@@ -89,6 +99,7 @@ fn pksim(
     spres: Res<SPRes>,
     mut commands: Commands,
     keys: Res<ButtonInput<KeyCode>>,
+    sim_achz: Res<SimAcHz>,
 ) {
     // clear all port labels
     for (e, p) in q_labeled_ports.iter() {
@@ -105,7 +116,7 @@ fn pksim(
     let cmd;
     if keys.pressed(KeyCode::ControlLeft) {
         // run acop
-        let hz = 60.0;
+        let hz = **sim_achz;
         // ac step_type step_size start end (start and end are inclusive)
         // since dcop, start and end can be same
         cmd = format!("ac lin 0 {} {}", hz, hz);

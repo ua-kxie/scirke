@@ -1,6 +1,16 @@
-use bevy::input::keyboard::KeyboardInput;
-use bevy::input::mouse::MouseWheel;
-use bevy::{input::mouse::MouseButtonInput, prelude::*};
+use bevy::{
+    input::{
+        keyboard::KeyboardInput,
+        mouse::{MouseButtonInput, MouseWheel},
+    },
+    prelude::*,
+};
+use bevy_egui::{
+    egui::{self},
+    EguiContexts,
+};
+
+use super::electrical::SimAcHz;
 
 pub mod console;
 mod params_editor;
@@ -23,18 +33,16 @@ pub struct SchematicUiPlugin;
 impl Plugin for SchematicUiPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(console::ConsolePlugin);
-        app.add_systems(Update, (
-            params_editor::params_ui.in_set(UiSet::Ui),
-            consume_input_events.in_set(UiSet::PostUi),
-        ));
-        app.init_resource::<UiHasFocus>();
-        app.configure_sets(
-            Update,
+        app.add_systems(
+            PreUpdate,
             (
-                UiSet::Ui,
-                UiSet::PostUi.after(UiSet::Ui),
+                params_editor::params_ui.in_set(UiSet::Ui),
+                ac_sim_config.in_set(UiSet::Ui),
+                consume_input_events.in_set(UiSet::PostUi),
             ),
         );
+        app.init_resource::<UiHasFocus>();
+        app.configure_sets(Update, (UiSet::Ui, UiSet::PostUi.after(UiSet::Ui)));
     }
 }
 
@@ -71,3 +79,12 @@ fn consume_input_events(
     }
 }
 
+fn ac_sim_config(mut egui_context: EguiContexts, mut sim_achz: ResMut<SimAcHz>) {
+    let ctx = egui_context.ctx_mut();
+    egui::Window::new("ac sim config").show(ctx, |ui| {
+        ui.horizontal(|ui| {
+            ui.label("Stroke:");
+            ui.add(egui::DragValue::new(&mut **sim_achz));
+        })
+    });
+}
