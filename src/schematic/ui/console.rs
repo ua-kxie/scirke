@@ -11,6 +11,8 @@ use std::collections::VecDeque;
 
 use crate::schematic::electrical::SPRes;
 
+use super::UiHasFocus;
+
 /// Console plugin.
 pub struct ConsolePlugin;
 
@@ -19,20 +21,10 @@ pub struct ConsolePlugin;
 pub enum ConsoleSet {
     /// Systems operating the console UI (the input layer)
     ConsoleUI,
-
-    /// Systems executing console commands (the functionality layer).
-    /// All command handler systems are added to this set
-    Commands,
-
     /// Systems running after command systems, which depend on the fact commands have executed beforehand (the output layer).
     /// For example a system which makes use of [`PrintConsoleLine`] events should be placed in this set to be able to receive
     /// New lines to print in the same frame
     PostCommands,
-}
-
-/// Run condition which does not run any command systems if no command was entered
-fn have_commands(commands: EventReader<ConsoleCommandEntered>) -> bool {
-    !commands.is_empty()
 }
 
 impl Plugin for ConsolePlugin {
@@ -48,22 +40,9 @@ impl Plugin for ConsolePlugin {
                     console_ui.in_set(ConsoleSet::ConsoleUI),
                     receive_console_line.in_set(ConsoleSet::PostCommands),
                 ),
-            )
-            .configure_sets(
-                Update,
-                (
-                    ConsoleSet::Commands
-                        .after(ConsoleSet::ConsoleUI)
-                        .run_if(have_commands),
-                    ConsoleSet::PostCommands.after(ConsoleSet::Commands),
-                ),
             );
-        app.add_systems(
-            Update,
-            block_inputs_on_console_focus.in_set(ConsoleSet::PostCommands),
-        );
-        app.add_systems(Update, write_to_console.after(ConsoleSet::ConsoleUI));
-        app.add_systems(Update, pass_to_ngspice.after(ConsoleSet::Commands));
+        app.add_systems(Update, write_to_console.in_set(super::UiSet::Ui));
+        app.add_systems(Update, pass_to_ngspice.in_set(super::UiSet::PostUi));
     }
 }
 
@@ -76,20 +55,6 @@ fn write_to_console(mut console_line: EventWriter<PrintConsoleLine>, sres: Res<S
 fn pass_to_ngspice(mut console_line: EventReader<ConsoleCommandEntered>, sres: Res<SPRes>) {
     for ConsoleCommandEntered { command } in console_line.read() {
         sres.command(command);
-    }
-}
-
-/// system to block inputs on console focus
-pub fn block_inputs_on_console_focus(
-    mut events: ResMut<Events<KeyboardInput>>,
-    mut keys: ResMut<ButtonInput<KeyCode>>,
-    mut mouse: ResMut<ButtonInput<MouseButton>>,
-    console_open: Res<ConsoleOpen>,
-) {
-    if console_open.open {
-        events.drain().for_each(drop);
-        keys.reset_all();
-        mouse.reset_all();
     }
 }
 
@@ -201,7 +166,7 @@ impl Default for ConsoleState {
     }
 }
 
-pub fn console_ui(
+fn console_ui(
     mut egui_context: EguiContexts,
     config: Res<ConsoleConfiguration>,
     mut keyboard_input_events: EventReader<KeyboardInput>,
@@ -209,9 +174,11 @@ pub fn console_ui(
     mut state: ResMut<ConsoleState>,
     mut command_entered: EventWriter<ConsoleCommandEntered>,
     mut console_open: ResMut<ConsoleOpen>,
+    mut has_focus: ResMut<UiHasFocus>,
 ) {
     let keyboard_input_events = keyboard_input_events.read().collect::<Vec<_>>();
     let ctx = egui_context.ctx_mut();
+    **has_focus = ctx.wants_keyboard_input() || ctx.wants_pointer_input();
 
     let pressed = keyboard_input_events
         .iter()
