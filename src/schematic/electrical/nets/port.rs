@@ -77,6 +77,7 @@ impl PortBundle {
             mat: MaterialMesh2dBundle {
                 mesh: bevy::sprite::Mesh2dHandle(eres.mesh_port.clone()), // TODO create a mesh for port
                 material: eres.mat_dflt.clone(),
+                transform: Transform::from_translation(offset.as_vec2().extend(0.0)),
                 ..Default::default()
             },
             se: SchematicElement {

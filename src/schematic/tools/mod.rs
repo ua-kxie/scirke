@@ -62,6 +62,7 @@ fn post_serde(
     q_unpicked: Query<Entity, (Without<Selected>, With<Preview>, With<PickableElement>)>,
     mut q_transform: Query<(&GlobalTransform, &mut Transform)>,
     q_scparent: Query<(&GlobalTransform, &Children), With<SchematicCursor>>,
+    mut ev_sch_changed: EventWriter<SchematicChanged>,
 ) {
     let cursor = qc.single();
     // despawn Preview, Pickable, Without<Selected>
@@ -83,6 +84,7 @@ fn post_serde(
         let (gt, mut t) = q_transform.get_mut(c).unwrap();
         (*t).translation = gt.translation() - offset;
     }
+    ev_sch_changed.send(SchematicChanged); // TODO port gets double dipped between transform propagate and port location update
 }
 
 fn exclusive_main(world: &mut World) {

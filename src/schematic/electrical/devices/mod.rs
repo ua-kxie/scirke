@@ -19,7 +19,7 @@ use crate::{
 use bevy::{prelude::*, sprite::Mesh2dHandle};
 use euclid::{default::Point2D, Angle, Vector2D};
 use lyon_tessellation::{StrokeOptions, VertexBuffers};
-use std::sync::Arc;
+use std::{iter, sync::Arc};
 
 #[derive(Resource)]
 pub struct DefaultDevices {
@@ -363,7 +363,7 @@ pub fn spawn_preview_device_from_type(
     dtype: DeviceType,
     commands: &mut Commands,
     eres: &ElementsRes,
-) -> Entity {
+) -> Box<[Entity]> {
     let device_entity = commands.spawn_empty().id();
 
     let ports_entities = dtype
@@ -385,8 +385,11 @@ pub fn spawn_preview_device_from_type(
     );
     commands.entity(device_entity).insert(device_bundle);
     commands.entity(label_entity).insert(label_bundle);
-    commands.insert_or_spawn_batch(ports_entities.into_iter().zip(port_iter.into_iter()));
-    device_entity
+    commands.insert_or_spawn_batch(ports_entities.clone().into_iter().zip(port_iter.into_iter()));
+    iter::once(device_entity)
+    .chain(ports_entities.into_iter())
+    .chain(iter::once(label_entity))
+    .collect()
 }
 
 /// inspert spid component for entities which have SpDeviceType but not spid
