@@ -25,7 +25,7 @@ use spmanager::SPManagerPlugin;
 use super::{
     infotext::InfoRes,
     material::SchematicMaterial,
-    tools::{NewPickingCollider, PickingCollider, SelectEvt},
+    tools::{NewPickingCollider, PickingCollider, SelectEvt}, SchematicChanged,
 };
 
 use bevy::{
@@ -263,9 +263,13 @@ impl Plugin for ElementsPlugin {
         app.configure_sets(
             Update,
             (
-                ElectricalSet::Direct,
-                ElectricalSet::React.after(ElectricalSet::Direct),
-                ElectricalSet::Prune.after(ElectricalSet::React),
+                ElectricalSet::Direct.run_if(on_event::<SchematicChanged>()), 
+                ElectricalSet::React
+                .run_if(on_event::<SchematicChanged>())
+                .after(ElectricalSet::Direct),
+                ElectricalSet::Prune
+                .run_if(on_event::<SchematicChanged>())
+                .after(ElectricalSet::React),
             ),
         );
     }

@@ -360,15 +360,10 @@ impl DeviceType {
 }
 
 pub fn spawn_preview_device_from_type(
-    // mut e: EventReader<DeviceType>,
     dtype: DeviceType,
     commands: &mut Commands,
     eres: &ElementsRes,
-    // cursor: Query<Entity, With<SchematicCursor>>,
 ) -> Entity {
-    // let Some(newtype) = e.read().last() else {
-    //     return;
-    // };
     let device_entity = commands.spawn_empty().id();
 
     let ports_entities = dtype
@@ -471,7 +466,7 @@ impl Plugin for DevicesPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            (update_device_param_labels).in_set(ElectricalSet::React),
+            (update_device_param_labels, insert_spid).in_set(ElectricalSet::React),
         );
         app.add_systems(
             PreUpdate,

@@ -6,7 +6,7 @@ use bevy::{
     sprite::MaterialMesh2dBundle,
 };
 
-use crate::schematic::material::SchematicMaterial;
+use crate::schematic::{electrical::label::DEFAULT_FONT_SIZE, material::SchematicMaterial};
 
 use super::{spid, DeviceType, ElementsRes, PickableElement, SchematicElement};
 
@@ -26,12 +26,6 @@ impl DeviceParams {
         }
     }
 }
-
-// #[derive(Component, Reflect)]
-// #[reflect(Component)]
-// pub struct DeviceParams0 (
-//     Box<dyn Send + Sync + 'static>,  // params trait object
-// );
 
 #[derive(Component, Reflect)]
 #[reflect(Component, MapEntities)]
@@ -108,7 +102,7 @@ pub fn update_device_param_labels(q: Query<(&DeviceParams, &DeviceLabel)>, mut c
             .insert(Text::from_section(
                 p.spice_param(),
                 TextStyle {
-                    font_size: 18.0,
+                    font_size: DEFAULT_FONT_SIZE,
                     color: Color::WHITE,
                     ..default()
                 },

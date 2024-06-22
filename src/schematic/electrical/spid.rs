@@ -66,7 +66,6 @@ pub enum SchType {
 #[derive(Component, Reflect, Clone, Debug)]
 #[reflect(Component)]
 pub struct SpDeviceId {
-    // sptype: SpDeviceType,
     id: String,
 }
 

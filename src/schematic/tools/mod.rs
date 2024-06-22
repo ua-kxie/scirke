@@ -1,4 +1,4 @@
-use bevy::{prelude::*, sprite::Mesh2dHandle};
+use bevy::{prelude::*, sprite::Mesh2dHandle, text::TextLayoutInfo};
 use bevy_save::prelude::*;
 use transform::TransformType;
 
@@ -132,6 +132,7 @@ impl Pipeline for ToolsPreviewPipeline {
         builder
             .deny::<Mesh2dHandle>()
             .deny::<Handle<SchematicMaterial>>()
+            .deny::<TextLayoutInfo>() // TODO: should work without this with bevy 0.14
             // .deny::<SpId>() // should be kept for move, denied for copy
             // .deny::<NetId>() // should be kept for move, denied for copy
             .extract_entities_matching(|e| e.contains::<SchematicElement>())
