@@ -35,3 +35,12 @@ notes:
 
     Last
 
+Tools: PreUpdate(?)
+    send out SchematicChanged event
+
+SchematicSet::Direct
+    any system directly tied to user input (spawn a device, etc.)
+SchematicSet::React
+    any system which may have to react to a changed schematic (e.g. port follow parent device)
+SchematicSet::Post
+    any system that need to operate on a world that is otherwise finished updating (pruning, netlisting)

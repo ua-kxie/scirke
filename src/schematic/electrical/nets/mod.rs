@@ -28,7 +28,7 @@ use prune::prune;
 use super::{
     spid, ElectricalSet, ElementsRes, Pickable, PickableElement, Preview, SchematicElement,
 };
-use crate::schematic::{FreshLoad, SchematicChanged, SchematicLoaded};
+use crate::schematic::{EntityLoadSet, FreshLoad, SchematicChanged};
 use bevy::{ecs::entity::Entity, prelude::*, sprite::Mesh2dHandle};
 
 /// creates a preview (missing schematicElement marker) lineseg from src to dst
@@ -81,10 +81,7 @@ impl Plugin for NetsPlugin {
                 .run_if(on_event::<SchematicChanged>())
                 .in_set(ElectricalSet::Prune),
         );
-        app.add_systems(
-            PreUpdate,
-            insert_non_reflect.run_if(on_event::<SchematicLoaded>()),
-        );
+        app.add_systems(PreUpdate, insert_non_reflect.in_set(EntityLoadSet::React));
         app.register_type::<LineSegment>();
         app.register_type::<LineVertex>();
         app.register_type::<Port>();

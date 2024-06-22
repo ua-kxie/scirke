@@ -36,6 +36,19 @@ pub struct SchematicChanged;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, SystemSet)]
 pub struct SnapSet;
 
+/// SystemSet for deserializing
+#[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
+pub enum EntityLoadSet {
+    /// systems doing serde
+    Direct,
+
+    /// systems which react to a schematic with freshly loaded entities, add mesh handle, PickableElement, etc.
+    React,
+
+    /// systems which need to work with a world that has otherwise finished deserializing
+    Post,
+}
+
 pub struct SchematicPlugin;
 
 impl Plugin for SchematicPlugin {
@@ -59,13 +72,25 @@ impl Plugin for SchematicPlugin {
             Update,
             register_checkpoint.run_if(on_event::<SchematicChanged>()),
         );
-        app.add_systems(Last, process_checkpoints);
+        app.add_systems(PreUpdate, process_checkpoints.in_set(EntityLoadSet::Direct));
         app.add_plugins((
             // Bevy Save
             SavePlugins,
         ));
+        app.configure_sets(
+            PreUpdate,
+            (
+                EntityLoadSet::Direct,
+                EntityLoadSet::React
+                    .run_if(on_event::<LoadEvent>())
+                    .after(EntityLoadSet::Direct),
+                EntityLoadSet::Post
+                    .run_if(on_event::<LoadEvent>())
+                    .after(EntityLoadSet::React),
+            ),
+        );
         app.add_event::<SchematicChanged>();
-        app.add_event::<SchematicLoaded>();
+        app.add_event::<LoadEvent>();
     }
 }
 
@@ -120,12 +145,12 @@ fn process_checkpoints(world: &mut World) {
             world
                 .rollback::<SavePipeline>(-1)
                 .expect("Failed to rollforward");
-            world.send_event(SchematicLoaded);
+            world.send_event(LoadEvent);
         } else {
             world
                 .rollback::<SavePipeline>(1)
                 .expect("Failed to rollback");
-            world.send_event(SchematicLoaded);
+            world.send_event(LoadEvent);
         }
         // world.send_event(SchematicChanged);
     }
@@ -150,7 +175,7 @@ fn process_checkpoints(world: &mut World) {
 /// event to fire when elements are loaded in through reflection
 /// systems should watch for this event and append non-reflect components
 #[derive(Event)]
-pub struct SchematicLoaded;
+pub struct LoadEvent;
 
 /// component to tag entities that have just been loaded and need to append non-reflect components
 #[derive(Component)]

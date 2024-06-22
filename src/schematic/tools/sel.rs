@@ -77,7 +77,7 @@ impl Plugin for SelToolPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, setup);
         app.add_systems(
-            Update,
+            PreUpdate,
             (main, listener).run_if(in_state(SchematicToolState::Idle)),
         );
         app.init_resource::<SelToolRes>();

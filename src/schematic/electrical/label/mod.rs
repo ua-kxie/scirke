@@ -3,7 +3,8 @@
 
 use bevy::{
     ecs::{entity::MapEntities, reflect::ReflectMapEntities},
-    prelude::*, text::Text2dBounds,
+    prelude::*,
+    text::Text2dBounds,
 };
 
 use crate::schematic::guides::ZoomInvariant;
@@ -11,7 +12,10 @@ use crate::schematic::guides::ZoomInvariant;
 use super::{spid::SchType, SchematicElement};
 
 pub const DEFAULT_FONT_SIZE: f32 = 18.0;
-const DEFAULT_TEXT_BOUNDS: Text2dBounds = Text2dBounds{size: Vec2::new(1.0, 2.0)};
+// cannot be unbounded without screwing up serialization (contains null)
+const DEFAULT_TEXT_BOUNDS: Text2dBounds = Text2dBounds {
+    size: Vec2::new(100.0, 1.0),
+};
 
 /// component to display param summary
 #[derive(Component, Reflect)]
@@ -35,7 +39,7 @@ impl MapEntities for SchematicLabel {
 pub struct SchematicLabelBundle {
     selabel: SchematicLabel,
     text: Text2dBundle,
-    se: SchematicElement,  // saving of ui nodes broken until 0.14
+    se: SchematicElement, // saving of ui nodes broken until 0.14
     zi: ZoomInvariant,
 }
 
@@ -57,7 +61,9 @@ impl SchematicLabelBundle {
                 ..default()
             },
             zi: ZoomInvariant,
-            se: SchematicElement {schtype: SchType::Label}
+            se: SchematicElement {
+                schtype: SchType::Label,
+            },
         }
     }
 }

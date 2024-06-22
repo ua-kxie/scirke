@@ -24,7 +24,7 @@ pub struct WireToolPlugin;
 impl Plugin for WireToolPlugin {
     fn build(&self, app: &mut App) {
         app.init_state::<WireToolState>();
-        app.add_systems(Update, main.run_if(in_state(SchematicToolState::Wiring)));
+        app.add_systems(PreUpdate, main.run_if(in_state(SchematicToolState::Wiring)));
         app.add_systems(OnExit(SchematicToolState::Wiring), cleanup);
     }
 }

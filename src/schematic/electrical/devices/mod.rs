@@ -13,7 +13,7 @@ use super::{
 };
 use crate::{
     bevyon::{self, build_mesh, stroke, StrokeTessellator},
-    schematic::{FreshLoad, SchematicLoaded},
+    schematic::{EntityLoadSet, FreshLoad},
 };
 
 use bevy::{prelude::*, sprite::Mesh2dHandle};
@@ -468,10 +468,7 @@ impl Plugin for DevicesPlugin {
             Update,
             (update_device_param_labels, insert_spid).in_set(ElectricalSet::React),
         );
-        app.add_systems(
-            PreUpdate,
-            insert_non_reflect.run_if(on_event::<SchematicLoaded>()),
-        );
+        app.add_systems(PreUpdate, insert_non_reflect.in_set(EntityLoadSet::React));
         app.register_type::<SpDeviceId>();
         app.register_type::<DevicePorts>();
         app.register_type::<DeviceParams>();

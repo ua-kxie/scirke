@@ -11,7 +11,7 @@ use super::{
     electrical::{PickableElement, Preview, SchematicElement, Selected},
     guides::SchematicCursor,
     material::SchematicMaterial,
-    FreshLoad, SchematicLoaded,
+    EntityLoadSet, FreshLoad, LoadEvent, SchematicChanged,
 };
 pub use sel::{NewPickingCollider, PickingCollider, SelectEvt};
 
@@ -31,6 +31,9 @@ pub enum SchematicToolState {
                // Comment, // plain text comment with basic formatting options
 }
 
+#[derive(Event)]
+pub struct MergeLoadEvent;
+
 pub struct ToolsPlugin;
 
 impl Plugin for ToolsPlugin {
@@ -41,8 +44,44 @@ impl Plugin for ToolsPlugin {
             transform::TransformToolPlugin,
             devicespawn::DeviceSpawnToolPlugin,
         ));
-        app.add_systems(Update, exclusive_main);
+        app.add_systems(PreUpdate, exclusive_main.in_set(EntityLoadSet::Direct));
+        app.add_systems(
+            PreUpdate,
+            post_serde
+                .in_set(EntityLoadSet::Post)
+                .run_if(on_event::<MergeLoadEvent>()),
+        );
         app.init_state::<SchematicToolState>();
+        app.add_event::<MergeLoadEvent>();
+    }
+}
+
+fn post_serde(
+    mut commands: Commands,
+    qc: Query<Entity, With<SchematicCursor>>,
+    q_unpicked: Query<Entity, (Without<Selected>, With<Preview>, With<PickableElement>)>,
+    mut q_transform: Query<(&GlobalTransform, &mut Transform)>,
+    q_scparent: Query<(&GlobalTransform, &Children), With<SchematicCursor>>,
+) {
+    let cursor = qc.single();
+    // despawn Preview, Pickable, Without<Selected>
+    commands
+        .entity(cursor)
+        .remove_children(&q_unpicked.iter().collect::<Box<[Entity]>>());
+    for e in q_unpicked.iter() {
+        dbg!("8");
+        commands.entity(e).despawn();
+    }
+    // anything Preview gets added to schematiccursor children, transform adjusted
+    let (cursor_gt, cchildren) = q_scparent.single();
+    let offset = cursor_gt.translation();
+    let mut children = vec![];
+    for c in cchildren {
+        children.push(*c);
+    }
+    for c in children {
+        let (gt, mut t) = q_transform.get_mut(c).unwrap();
+        (*t).translation = gt.translation() - offset;
     }
 }
 
@@ -60,40 +99,34 @@ fn exclusive_main(world: &mut World) {
             let is_move = keys.just_pressed(MOVE_KEY);
             let is_copy = keys.just_pressed(COPY_KEY);
             if is_move || is_copy {
-                world
-                    .save(ToolsPreviewPipeline)
-                    .expect("Failed to save copy");
-                world
-                    .load(ToolsPreviewPipeline)
-                    .expect("Failed to load copy");
-                let mut q_transform = world.query::<&mut Transform>();
-                let mut q_cursor = world
-                    .query_filtered::<(&GlobalTransform, Option<&Children>), With<SchematicCursor>>(
-                    );
-
-                let (cursor_gt, Some(cchildren)) = q_cursor.single(&world) else {
-                    return;
-                };
-                let offset = cursor_gt.translation();
-                let mut children = vec![];
-                for c in cchildren {
-                    children.push(*c);
+                // check if valid (something selected)
+                let mut q_anything_selected = world.query_filtered::<Entity, With<Selected>>();
+                let mut something_selected = false;
+                for _ in q_anything_selected.iter(&world) {
+                    // valid
+                    something_selected = true;
+                    break;
                 }
-
-                for c in children {
-                    let mut t = q_transform.get_mut(world, c).unwrap();
-                    (*t).translation = t.translation - offset;
+                if something_selected {
+                    // everything in schematic gets saved
+                    world
+                        .save(ToolsPreviewPipeline)
+                        .expect("Failed to save copy");
+                    // copy of everything gets loaded with Preview tag
+                    world
+                        .load(ToolsPreviewPipeline)
+                        .expect("Failed to load copy");
+                    let mut next_toolst = world.resource_mut::<NextState<SchematicToolState>>();
+                    next_toolst.set(SchematicToolState::Transform);
+                    let mut next_transst = world.resource_mut::<NextState<TransformType>>();
+                    next_transst.set(if is_move {
+                        TransformType::Move
+                    } else {
+                        TransformType::Copy
+                    });
+                    world.send_event(MergeLoadEvent);
+                    world.send_event(LoadEvent);
                 }
-
-                let mut next_toolst = world.resource_mut::<NextState<SchematicToolState>>();
-                next_toolst.set(SchematicToolState::Transform);
-                let mut next_transst = world.resource_mut::<NextState<TransformType>>();
-                next_transst.set(if is_move {
-                    TransformType::Move
-                } else {
-                    TransformType::Copy
-                });
-                world.send_event(SchematicLoaded);
             } else if keys.just_released(WIRE_TOOL_KEY) {
                 let mut next_toolst = world.resource_mut::<NextState<SchematicToolState>>();
                 next_toolst.set(SchematicToolState::Wiring);

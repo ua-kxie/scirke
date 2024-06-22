@@ -12,7 +12,7 @@ pub struct DeviceSpawnToolPlugin;
 impl Plugin for DeviceSpawnToolPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
-            Update,
+            PreUpdate,
             main.run_if(in_state(SchematicToolState::DeviceSpawn)),
         );
     }

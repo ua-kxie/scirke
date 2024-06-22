@@ -3,7 +3,9 @@ use std::f32::consts::PI;
 use bevy::prelude::*;
 
 use crate::schematic::{
-    electrical::{LineVertex, PickableElement, Preview, Selected, SpDeviceId},
+    electrical::{
+        self, LineVertex, NetId, PickableElement, Preview, SchematicElement, Selected, SpDeviceId
+    },
     guides::SchematicCursor,
     SchematicChanged,
 };
@@ -22,8 +24,11 @@ pub struct TransformToolPlugin;
 impl Plugin for TransformToolPlugin {
     fn build(&self, app: &mut App) {
         app.init_state::<TransformType>();
-        app.add_systems(Update, main.run_if(in_state(SchematicToolState::Transform)));
-        app.add_systems(OnEnter(SchematicToolState::Transform), prep.chain());
+        app.add_systems(
+            PreUpdate,
+            main.run_if(in_state(SchematicToolState::Transform)),
+        );
+        // app.add_systems(OnEnter(SchematicToolState::Transform), prep);
         app.add_systems(OnExit(SchematicToolState::Transform), clear_cursor_children);
     }
 }
@@ -44,70 +49,6 @@ fn clear_cursor_children(
     }
 }
 
-/// on entering transform toolstate:
-/// delete pickable not selected elements in preview,
-/// remove from cursor children: unpickable elements in preview
-fn prep(
-    mut commands: Commands,
-    qc: Query<Entity, With<SchematicCursor>>,
-    q_unpicked: Query<Entity, (Without<Selected>, With<Preview>, With<PickableElement>)>,
-    q_unpickable: Query<Entity, (With<Preview>, Without<PickableElement>)>,
-) {
-    let cursor = qc.single();
-    // despawn pickable entities in preview not tagged as selected
-    commands
-        .entity(cursor)
-        .remove_children(&q_unpicked.iter().collect::<Box<[Entity]>>());
-    for e in q_unpicked.iter() {
-        dbg!("8");
-        commands.entity(e).despawn();
-    }
-
-    // remove non-pickable (ports) from cursor
-    commands
-        .entity(cursor)
-        .remove_children(&q_unpickable.iter().collect::<Box<[Entity]>>());
-}
-
-/// all SchematicElements are copied in
-/// [`prep`] may leave some straggling vertices
-/// finally, remove Selected tag
-fn post_prep(
-    mut commands: Commands,
-    mut q: Query<(Entity, &mut LineVertex, &Parent), (Without<Selected>, With<Preview>)>,
-    qc: Query<(Entity, Option<&Children>), With<SchematicCursor>>,
-) {
-    let (cursor, opt_cursor_children) = qc.single();
-    for (e, mut lv, parent) in q.iter_mut() {
-        if parent.get() == cursor {
-            (*lv).branches = lv
-                .branches
-                .iter()
-                .filter_map(|ls| {
-                    if commands.get_entity(*ls).is_some() {
-                        Some(*ls)
-                    } else {
-                        None
-                    }
-                })
-                .collect();
-
-            if lv.branches.is_empty() {
-                commands.entity(cursor).remove_children(&[e]);
-                dbg!("9");
-                commands.entity(e).despawn();
-            }
-        }
-    }
-    opt_cursor_children.map(|x| {
-        x.iter().map(|e| {
-            commands.entity(*e).remove::<Selected>();
-        })
-    });
-    // find entities to despawn
-    // despawn line vertices without valid branches
-}
-
 // this tool should be activated more generally through: moving, copying, placing, etc.
 
 fn main(
@@ -119,7 +60,7 @@ fn main(
     mut commands: Commands,
     st: Res<State<TransformType>>,
     q_selected_not_preview: Query<Entity, (With<Selected>, Without<Preview>)>,
-    q_previews: Query<Entity, With<Preview>>,
+    q_previews: Query<Entity, (With<SchematicElement>, With<Preview>)>,
     mut notify_changed: EventWriter<SchematicChanged>,
 ) {
     let (cursor_entity, Some(children)) = cursor_children.single() else {
@@ -130,11 +71,11 @@ fn main(
             TransformType::Copy => {
                 // delete spid component on new copies
                 for c in children.iter() {
-                    commands.entity(*c).remove::<SpDeviceId>();
+                    commands.entity(*c).remove::<SpDeviceId>().remove::<NetId>();
                 }
             }
             TransformType::Move => {
-                // delete all entities not in preview marked as selected
+                // delete all entities not in preview marked as selected, e.g. the entities originally selected for move
                 for e in q_selected_not_preview.iter() {
                     dbg!("10");
                     commands.entity(e).despawn();
@@ -150,9 +91,7 @@ fn main(
             *t = gt.compute_transform();
         }
         // unmark all entites as preview
-        q_previews.iter().for_each(|e| {
-            commands.entity(e).remove::<Preview>();
-        });
+        electrical::persist_preview(&mut commands, &q_previews);
 
         notify_changed.send(SchematicChanged);
         return; // ignore other commands because its effects were never shown to user

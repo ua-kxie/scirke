@@ -25,7 +25,8 @@ use spmanager::SPManagerPlugin;
 use super::{
     infotext::InfoRes,
     material::SchematicMaterial,
-    tools::{NewPickingCollider, PickingCollider, SelectEvt}, SchematicChanged,
+    tools::{NewPickingCollider, PickingCollider, SelectEvt},
+    SchematicChanged,
 };
 
 use bevy::{
@@ -57,9 +58,9 @@ pub fn persist_preview(
     commands: &mut Commands,
     q: &Query<Entity, (With<SchematicElement>, With<Preview>)>,
 ) {
-    for e in q.iter() {
+    q.iter().for_each(|e| {
         commands.entity(e).remove::<Preview>();
-    }
+    });
 }
 
 #[derive(Resource, Clone)]
@@ -263,13 +264,13 @@ impl Plugin for ElementsPlugin {
         app.configure_sets(
             Update,
             (
-                ElectricalSet::Direct.run_if(on_event::<SchematicChanged>()), 
+                ElectricalSet::Direct.run_if(on_event::<SchematicChanged>()),
                 ElectricalSet::React
-                .run_if(on_event::<SchematicChanged>())
-                .after(ElectricalSet::Direct),
+                    .run_if(on_event::<SchematicChanged>())
+                    .after(ElectricalSet::Direct),
                 ElectricalSet::Prune
-                .run_if(on_event::<SchematicChanged>())
-                .after(ElectricalSet::React),
+                    .run_if(on_event::<SchematicChanged>())
+                    .after(ElectricalSet::React),
             ),
         );
     }
