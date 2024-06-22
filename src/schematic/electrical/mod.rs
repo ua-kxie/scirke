@@ -10,7 +10,7 @@ mod readable_idgen;
 mod spid;
 mod spmanager;
 
-pub use devices::{DefaultDevices, DeviceParams, DeviceType};
+pub use devices::{spawn_preview_device_from_type, DefaultDevices, DeviceParams};
 pub use netlisting::SimAcHz;
 pub use nets::{create_preview_lineseg, LineVertex};
 pub use spid::{NetId, SpDeviceId};

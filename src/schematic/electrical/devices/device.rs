@@ -76,25 +76,25 @@ pub struct DeviceBundle {
 
 impl DeviceBundle {
     pub fn from_type(
-        dtype: &DeviceType,
+        dtype: DeviceType,
         eres: &ElementsRes,
         ports: Vec<Entity>,
         label: Entity,
     ) -> Self {
         Self {
             label: DeviceLabel { label },
-            params: dtype.params.clone(),
+            params: dtype.params,
             ports: DevicePorts { ports },
             mat: MaterialMesh2dBundle {
-                mesh: dtype.visuals.clone(),
+                mesh: dtype.visuals,
                 material: eres.mat_dflt.clone(),
                 ..Default::default()
             },
             pe: PickableElement {
-                behavior: dtype.collider.clone(),
+                behavior: dtype.collider,
             },
             se: SchematicElement {
-                schtype: spid::SchType::Spice(spid::SpType::Device(dtype.spice_type.clone())),
+                schtype: spid::SchType::Spice(spid::SpType::Device(dtype.spice_type)),
             },
         }
     }

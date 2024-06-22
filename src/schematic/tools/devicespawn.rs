@@ -1,6 +1,9 @@
 use bevy::prelude::*;
 
-use crate::schematic::electrical::{DefaultDevices, DeviceType};
+use crate::schematic::{
+    electrical::{spawn_preview_device_from_type, DefaultDevices, ElementsRes},
+    guides::SchematicCursor,
+};
 
 use super::{transform::TransformType, SchematicToolState};
 
@@ -20,7 +23,9 @@ fn main(
     mut ntool_st: ResMut<NextState<SchematicToolState>>,
     mut ntransform_st: ResMut<NextState<TransformType>>,
     dd: Res<DefaultDevices>,
-    mut e_newd: EventWriter<DeviceType>,
+    mut commands: Commands,
+    eres: Res<ElementsRes>,
+    cursor: Query<Entity, With<SchematicCursor>>,
 ) {
     if keys.just_pressed(KeyCode::KeyG)
         || keys.just_pressed(KeyCode::KeyV)
@@ -29,20 +34,24 @@ fn main(
         || keys.just_pressed(KeyCode::KeyL)
         || keys.just_pressed(KeyCode::KeyC)
     {
-        // spawn device as child of cursor
-        e_newd.send(if keys.just_pressed(KeyCode::KeyV) {
-            dd.voltage_source()
-        } else if keys.just_pressed(KeyCode::KeyI) {
-            dd.current_source()
-        } else if keys.just_pressed(KeyCode::KeyR) {
-            dd.resistor()
-        } else if keys.just_pressed(KeyCode::KeyL) {
-            dd.inductor()
-        } else if keys.just_pressed(KeyCode::KeyC) {
-            dd.capacitor()
-        } else {
-            dd.gnd()
-        });
+        let device_entity = spawn_preview_device_from_type(
+            if keys.just_pressed(KeyCode::KeyV) {
+                dd.voltage_source()
+            } else if keys.just_pressed(KeyCode::KeyI) {
+                dd.current_source()
+            } else if keys.just_pressed(KeyCode::KeyR) {
+                dd.resistor()
+            } else if keys.just_pressed(KeyCode::KeyL) {
+                dd.inductor()
+            } else if keys.just_pressed(KeyCode::KeyC) {
+                dd.capacitor()
+            } else {
+                dd.gnd()
+            },
+            &mut commands,
+            &eres,
+        );
+        commands.entity(cursor.single()).add_child(device_entity);
         ntool_st.set(SchematicToolState::Transform);
         ntransform_st.set(TransformType::Copy);
     }

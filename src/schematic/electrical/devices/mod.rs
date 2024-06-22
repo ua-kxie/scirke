@@ -13,7 +13,7 @@ use super::{
 };
 use crate::{
     bevyon::{self, build_mesh, stroke, StrokeTessellator},
-    schematic::{guides::SchematicCursor, FreshLoad, SchematicLoaded},
+    schematic::{FreshLoad, SchematicLoaded},
 };
 
 use bevy::{prelude::*, sprite::Mesh2dHandle};
@@ -65,7 +65,7 @@ impl FromWorld for DefaultDevices {
     }
 }
 
-#[derive(Event, Clone)]
+#[derive(Clone)]
 pub struct DeviceType {
     params: DeviceParams,
     spice_type: spid::SpDeviceType,
@@ -360,38 +360,38 @@ impl DeviceType {
 }
 
 pub fn spawn_preview_device_from_type(
-    mut e: EventReader<DeviceType>,
-    mut commands: Commands,
-    eres: Res<ElementsRes>,
-    cursor: Query<Entity, With<SchematicCursor>>,
-) {
-    let Some(newtype) = e.read().last() else {
-        return;
-    };
+    // mut e: EventReader<DeviceType>,
+    dtype: DeviceType,
+    commands: &mut Commands,
+    eres: &ElementsRes,
+    // cursor: Query<Entity, With<SchematicCursor>>,
+) -> Entity {
+    // let Some(newtype) = e.read().last() else {
+    //     return;
+    // };
     let device_entity = commands.spawn_empty().id();
 
-    let ports_entities = newtype
+    let ports_entities = dtype
         .ports
         .iter()
         .map(|_| commands.spawn_empty().id())
         .collect::<Vec<Entity>>();
     let label_entity = commands.spawn_empty().id();
-    let device_bundle = (
-        DeviceBundle::from_type(newtype, &eres, ports_entities.clone(), label_entity),
-        Preview,
-        Selected,
-    );
     let label_bundle = SchematicLabelBundle::new(device_entity, IVec2::new(1, 0), "".to_owned());
-    let port_iter = newtype
+    let port_iter = dtype
         .ports
         .iter()
         .map(|&offset| PortBundle::new(device_entity, offset, &eres))
         .collect::<Vec<PortBundle>>();
-    commands.entity(cursor.single()).add_child(device_entity);
-
+    let device_bundle = (
+        DeviceBundle::from_type(dtype, &eres, ports_entities.clone(), label_entity),
+        Preview,
+        Selected,
+    );
     commands.entity(device_entity).insert(device_bundle);
     commands.entity(label_entity).insert(label_bundle);
     commands.insert_or_spawn_batch(ports_entities.into_iter().zip(port_iter.into_iter()));
+    device_entity
 }
 
 /// inspert spid component for entities which have SpDeviceType but not spid
@@ -471,10 +471,6 @@ impl Plugin for DevicesPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            (insert_spid, spawn_preview_device_from_type).in_set(ElectricalSet::Direct),
-        );
-        app.add_systems(
-            Update,
             (update_device_param_labels).in_set(ElectricalSet::React),
         );
         app.add_systems(
@@ -485,7 +481,5 @@ impl Plugin for DevicesPlugin {
         app.register_type::<DevicePorts>();
         app.register_type::<DeviceParams>();
         app.register_type::<DeviceLabel>();
-
-        app.add_event::<DeviceType>();
     }
 }
