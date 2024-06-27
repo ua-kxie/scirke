@@ -23,6 +23,9 @@ pub struct IdTracker {
     r: IdGen,
     l: IdGen,
     c: IdGen,
+    d: IdGen,
+    q: IdGen,
+    m: IdGen,
 }
 
 impl IdTracker {
@@ -43,6 +46,15 @@ impl IdTracker {
     }
     pub fn new_c_id(&mut self, prefix: &str) -> String {
         self.c.get_id(prefix)
+    }
+    pub fn new_d_id(&mut self, prefix: &str) -> String {
+        self.d.get_id(prefix)
+    }
+    pub fn new_q_id(&mut self, prefix: &str) -> String {
+        self.q.get_id(prefix)
+    }
+    pub fn new_m_id(&mut self, prefix: &str) -> String {
+        self.m.get_id(prefix)
     }
 }
 

@@ -32,6 +32,9 @@ pub enum SpDeviceType {
     R,
     L,
     C,
+    D,
+    Q,
+    M,
 }
 
 impl SpDeviceType {
@@ -43,6 +46,9 @@ impl SpDeviceType {
             SpDeviceType::R => R,
             SpDeviceType::L => L,
             SpDeviceType::C => C,
+            SpDeviceType::D => D,
+            SpDeviceType::Q => Q,
+            SpDeviceType::M => M,
         }
     }
 }

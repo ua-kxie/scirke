@@ -29,6 +29,9 @@ pub struct DefaultDevices {
     r: DeviceType,
     l: DeviceType,
     c: DeviceType,
+    d: DeviceType,
+    q: DeviceType,
+    m: DeviceType,
 }
 
 impl DefaultDevices {
@@ -50,6 +53,15 @@ impl DefaultDevices {
     pub fn capacitor(&self) -> DeviceType {
         self.c.clone()
     }
+    pub fn diode(&self) -> DeviceType {
+        self.d.clone()
+    }
+    pub fn bjt(&self) -> DeviceType {
+        self.q.clone()
+    }
+    pub fn mos(&self) -> DeviceType {
+        self.m.clone()
+    }
 }
 
 impl FromWorld for DefaultDevices {
@@ -61,6 +73,9 @@ impl FromWorld for DefaultDevices {
             r: DeviceType::type_r(world),
             l: DeviceType::type_l(world),
             c: DeviceType::type_c(world),
+            d: DeviceType::type_d(world),
+            q: DeviceType::type_q(world),
+            m: DeviceType::type_m(world),
         }
     }
 }
@@ -104,12 +119,12 @@ impl DeviceType {
         let path = path_builder.build();
         let mut buffers = VertexBuffers::new();
         stroke(&mut *stroke_tess, &path, &STROKE_OPTIONS, &mut buffers);
-        let gnd_mesh = build_mesh(&buffers).with_inserted_attribute(
+        let mesh = build_mesh(&buffers).with_inserted_attribute(
             Mesh::ATTRIBUTE_COLOR,
             vec![DEVICE_COLOR.rgba_linear_to_vec4(); buffers.vertices.len()],
         );
         let mut meshes = world.resource_mut::<Assets<Mesh>>();
-        let mesh_res = meshes.add(gnd_mesh);
+        let mesh_hndl = meshes.add(mesh);
 
         let collider = Arc::new(PickableDevice::_2x4());
 
@@ -118,7 +133,7 @@ impl DeviceType {
         DeviceType {
             params: DeviceParams::Raw("0 0".to_owned()),
             spice_type: spid::SpDeviceType::Gnd,
-            visuals: Mesh2dHandle(mesh_res),
+            visuals: Mesh2dHandle(mesh_hndl),
             collider,
             ports,
         }
@@ -149,12 +164,12 @@ impl DeviceType {
         let path = path_builder.build();
         let mut buffers = VertexBuffers::new();
         stroke(&mut *stroke_tess, &path, &STROKE_OPTIONS, &mut buffers);
-        let vmesh = build_mesh(&buffers).with_inserted_attribute(
+        let mesh = build_mesh(&buffers).with_inserted_attribute(
             Mesh::ATTRIBUTE_COLOR,
             vec![DEVICE_COLOR.rgba_linear_to_vec4(); buffers.vertices.len()],
         );
         let mut meshes = world.resource_mut::<Assets<Mesh>>();
-        let mesh = meshes.add(vmesh);
+        let mesh_hndl = meshes.add(mesh);
 
         let collider = Arc::new(PickableDevice::_4x6());
 
@@ -162,7 +177,7 @@ impl DeviceType {
         DeviceType {
             params: DeviceParams::Raw("AC 1 SIN(3.3 1 2k 0 0)".to_owned()),
             spice_type: spid::SpDeviceType::V,
-            visuals: Mesh2dHandle(mesh),
+            visuals: Mesh2dHandle(mesh_hndl),
             collider,
             ports,
         }
@@ -192,12 +207,12 @@ impl DeviceType {
         let path = path_builder.build();
         let mut buffers = VertexBuffers::new();
         stroke(&mut *stroke_tess, &path, &STROKE_OPTIONS, &mut buffers);
-        let vmesh = build_mesh(&buffers).with_inserted_attribute(
+        let mesh = build_mesh(&buffers).with_inserted_attribute(
             Mesh::ATTRIBUTE_COLOR,
             vec![DEVICE_COLOR.rgba_linear_to_vec4(); buffers.vertices.len()],
         );
         let mut meshes = world.resource_mut::<Assets<Mesh>>();
-        let mesh = meshes.add(vmesh);
+        let mesh_hndl = meshes.add(mesh);
 
         let collider = Arc::new(PickableDevice::_4x6());
 
@@ -205,7 +220,7 @@ impl DeviceType {
         DeviceType {
             params: DeviceParams::Raw("1u".to_owned()),
             spice_type: spid::SpDeviceType::I,
-            visuals: Mesh2dHandle(mesh),
+            visuals: Mesh2dHandle(mesh_hndl),
             collider,
             ports,
         }
@@ -228,12 +243,12 @@ impl DeviceType {
         let path = path_builder.build();
         let mut buffers = VertexBuffers::new();
         stroke(&mut *stroke_tess, &path, &STROKE_OPTIONS, &mut buffers);
-        let res_mesh = build_mesh(&buffers).with_inserted_attribute(
+        let mesh = build_mesh(&buffers).with_inserted_attribute(
             Mesh::ATTRIBUTE_COLOR,
             vec![DEVICE_COLOR.rgba_linear_to_vec4(); buffers.vertices.len()],
         );
         let mut meshes = world.resource_mut::<Assets<Mesh>>();
-        let mesh_res = meshes.add(res_mesh);
+        let mesh_hndl = meshes.add(mesh);
 
         let collider = Arc::new(PickableDevice::_4x6());
 
@@ -242,7 +257,7 @@ impl DeviceType {
         DeviceType {
             params: DeviceParams::Raw("1k".to_owned()),
             spice_type: spid::SpDeviceType::R,
-            visuals: Mesh2dHandle(mesh_res),
+            visuals: Mesh2dHandle(mesh_hndl),
             collider,
             ports,
         }
@@ -293,12 +308,12 @@ impl DeviceType {
         let path = path_builder.build();
         let mut buffers = VertexBuffers::new();
         stroke(&mut *stroke_tess, &path, &STROKE_OPTIONS, &mut buffers);
-        let gnd_mesh = build_mesh(&buffers).with_inserted_attribute(
+        let mesh = build_mesh(&buffers).with_inserted_attribute(
             Mesh::ATTRIBUTE_COLOR,
             vec![DEVICE_COLOR.rgba_linear_to_vec4(); buffers.vertices.len()],
         );
         let mut meshes = world.resource_mut::<Assets<Mesh>>();
-        let mesh_res = meshes.add(gnd_mesh);
+        let mesh_hndl = meshes.add(mesh);
 
         let collider = Arc::new(PickableDevice::_4x6());
 
@@ -307,7 +322,7 @@ impl DeviceType {
         DeviceType {
             params: DeviceParams::Raw("1n".to_owned()),
             spice_type: spid::SpDeviceType::L,
-            visuals: Mesh2dHandle(mesh_res),
+            visuals: Mesh2dHandle(mesh_hndl),
             collider,
             ports,
         }
@@ -338,6 +353,70 @@ impl DeviceType {
         let path = path_builder.build();
         let mut buffers = VertexBuffers::new();
         stroke(&mut *stroke_tess, &path, &STROKE_OPTIONS, &mut buffers);
+        let mesh = build_mesh(&buffers).with_inserted_attribute(
+            Mesh::ATTRIBUTE_COLOR,
+            vec![DEVICE_COLOR.rgba_linear_to_vec4(); buffers.vertices.len()],
+        );
+        let mut meshes = world.resource_mut::<Assets<Mesh>>();
+        let mesh_hndl = meshes.add(mesh);
+
+        let collider = Arc::new(PickableDevice::_4x6());
+
+        let ports = Arc::new([IVec2::new(0, 3), IVec2::new(0, -3)]);
+
+        DeviceType {
+            params: DeviceParams::Raw("1p".to_owned()),
+            spice_type: spid::SpDeviceType::C,
+            visuals: Mesh2dHandle(mesh_hndl),
+            collider,
+            ports,
+        }
+    }
+    fn type_d(world: &mut World) -> Self {
+        let mut stroke_tess = world.resource_mut::<StrokeTessellator>();
+        let mut path_builder = bevyon::path_builder().with_svg();
+        path_builder.move_to(Point2D::new(0.00, 3.00));
+        path_builder.line_to(Point2D::new(0.00, 1.00));
+
+        path_builder.move_to(Point2D::new(0.00, -0.50));
+        path_builder.line_to(Point2D::new(1.00, 1.00));
+        path_builder.line_to(Point2D::new(-1.00, 1.00));
+        path_builder.line_to(Point2D::new(0.00, -0.50)); 
+        path_builder.line_to(Point2D::new(0.00, -3.00));
+        
+        path_builder.move_to(Point2D::new(-1.00, -0.50)); 
+        path_builder.line_to(Point2D::new(1.00, -0.50));
+        let path = path_builder.build();
+        let mut buffers = VertexBuffers::new();
+        stroke(&mut *stroke_tess, &path, &STROKE_OPTIONS, &mut buffers);
+        let mesh = build_mesh(&buffers).with_inserted_attribute(
+            Mesh::ATTRIBUTE_COLOR,
+            vec![DEVICE_COLOR.rgba_linear_to_vec4(); buffers.vertices.len()],
+        );
+        let mut meshes = world.resource_mut::<Assets<Mesh>>();
+        let mesh_hndl = meshes.add(mesh);
+
+        let collider = Arc::new(PickableDevice::_4x6());
+
+        let ports = Arc::new([IVec2::new(0, 3), IVec2::new(0, -3)]);
+
+        DeviceType {
+            params: DeviceParams::Raw("".to_owned()),  // TODO
+            spice_type: spid::SpDeviceType::D,
+            visuals: Mesh2dHandle(mesh_hndl),
+            collider,
+            ports,
+        }
+    }
+    fn type_q(world: &mut World) -> Self {
+        let mut stroke_tess = world.resource_mut::<StrokeTessellator>();
+        let mut path_builder = bevyon::path_builder().with_svg();
+        path_builder.move_to(Point2D::new(0.00, 3.00));
+        path_builder.line_to(Point2D::new(0.00, 0.50));
+
+        let path = path_builder.build();
+        let mut buffers = VertexBuffers::new();
+        stroke(&mut *stroke_tess, &path, &STROKE_OPTIONS, &mut buffers);
         let gnd_mesh = build_mesh(&buffers).with_inserted_attribute(
             Mesh::ATTRIBUTE_COLOR,
             vec![DEVICE_COLOR.rgba_linear_to_vec4(); buffers.vertices.len()],
@@ -350,8 +429,36 @@ impl DeviceType {
         let ports = Arc::new([IVec2::new(0, 3), IVec2::new(0, -3)]);
 
         DeviceType {
-            params: DeviceParams::Raw("1p".to_owned()),
-            spice_type: spid::SpDeviceType::C,
+            params: DeviceParams::Raw("".to_owned()),  // TODO
+            spice_type: spid::SpDeviceType::Q,
+            visuals: Mesh2dHandle(mesh_res),
+            collider,
+            ports,
+        }
+    }
+    fn type_m(world: &mut World) -> Self {
+        let mut stroke_tess = world.resource_mut::<StrokeTessellator>();
+        let mut path_builder = bevyon::path_builder().with_svg();
+        path_builder.move_to(Point2D::new(0.00, 3.00));
+        path_builder.line_to(Point2D::new(0.00, 0.50));
+
+        let path = path_builder.build();
+        let mut buffers = VertexBuffers::new();
+        stroke(&mut *stroke_tess, &path, &STROKE_OPTIONS, &mut buffers);
+        let gnd_mesh = build_mesh(&buffers).with_inserted_attribute(
+            Mesh::ATTRIBUTE_COLOR,
+            vec![DEVICE_COLOR.rgba_linear_to_vec4(); buffers.vertices.len()],
+        );
+        let mut meshes = world.resource_mut::<Assets<Mesh>>();
+        let mesh_res = meshes.add(gnd_mesh);
+
+        let collider = Arc::new(PickableDevice::_4x6());
+
+        let ports = Arc::new([IVec2::new(0, 3), IVec2::new(0, -3)]);
+
+        DeviceType {
+            params: DeviceParams::Raw("".to_owned()), // TODO
+            spice_type: spid::SpDeviceType::M,
             visuals: Mesh2dHandle(mesh_res),
             collider,
             ports,
@@ -406,6 +513,9 @@ fn insert_spid(
             spid::SpDeviceType::R => SpDeviceId::new(idtracker.new_r_id("")),
             spid::SpDeviceType::L => SpDeviceId::new(idtracker.new_l_id("")),
             spid::SpDeviceType::C => SpDeviceId::new(idtracker.new_c_id("")),
+            spid::SpDeviceType::D => SpDeviceId::new(idtracker.new_d_id("")),
+            spid::SpDeviceType::Q => SpDeviceId::new(idtracker.new_q_id("")),
+            spid::SpDeviceType::M => SpDeviceId::new(idtracker.new_m_id("")),
         };
         commands.entity(e).insert(spid);
     });
@@ -444,6 +554,18 @@ fn insert_non_reflect(
             ),
             spid::SpDeviceType::C => (
                 default_devices.c.as_non_reflect_bundle(),
+                eres.mat_dflt.clone(),
+            ),
+            spid::SpDeviceType::D => (
+                default_devices.d.as_non_reflect_bundle(),
+                eres.mat_dflt.clone(),
+            ),
+            spid::SpDeviceType::Q => (
+                default_devices.q.as_non_reflect_bundle(),
+                eres.mat_dflt.clone(),
+            ),
+            spid::SpDeviceType::M => (
+                default_devices.m.as_non_reflect_bundle(),
                 eres.mat_dflt.clone(),
             ),
         };
