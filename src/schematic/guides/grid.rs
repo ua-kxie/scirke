@@ -65,7 +65,7 @@ fn major(
             stroke: None,
             fill: Some(FillOptions::DEFAULT),
         },
-        Color::hex("4682B4").unwrap(),
+        bevy::prelude::Color::Srgba(Srgba::hex("4682B4").unwrap()),
     );
     let mut marker_mesh = build_mesh_im(empty, &data, stroke_tess, fill_tess);
     marker_mesh.asset_usage = RenderAssetUsages::MAIN_WORLD;
@@ -96,7 +96,7 @@ fn minor(
             stroke: None,
             fill: Some(FillOptions::DEFAULT),
         },
-        Color::hex("468200").unwrap(),
+        bevy::prelude::Color::Srgba(Srgba::hex("468200").unwrap()),
     );
     let mut marker_mesh = build_mesh_im(empty, &data, stroke_tess, fill_tess);
     marker_mesh.asset_usage = RenderAssetUsages::MAIN_WORLD;
@@ -120,7 +120,7 @@ fn setup(
     commands.spawn(GridBundle {
         mat_bundle: MaterialMesh2dBundle {
             material: materials.add(SchematicMaterial {
-                color: Color::BLACK.with_a(0.0),
+                color: Color::BLACK.with_alpha(0.0).into(),
             }),
             transform: Transform::from_translation(Vec3::Z * Z_DEPTH),
             ..Default::default()
@@ -183,7 +183,7 @@ fn build_grid(
             for col in 0..cols_count {
                 let xofst = col as f32 * homogrid.step;
                 let p = seed + Vec2::new(xofst, yofst);
-                mesh.merge(marker_mesh.clone().translated_by(p.extend(0.0)));
+                mesh.merge(&marker_mesh.clone().translated_by(p.extend(0.0)));
             }
         }
     }

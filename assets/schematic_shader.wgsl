@@ -1,4 +1,4 @@
-#import bevy_sprite::mesh2d_functions::{get_model_matrix, mesh2d_position_local_to_clip}
+#import bevy_sprite::mesh2d_functions::{get_world_from_local, mesh2d_position_local_to_clip}
 
 @group(2) @binding(0) var<uniform> material_color: vec4<f32>;
 
@@ -17,7 +17,7 @@ struct VertexOutput {
 fn vertex(vertex: Vertex) -> VertexOutput {
     var out: VertexOutput;
     out.clip_position = mesh2d_position_local_to_clip(
-        get_model_matrix(vertex.instance_index),
+        get_world_from_local(vertex.instance_index),
         vec4<f32>(vertex.position, 1.0),
     );
     out.vertex_color = vertex.color;

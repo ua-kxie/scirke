@@ -30,10 +30,9 @@ use super::{
 };
 
 use bevy::{
-    math::bounding::{Aabb2d, BoundingVolume, IntersectsVolume},
-    prelude::*,
-    render::{mesh::PrimitiveTopology, render_asset::RenderAssetUsages},
-};
+    math::bounding::{Aabb2d, BoundingVolume, IntersectsVolume}, prelude::*, render::{mesh::PrimitiveTopology, render_asset::RenderAssetUsages}
+};use bevy::color::palettes::basic as basic_colors;
+
 use euclid::default::{Box2D, Point2D};
 use std::sync::Arc;
 
@@ -90,12 +89,12 @@ pub struct ElementsRes {
     pub pe_device: PickableElement,
 }
 
-const MAT_SEL_COLOR: Color = Color::YELLOW;
-const MAT_PCK_COLOR: Color = Color::WHITE;
+const MAT_SEL_COLOR: Srgba = basic_colors::YELLOW;
+const MAT_PCK_COLOR: Srgba = basic_colors::WHITE;
 
 impl FromWorld for ElementsRes {
     fn from_world(world: &mut World) -> Self {
-        let wirecolor = Color::AQUAMARINE.rgba_linear_to_vec4();
+        let wirecolor = basic_colors::AQUA.to_f32_array();
 
         // add port visuals
         let mut meshes = world.resource_mut::<Assets<Mesh>>();
@@ -116,7 +115,7 @@ impl FromWorld for ElementsRes {
             )
             .with_inserted_attribute(
                 Mesh::ATTRIBUTE_COLOR,
-                vec![Color::RED.rgba_linear_to_vec4(); 4],
+                vec![basic_colors::RED.to_f32_array(); 4],
             )
             .with_inserted_indices(bevy::render::mesh::Indices::U32(
                 (0..4).collect::<Vec<u32>>(),
@@ -161,16 +160,16 @@ impl FromWorld for ElementsRes {
             mesh_port,
 
             mat_dflt: mats.add(SchematicMaterial {
-                color: Color::BLACK,
+                color: Color::BLACK.into(),
             }),
             mat_pckd: mats.add(SchematicMaterial {
-                color: MAT_PCK_COLOR,
+                color: bevy::prelude::Color::Srgba(MAT_PCK_COLOR).into(),
             }),
             mat_seld: mats.add(SchematicMaterial {
-                color: MAT_SEL_COLOR,
+                color: bevy::prelude::Color::Srgba(MAT_SEL_COLOR).into(),
             }),
             mat_alld: mats.add(SchematicMaterial {
-                color: MAT_SEL_COLOR + MAT_PCK_COLOR,
+                color: bevy::prelude::Color::Srgba(MAT_SEL_COLOR + MAT_PCK_COLOR).into(),
             }),
 
             pe_device: PickableElement {

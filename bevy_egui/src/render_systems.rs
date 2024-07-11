@@ -6,16 +6,10 @@ use bevy::{
     ecs::system::SystemParam,
     prelude::*,
     render::{
-        extract_resource::ExtractResource,
-        render_asset::RenderAssets,
-        render_graph::{RenderGraph, RenderLabel},
-        render_resource::{
+        extract_resource::ExtractResource, render_asset::RenderAssets, render_graph::{RenderGraph, RenderLabel}, render_resource::{
             BindGroup, BindGroupEntry, BindingResource, BufferId, CachedRenderPipelineId,
             DynamicUniformBuffer, PipelineCache, ShaderType, SpecializedRenderPipelines,
-        },
-        renderer::{RenderDevice, RenderQueue},
-        view::ExtractedWindows,
-        Extract,
+        }, renderer::{RenderDevice, RenderQueue}, texture::GpuImage, view::ExtractedWindows, Extract
     },
     utils::HashMap,
 };
@@ -188,7 +182,7 @@ pub fn queue_bind_groups_system(
     mut commands: Commands,
     egui_textures: ExtractedEguiTextures,
     render_device: Res<RenderDevice>,
-    gpu_images: Res<RenderAssets<Image>>,
+    gpu_images: Res<RenderAssets<GpuImage>>,
     egui_pipeline: Res<EguiPipeline>,
 ) {
     let bind_groups = egui_textures

@@ -62,11 +62,11 @@ pub fn setup(mut commands: Commands, mut materials: ResMut<Assets<SchematicMater
     commands.spawn(OriginBundle {
         tess_data: CompositeMeshData::from_single_w_color(
             tessellator_input_data,
-            Color::hex("4682B4").unwrap(),
+            bevy::prelude::Color::Srgba(Srgba::hex("4682B4").unwrap()),
         ),
         mat_bundle: MaterialMesh2dBundle {
             material: materials.add(SchematicMaterial {
-                color: Color::BLACK.with_a(0.0),
+                color: Color::BLACK.with_alpha(0.0).into(),
             }),
             transform: Transform::from_translation(Vec3::Z * Z_DEPTH),
             ..Default::default()

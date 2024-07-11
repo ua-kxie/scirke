@@ -1,5 +1,5 @@
 use bevy::{math::bounding::Aabb2d, prelude::*, sprite::MaterialMesh2dBundle};
-
+use bevy::color::palettes::basic as basic_colors;
 use crate::{
     bevyon::{self, CompositeMeshData, SubMesh, TessInData},
     schematic::{
@@ -206,13 +206,13 @@ fn setup(mut commands: Commands, mut materials: ResMut<Assets<SchematicMaterial>
         tess_data: CompositeMeshData {
             zoom_invariant: false,
             mesh_data: vec![
-                SubMesh::new_with_color(tess_fill_data, Color::WHITE.with_a(0.1)),
-                SubMesh::new_with_color(tess_stroke_data, Color::RED.with_a(1.0)),
+                SubMesh::new_with_color(tess_fill_data, Color::WHITE.with_alpha(0.1)),
+                SubMesh::new_with_color(tess_stroke_data, bevy::prelude::Color::Srgba(basic_colors::RED.with_alpha(1.0))),
             ],
         },
         mat_bundle: MaterialMesh2dBundle {
             material: materials.add(SchematicMaterial {
-                color: Color::BLACK.with_a(0.0),
+                color: Color::BLACK.with_alpha(0.0).into(),
             }),
             //            material: eres.mat_dflt.clone().unwrap(),
             transform: Transform::from_translation(Vec3::new(0.0, 0.0, Z_DEPTH)),

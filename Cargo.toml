@@ -8,7 +8,7 @@ edition = "2021"
 opt-level = 3
 
 [dependencies]
-bevy = {version="0.13.2"}
+bevy = {version="0.14.0"}
 euclid = {version="0.22.10"}
 lyon_tessellation = "1"
 serde = "1.0.203"
@@ -17,6 +17,7 @@ bevy_save = { path = "./bevy_save" }
 bevy_egui = { path = "./bevy_egui" }
 colored = "2.0"
 num = "0.4.3"
+smallvec = "1.13.2"
 
 [workspace]
 members = [

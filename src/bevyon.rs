@@ -234,9 +234,9 @@ pub fn build_mesh_im(
                 stroke(&mut *stroke_tess, &path, &options, &mut buffers);
             }
         }
-        empty.merge(build_mesh(&buffers).with_inserted_attribute(
+        empty.merge(&build_mesh(&buffers).with_inserted_attribute(
             Mesh::ATTRIBUTE_COLOR,
-            vec![submeshdata.color.rgba_to_vec4(); buffers.vertices.len()],
+            vec![submeshdata.color.to_srgba().to_f32_array(); buffers.vertices.len()],
         ));
     }
     empty

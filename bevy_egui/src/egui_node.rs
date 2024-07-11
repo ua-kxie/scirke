@@ -5,7 +5,6 @@ use crate::{
     EguiRenderOutput, EguiSettings, WindowSize,
 };
 use bevy::{
-    core::cast_slice,
     ecs::world::{FromWorld, World},
     prelude::{Entity, Handle, Resource},
     render::{
@@ -27,7 +26,7 @@ use bevy::{
     },
 };
 use egui::{TextureFilter, TextureOptions};
-
+use bytemuck::cast_slice;
 /// Egui shader.
 pub const EGUI_SHADER_HANDLE: Handle<Shader> = Handle::weak_from_u128(9898276442290979394);
 

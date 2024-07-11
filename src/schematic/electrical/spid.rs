@@ -23,8 +23,7 @@ sptype_prefix!(
 const NET: &str = "";
 
 /// Spice Device Types enumeration
-#[derive(Component, Reflect, Debug, Clone)]
-#[reflect(Component)]
+#[derive(Reflect, Debug, Clone)]
 pub enum SpDeviceType {
     Gnd,
     V,

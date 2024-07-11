@@ -16,7 +16,7 @@ use crate::{
     schematic::{EntityLoadSet, FreshLoad},
 };
 
-use bevy::{prelude::*, sprite::Mesh2dHandle};
+use bevy::{color, prelude::*, sprite::Mesh2dHandle};
 use euclid::{default::Point2D, Angle, Vector2D};
 use lyon_tessellation::{StrokeOptions, VertexBuffers};
 use std::{iter, sync::Arc};
@@ -100,7 +100,7 @@ impl DeviceType {
     }
 }
 
-const DEVICE_COLOR: Color = Color::GREEN;
+const DEVICE_COLOR: Color = Color::Srgba(color::palettes::basic::GREEN);
 const STROKE_OPTIONS: StrokeOptions = StrokeOptions::DEFAULT
     .with_line_width(0.1)
     .with_tolerance(0.001)
@@ -121,7 +121,7 @@ impl DeviceType {
         stroke(&mut *stroke_tess, &path, &STROKE_OPTIONS, &mut buffers);
         let mesh = build_mesh(&buffers).with_inserted_attribute(
             Mesh::ATTRIBUTE_COLOR,
-            vec![DEVICE_COLOR.rgba_linear_to_vec4(); buffers.vertices.len()],
+            vec![DEVICE_COLOR.to_linear().to_f32_array(); buffers.vertices.len()],
         );
         let mut meshes = world.resource_mut::<Assets<Mesh>>();
         let mesh_hndl = meshes.add(mesh);
@@ -166,7 +166,7 @@ impl DeviceType {
         stroke(&mut *stroke_tess, &path, &STROKE_OPTIONS, &mut buffers);
         let mesh = build_mesh(&buffers).with_inserted_attribute(
             Mesh::ATTRIBUTE_COLOR,
-            vec![DEVICE_COLOR.rgba_linear_to_vec4(); buffers.vertices.len()],
+            vec![DEVICE_COLOR.to_linear().to_f32_array(); buffers.vertices.len()],
         );
         let mut meshes = world.resource_mut::<Assets<Mesh>>();
         let mesh_hndl = meshes.add(mesh);
@@ -209,7 +209,7 @@ impl DeviceType {
         stroke(&mut *stroke_tess, &path, &STROKE_OPTIONS, &mut buffers);
         let mesh = build_mesh(&buffers).with_inserted_attribute(
             Mesh::ATTRIBUTE_COLOR,
-            vec![DEVICE_COLOR.rgba_linear_to_vec4(); buffers.vertices.len()],
+            vec![DEVICE_COLOR.to_linear().to_f32_array(); buffers.vertices.len()],
         );
         let mut meshes = world.resource_mut::<Assets<Mesh>>();
         let mesh_hndl = meshes.add(mesh);
@@ -245,7 +245,7 @@ impl DeviceType {
         stroke(&mut *stroke_tess, &path, &STROKE_OPTIONS, &mut buffers);
         let mesh = build_mesh(&buffers).with_inserted_attribute(
             Mesh::ATTRIBUTE_COLOR,
-            vec![DEVICE_COLOR.rgba_linear_to_vec4(); buffers.vertices.len()],
+            vec![DEVICE_COLOR.to_linear().to_f32_array(); buffers.vertices.len()],
         );
         let mut meshes = world.resource_mut::<Assets<Mesh>>();
         let mesh_hndl = meshes.add(mesh);
@@ -310,7 +310,7 @@ impl DeviceType {
         stroke(&mut *stroke_tess, &path, &STROKE_OPTIONS, &mut buffers);
         let mesh = build_mesh(&buffers).with_inserted_attribute(
             Mesh::ATTRIBUTE_COLOR,
-            vec![DEVICE_COLOR.rgba_linear_to_vec4(); buffers.vertices.len()],
+            vec![DEVICE_COLOR.to_linear().to_f32_array(); buffers.vertices.len()],
         );
         let mut meshes = world.resource_mut::<Assets<Mesh>>();
         let mesh_hndl = meshes.add(mesh);
@@ -355,7 +355,7 @@ impl DeviceType {
         stroke(&mut *stroke_tess, &path, &STROKE_OPTIONS, &mut buffers);
         let mesh = build_mesh(&buffers).with_inserted_attribute(
             Mesh::ATTRIBUTE_COLOR,
-            vec![DEVICE_COLOR.rgba_linear_to_vec4(); buffers.vertices.len()],
+            vec![DEVICE_COLOR.to_linear().to_f32_array(); buffers.vertices.len()],
         );
         let mut meshes = world.resource_mut::<Assets<Mesh>>();
         let mesh_hndl = meshes.add(mesh);
@@ -391,7 +391,7 @@ impl DeviceType {
         stroke(&mut *stroke_tess, &path, &STROKE_OPTIONS, &mut buffers);
         let mesh = build_mesh(&buffers).with_inserted_attribute(
             Mesh::ATTRIBUTE_COLOR,
-            vec![DEVICE_COLOR.rgba_linear_to_vec4(); buffers.vertices.len()],
+            vec![DEVICE_COLOR.to_linear().to_f32_array(); buffers.vertices.len()],
         );
         let mut meshes = world.resource_mut::<Assets<Mesh>>();
         let mesh_hndl = meshes.add(mesh);
@@ -419,7 +419,7 @@ impl DeviceType {
         stroke(&mut *stroke_tess, &path, &STROKE_OPTIONS, &mut buffers);
         let gnd_mesh = build_mesh(&buffers).with_inserted_attribute(
             Mesh::ATTRIBUTE_COLOR,
-            vec![DEVICE_COLOR.rgba_linear_to_vec4(); buffers.vertices.len()],
+            vec![DEVICE_COLOR.to_linear().to_f32_array(); buffers.vertices.len()],
         );
         let mut meshes = world.resource_mut::<Assets<Mesh>>();
         let mesh_res = meshes.add(gnd_mesh);
@@ -447,7 +447,7 @@ impl DeviceType {
         stroke(&mut *stroke_tess, &path, &STROKE_OPTIONS, &mut buffers);
         let gnd_mesh = build_mesh(&buffers).with_inserted_attribute(
             Mesh::ATTRIBUTE_COLOR,
-            vec![DEVICE_COLOR.rgba_linear_to_vec4(); buffers.vertices.len()],
+            vec![DEVICE_COLOR.to_linear().to_f32_array(); buffers.vertices.len()],
         );
         let mut meshes = world.resource_mut::<Assets<Mesh>>();
         let mesh_res = meshes.add(gnd_mesh);

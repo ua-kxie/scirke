@@ -15,7 +15,7 @@ use bevy::{
     },
     sprite::{Material2d, MaterialMesh2dBundle, Mesh2dHandle},
 };
-
+use bevy::color::palettes::basic as basic_colors;
 const Z_DEPTH: f32 = -0.9;
 
 pub fn setup(
@@ -44,7 +44,7 @@ pub fn setup(
     let bundle = (
         MaterialMesh2dBundle {
             mesh: Mesh2dHandle(meshid),
-            material: clip_materials.add(ClipMaterial { color: Color::RED }),
+            material: clip_materials.add(ClipMaterial { color: basic_colors::RED.into()}),
             transform: Transform::from_translation(Vec3::Z * Z_DEPTH),
             ..Default::default()
         },
@@ -59,7 +59,7 @@ pub fn setup(
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
 pub struct ClipMaterial {
     #[uniform(0)]
-    pub color: Color,
+    pub color: LinearRgba,
 }
 
 impl Material2d for ClipMaterial {

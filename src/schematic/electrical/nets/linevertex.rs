@@ -10,8 +10,8 @@ use bevy::{
     math::bounding::{Aabb2d, BoundingVolume, IntersectsVolume},
     prelude::*,
     sprite::{MaterialMesh2dBundle, Mesh2dHandle},
-    utils::smallvec::{smallvec, SmallVec},
 };
+use smallvec::{smallvec, SmallVec};
 use euclid::default::{Box2D, Point2D};
 
 /// defines the end points of a line

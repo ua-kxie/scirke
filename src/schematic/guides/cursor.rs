@@ -178,7 +178,7 @@ fn setup(mut commands: Commands, mut materials: ResMut<Assets<SchematicMaterial>
         tess_data: create_mesh_data(scale),
         mat_bundle: MaterialMesh2dBundle {
             material: materials.add(SchematicMaterial {
-                color: Color::BLACK.with_a(0.0),
+                color: Color::BLACK.with_alpha(0.0).into(),
             }),
             transform: Transform::from_translation(vec3(0.0, 0.0, Z_DEPTH)),
             ..Default::default()

@@ -7,7 +7,8 @@ use super::{
     port::Port, ElementsRes, LineSegBundle, LineSegment, LineVertex, PickableElement, Preview,
 };
 use crate::schematic::tools::PickingCollider;
-use bevy::{ecs::entity::Entity, prelude::*, utils::smallvec::SmallVec};
+use bevy::{ecs::entity::Entity, prelude::*};
+use smallvec::SmallVec;
 use euclid::approxeq::ApproxEq;
 
 /// full functionality:
