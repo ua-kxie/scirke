@@ -70,7 +70,7 @@ fn post_serde(
         .entity(cursor)
         .remove_children(&q_unpicked.iter().collect::<Box<[Entity]>>());
     for e in q_unpicked.iter() {
-        dbg!("8");
+        debug!("deletied entity: unpicked, selected");
         commands.entity(e).despawn();
     }
     // anything Preview gets added to schematiccursor children, transform adjusted

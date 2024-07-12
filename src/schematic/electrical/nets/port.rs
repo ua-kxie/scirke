@@ -95,7 +95,7 @@ pub fn update_port_location(
     // delete all ports without valid parent device
     for (e, _, port) in q_p.iter() {
         if commands.get_entity(port.get_parent()).is_none() {
-            dbg!("3");
+            debug!("deleting orphaned port");
             commands.entity(e).despawn();
         }
     }

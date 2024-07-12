@@ -30,8 +30,11 @@ use super::{
 };
 
 use bevy::{
-    math::bounding::{Aabb2d, BoundingVolume, IntersectsVolume}, prelude::*, render::{mesh::PrimitiveTopology, render_asset::RenderAssetUsages}
-};use bevy::color::palettes::basic as basic_colors;
+    color::palettes::basic as basic_colors,
+    math::bounding::{Aabb2d, BoundingVolume, IntersectsVolume},
+    prelude::*,
+    render::{mesh::PrimitiveTopology, render_asset::RenderAssetUsages},
+};
 
 use euclid::default::{Box2D, Point2D};
 use std::sync::Arc;
@@ -47,7 +50,7 @@ pub fn despawn_preview(
     q: &Query<Entity, (With<SchematicElement>, With<Preview>)>,
 ) {
     for e in q.iter() {
-        dbg!("1");
+        debug!("deleting preview element");
         commands.entity(e).despawn();
     }
 }

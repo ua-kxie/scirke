@@ -11,8 +11,8 @@ use bevy::{
     prelude::*,
     sprite::{MaterialMesh2dBundle, Mesh2dHandle},
 };
-use smallvec::{smallvec, SmallVec};
 use euclid::default::{Box2D, Point2D};
+use smallvec::{smallvec, SmallVec};
 
 /// defines the end points of a line
 #[derive(Component, Clone, Reflect, Default)]

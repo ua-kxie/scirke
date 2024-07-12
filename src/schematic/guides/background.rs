@@ -5,6 +5,7 @@ https://stackoverflow.com/questions/2588875/whats-the-best-way-to-draw-a-fullscr
 */
 
 use bevy::{
+    color::palettes::basic as basic_colors,
     math::vec3,
     prelude::*,
     render::{
@@ -15,7 +16,6 @@ use bevy::{
     },
     sprite::{Material2d, MaterialMesh2dBundle, Mesh2dHandle},
 };
-use bevy::color::palettes::basic as basic_colors;
 const Z_DEPTH: f32 = -0.9;
 
 pub fn setup(
@@ -44,7 +44,9 @@ pub fn setup(
     let bundle = (
         MaterialMesh2dBundle {
             mesh: Mesh2dHandle(meshid),
-            material: clip_materials.add(ClipMaterial { color: basic_colors::RED.into()}),
+            material: clip_materials.add(ClipMaterial {
+                color: basic_colors::RED.into(),
+            }),
             transform: Transform::from_translation(Vec3::Z * Z_DEPTH),
             ..Default::default()
         },

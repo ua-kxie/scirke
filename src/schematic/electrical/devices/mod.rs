@@ -381,10 +381,10 @@ impl DeviceType {
         path_builder.move_to(Point2D::new(0.00, -0.50));
         path_builder.line_to(Point2D::new(1.00, 1.00));
         path_builder.line_to(Point2D::new(-1.00, 1.00));
-        path_builder.line_to(Point2D::new(0.00, -0.50)); 
+        path_builder.line_to(Point2D::new(0.00, -0.50));
         path_builder.line_to(Point2D::new(0.00, -3.00));
-        
-        path_builder.move_to(Point2D::new(-1.00, -0.50)); 
+
+        path_builder.move_to(Point2D::new(-1.00, -0.50));
         path_builder.line_to(Point2D::new(1.00, -0.50));
         let path = path_builder.build();
         let mut buffers = VertexBuffers::new();
@@ -401,7 +401,7 @@ impl DeviceType {
         let ports = Arc::new([IVec2::new(0, 3), IVec2::new(0, -3)]);
 
         DeviceType {
-            params: DeviceParams::Raw("".to_owned()),  // TODO
+            params: DeviceParams::Raw("".to_owned()), // TODO
             spice_type: spid::SpDeviceType::D,
             visuals: Mesh2dHandle(mesh_hndl),
             collider,
@@ -429,7 +429,7 @@ impl DeviceType {
         let ports = Arc::new([IVec2::new(0, 3), IVec2::new(0, -3)]);
 
         DeviceType {
-            params: DeviceParams::Raw("".to_owned()),  // TODO
+            params: DeviceParams::Raw("".to_owned()), // TODO
             spice_type: spid::SpDeviceType::Q,
             visuals: Mesh2dHandle(mesh_res),
             collider,
@@ -492,11 +492,16 @@ pub fn spawn_preview_device_from_type(
     );
     commands.entity(device_entity).insert(device_bundle);
     commands.entity(label_entity).insert(label_bundle);
-    commands.insert_or_spawn_batch(ports_entities.clone().into_iter().zip(port_iter.into_iter()));
+    commands.insert_or_spawn_batch(
+        ports_entities
+            .clone()
+            .into_iter()
+            .zip(port_iter.into_iter()),
+    );
     iter::once(device_entity)
-    .chain(ports_entities.into_iter())
-    .chain(iter::once(label_entity))
-    .collect()
+        .chain(ports_entities.into_iter())
+        .chain(iter::once(label_entity))
+        .collect()
 }
 
 /// inspert spid component for entities which have SpDeviceType but not spid

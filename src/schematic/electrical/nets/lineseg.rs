@@ -166,13 +166,13 @@ pub fn transform_lineseg(
     for (ent, ls, mut transform, mut visible) in lines.iter_mut() {
         let Ok(a) = gt.get(ls.get_a()) else {
             // a vertex cannot be found
-            dbg!("4");
+            debug!("deleting lineseg because vertex a is missing");
             commands.entity(ent).despawn();
             continue;
         };
         let Ok(b) = gt.get(ls.get_b()) else {
             // a vertex cannot be found
-            dbg!("5");
+            debug!("deleting lineseg because vertex b is missing");
             commands.entity(ent).despawn();
             continue;
         };

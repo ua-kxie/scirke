@@ -3,9 +3,7 @@ use std::f32::consts::PI;
 use bevy::prelude::*;
 
 use crate::schematic::{
-    electrical::{
-        self, LineVertex, NetId, PickableElement, Preview, SchematicElement, Selected, SpDeviceId
-    },
+    electrical::{self, NetId, Preview, SchematicElement, Selected, SpDeviceId},
     guides::SchematicCursor,
     SchematicChanged,
 };
@@ -44,7 +42,7 @@ fn clear_cursor_children(
     };
     commands.entity(parent).remove_children(&cursor_children);
     for e in cursor_children {
-        dbg!("7");
+        debug!("deleting cursor children");
         commands.entity(*e).despawn();
     }
 }
@@ -77,7 +75,7 @@ fn main(
             TransformType::Move => {
                 // delete all entities not in preview marked as selected, e.g. the entities originally selected for move
                 for e in q_selected_not_preview.iter() {
-                    dbg!("10");
+                    debug!("deleting selected, not preview entities (move tool, delete source entities)");
                     commands.entity(e).despawn();
                 }
             }

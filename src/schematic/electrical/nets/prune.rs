@@ -8,8 +8,8 @@ use super::{
 };
 use crate::schematic::tools::PickingCollider;
 use bevy::{ecs::entity::Entity, prelude::*};
-use smallvec::SmallVec;
 use euclid::approxeq::ApproxEq;
+use smallvec::SmallVec;
 
 /// full functionality:
 /// this function is called whenever schematic is changed. Ensures all connected nets have the same net name, overlapping segments are merged, etc.

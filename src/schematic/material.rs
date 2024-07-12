@@ -1,6 +1,9 @@
 use bevy::{
     prelude::*,
-    render::{mesh::MeshVertexBufferLayoutRef, render_resource::{AsBindGroup, ShaderRef}},
+    render::{
+        mesh::MeshVertexBufferLayoutRef,
+        render_resource::{AsBindGroup, ShaderRef},
+    },
     sprite::Material2d,
 };
 

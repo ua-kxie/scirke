@@ -76,7 +76,7 @@ pub fn sch_label_update(
 ) {
     for (ent, schl, mut t) in q_schlabels.iter_mut() {
         let Ok(parent_gt) = qt.get(schl.parent) else {
-            dbg!("2");
+            debug!("deleting orphaned label");
             commands.entity(ent).despawn();
             continue;
         };

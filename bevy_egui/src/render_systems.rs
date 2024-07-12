@@ -6,10 +6,17 @@ use bevy::{
     ecs::system::SystemParam,
     prelude::*,
     render::{
-        extract_resource::ExtractResource, render_asset::RenderAssets, render_graph::{RenderGraph, RenderLabel}, render_resource::{
+        extract_resource::ExtractResource,
+        render_asset::RenderAssets,
+        render_graph::{RenderGraph, RenderLabel},
+        render_resource::{
             BindGroup, BindGroupEntry, BindingResource, BufferId, CachedRenderPipelineId,
             DynamicUniformBuffer, PipelineCache, ShaderType, SpecializedRenderPipelines,
-        }, renderer::{RenderDevice, RenderQueue}, texture::GpuImage, view::ExtractedWindows, Extract
+        },
+        renderer::{RenderDevice, RenderQueue},
+        texture::GpuImage,
+        view::ExtractedWindows,
+        Extract,
     },
     utils::HashMap,
 };

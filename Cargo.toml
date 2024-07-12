@@ -18,6 +18,7 @@ bevy_egui = { path = "./bevy_egui" }
 colored = "2.0"
 num = "0.4.3"
 smallvec = "1.13.2"
+log = "0.4.22"
 
 [workspace]
 members = [

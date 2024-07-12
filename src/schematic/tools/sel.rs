@@ -1,5 +1,3 @@
-use bevy::{math::bounding::Aabb2d, prelude::*, sprite::MaterialMesh2dBundle};
-use bevy::color::palettes::basic as basic_colors;
 use crate::{
     bevyon::{self, CompositeMeshData, SubMesh, TessInData},
     schematic::{
@@ -9,6 +7,10 @@ use crate::{
         material::SchematicMaterial,
         SchematicChanged,
     },
+};
+use bevy::{
+    color::palettes::basic as basic_colors, math::bounding::Aabb2d, prelude::*,
+    sprite::MaterialMesh2dBundle,
 };
 
 use super::SchematicToolState;
@@ -95,7 +97,7 @@ fn listener(
 ) {
     if keys.just_released(KeyCode::Delete) {
         for e in qc.iter() {
-            dbg!("6");
+            debug!("deleting selected entity");
             commands.entity(e).despawn();
         }
         e_schchanged.send(SchematicChanged);
@@ -207,7 +209,10 @@ fn setup(mut commands: Commands, mut materials: ResMut<Assets<SchematicMaterial>
             zoom_invariant: false,
             mesh_data: vec![
                 SubMesh::new_with_color(tess_fill_data, Color::WHITE.with_alpha(0.1)),
-                SubMesh::new_with_color(tess_stroke_data, bevy::prelude::Color::Srgba(basic_colors::RED.with_alpha(1.0))),
+                SubMesh::new_with_color(
+                    tess_stroke_data,
+                    bevy::prelude::Color::Srgba(basic_colors::RED.with_alpha(1.0)),
+                ),
             ],
         },
         mat_bundle: MaterialMesh2dBundle {

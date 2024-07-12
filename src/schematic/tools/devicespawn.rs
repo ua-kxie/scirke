@@ -51,7 +51,9 @@ fn main(
             &mut commands,
             &eres,
         );
-        commands.entity(cursor.single()).push_children(&device_entity);
+        commands
+            .entity(cursor.single())
+            .push_children(&device_entity);
         ntool_st.set(SchematicToolState::Transform);
         ntransform_st.set(TransformType::Copy);
     }

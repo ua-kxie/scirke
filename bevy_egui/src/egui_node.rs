@@ -25,8 +25,8 @@ use bevy::{
         view::ExtractedWindows,
     },
 };
-use egui::{TextureFilter, TextureOptions};
 use bytemuck::cast_slice;
+use egui::{TextureFilter, TextureOptions};
 /// Egui shader.
 pub const EGUI_SHADER_HANDLE: Handle<Shader> = Handle::weak_from_u128(9898276442290979394);
 

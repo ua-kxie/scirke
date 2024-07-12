@@ -63,8 +63,11 @@ fn netlist(
     let mut netlist = String::from("Netlist Created by Sircke\n");
     for (d, params, se, spdid) in q_devices.iter() {
         let Some(spdid) = spice_id(se, spdid) else {
-            println!("following device did not have a device type");
-            dbg!(se, spdid);
+            let s = format!(
+                "netlist failed: this device did not have a device type {:?}, {:?}",
+                se, spdid
+            );
+            error!("netlist failed: this device did not have a device type");
             continue;
         };
         // push device id

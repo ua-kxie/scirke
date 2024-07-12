@@ -1,4 +1,4 @@
-use bevy::{asset::load_internal_binary_asset, prelude::*, window::PrimaryWindow};
+use bevy::{asset::load_internal_binary_asset, log::LogPlugin, prelude::*, window::PrimaryWindow};
 use bevy_egui::EguiPlugin;
 use bevyon::BevyonPlugin;
 use schematic::SchematicPlugin;
@@ -9,13 +9,21 @@ pub use bevyon::{FillOptions, StrokeOptions};
 
 fn main() {
     let mut app = App::new();
-    app.add_plugins(DefaultPlugins.set(WindowPlugin {
-        primary_window: Some(Window {
-            resolution: (800., 600.).into(),
-            ..default()
-        }),
-        ..default()
-    }));
+    app.add_plugins(
+        DefaultPlugins
+            .set(WindowPlugin {
+                primary_window: Some(Window {
+                    resolution: (800., 600.).into(),
+                    ..default()
+                }),
+                ..default()
+            })
+            .set(LogPlugin {
+                filter: "warn,scirke=trace".into(),
+                level: bevy::log::Level::TRACE,
+                custom_layer: |_| None,
+            }),
+    );
     load_internal_binary_asset!(
         app,
         TextStyle::default().font,
