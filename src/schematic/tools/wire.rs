@@ -52,6 +52,7 @@ fn main(
     let sc = qc.single();
     let Some(coords) = &sc.coords else { return };
     if keys.just_released(KeyCode::Escape) {
+        debug!("despawning preview - esc key");
         electrical::despawn_preview(&mut commands, &eqsp);
         next_schematictoolstate.set(SchematicToolState::Idle);
         return;
@@ -69,6 +70,7 @@ fn main(
                 next_wiretoolstate.set(WireToolState::Drawing(coords.get_snapped_coords()));
                 notify_changed.send(SchematicChanged);
             } else if let Some(NewSnappedCursorPos(Some(c))) = e_newsc.read().last() {
+                debug!("despawning preview - new curpos");
                 electrical::despawn_preview(&mut commands, &eqsp);
                 compute_preview(&mut commands, eres, *src, c.get_snapped_coords());
             }

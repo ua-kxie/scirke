@@ -5,6 +5,7 @@ use schematic::SchematicPlugin;
 
 mod bevyon;
 mod schematic;
+mod input;
 pub use bevyon::{FillOptions, StrokeOptions};
 
 fn main() {
