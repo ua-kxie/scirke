@@ -1,19 +1,26 @@
+//! idle/selection tool
+//! handles objection picking and listens for user input for entering another tool
+
+use super::{transform::TransformType, MergeLoadEvent, SchematicToolState};
 use crate::{
     bevyon::{self, CompositeMeshData, SubMesh, TessInData},
     schematic::{
         camera::SchematicCamera,
-        electrical::Selected,
+        electrical::{PickableElement, Preview, Selected},
         guides::{NewSnappedCursorPos, SchematicCursor},
         material::SchematicMaterial,
-        SchematicChanged,
+        tools::ToolsPreviewPipeline,
+        EntityLoadSet, LoadEvent, SchematicChanged,
     },
 };
 use bevy::{
-    color::palettes::basic as basic_colors, math::bounding::Aabb2d, prelude::*,
+    color::palettes::basic as basic_colors,
+    input::{keyboard::KeyboardInput, ButtonState},
+    math::bounding::Aabb2d,
+    prelude::*,
     sprite::MaterialMesh2dBundle,
 };
-
-use super::SchematicToolState;
+use bevy_save::WorldSaveableExt;
 
 /// struct describes the picking collider
 pub enum PickingCollider {
@@ -27,9 +34,10 @@ pub enum PickingCollider {
 pub enum SelectEvt {
     New,    // replace selection with current picked set
     Append, // append to selection with current picked set
+    // Subtract, // remove from selection the current picked set
     // Inverse,  // invert selected entities
     Clear, // deselect all
-           // All,  // select all valid targets
+    All,   // select all valid targets
 }
 
 /// event to be sent when the picking collider changes
@@ -85,6 +93,18 @@ impl Plugin for SelToolPlugin {
         app.init_resource::<SelToolRes>();
         app.add_event::<NewPickingCollider>();
         app.add_event::<SelectEvt>();
+        app.add_systems(
+            PreUpdate,
+            (
+                tools_select
+                    .in_set(EntityLoadSet::Direct)
+                    .run_if(in_state(SchematicToolState::Idle)),
+                (save_load, post_serde)
+                    .chain()
+                    .run_if(on_event::<MergeLoadEvent>()),
+            )
+                .chain(),
+        );
     }
 }
 
@@ -102,6 +122,105 @@ fn listener(
         }
         e_schchanged.send(SchematicChanged);
     }
+}
+
+fn post_serde(
+    mut commands: Commands,
+    qc: Query<Entity, With<SchematicCursor>>,
+    q_unpicked: Query<Entity, (Without<Selected>, With<Preview>, With<PickableElement>)>,
+    mut q_transform: Query<(&GlobalTransform, &mut Transform)>,
+    q_scparent: Query<(&GlobalTransform, &Children), With<SchematicCursor>>,
+    mut ev_sch_changed: EventWriter<SchematicChanged>,
+) {
+    let cursor = qc.single();
+    // despawn Preview, Pickable, Without<Selected>
+    commands
+        .entity(cursor)
+        .remove_children(&q_unpicked.iter().collect::<Box<[Entity]>>());
+    for e in q_unpicked.iter() {
+        debug!("deletied entity: unpicked, selected");
+        commands.entity(e).despawn();
+    }
+    // anything Preview gets added to schematiccursor children, transform adjusted
+    let (cursor_gt, cchildren) = q_scparent.single();
+    let offset = cursor_gt.translation();
+    let mut children = vec![];
+    for c in cchildren {
+        children.push(*c);
+    }
+    for c in children {
+        let (gt, mut t) = q_transform.get_mut(c).unwrap();
+        (*t).translation = gt.translation() - offset;
+    }
+    ev_sch_changed.send(SchematicChanged); // TODO port gets double dipped between transform propagate and port location update
+}
+
+fn save_load(world: &mut World) {
+    debug!("save-load");
+    // everything in schematic gets saved
+    world
+        .save(ToolsPreviewPipeline)
+        .expect("Failed to save copy");
+    // copy of everything gets loaded with Preview tag
+    world
+        .load(ToolsPreviewPipeline)
+        .expect("Failed to load copy");
+}
+const WIRE_TOOL_KEY: KeyCode = KeyCode::KeyW;
+const DEVICE_SPAWN_TOOL_KEY: KeyCode = KeyCode::KeyD;
+const MOVE_KEY: KeyCode = KeyCode::KeyM;
+const COPY_KEY: KeyCode = KeyCode::KeyC;
+fn tools_select(
+    commands: Commands,
+    mut evt_keys: EventReader<KeyboardInput>,
+    mut toolst_next: ResMut<NextState<SchematicToolState>>,
+    mut transformst_next: ResMut<NextState<TransformType>>,
+    q_sel: Query<Entity, With<Selected>>,
+    q_valid_sel: Query<Entity, With<PickableElement>>,
+    mut evtw_mergeload: EventWriter<MergeLoadEvent>,
+    mut evtw_load: EventWriter<LoadEvent>,
+) {
+    let evt_keys = evt_keys.read().collect::<Vec<&KeyboardInput>>();
+    let is_move = evt_keys.iter().any(|ki| ki.key_code == MOVE_KEY);
+    let is_copy = evt_keys.iter().any(|ki| ki.key_code == COPY_KEY);
+    if is_move || is_copy {
+        // check if valid (something selected)
+        if !q_sel.is_empty() {
+            debug!("selecting transform tool");
+            toolst_next.set(SchematicToolState::Transform);
+            transformst_next.set(if is_move {
+                debug!("selecting transform::move");
+                TransformType::Move
+            } else {
+                debug!("selecting transform::copy");
+                TransformType::Copy
+            });
+            evtw_mergeload.send(MergeLoadEvent);
+            evtw_load.send(LoadEvent);
+        }
+    } else if evt_keys
+        .iter()
+        .any(|ki| ki.key_code == WIRE_TOOL_KEY && ki.state == ButtonState::Released)
+    {
+        toolst_next.set(SchematicToolState::Wiring);
+    } else if evt_keys
+        .iter()
+        .any(|ki| ki.key_code == DEVICE_SPAWN_TOOL_KEY && ki.state == ButtonState::Released)
+    {
+        debug!("selecting device spawn tool");
+        toolst_next.set(SchematicToolState::DeviceSpawn);
+    }
+    // } else if evt_keys
+    //     .iter()
+    //     .any(|ki| ki.key_code == KeyCode::KeyA && ki.state == ButtonState::Released)
+    // {
+    //     // select all
+    //     let valids = q_valid_sel
+    //         .iter()
+    //         .map(|e| (e, Selected))
+    //         .collect::<Vec<(Entity, Selected)>>();
+    //     commands.insert_or_spawn_batch(valids.into_iter());
+    // }
 }
 
 /// on mouse button released: add selected marker to all schematic elements with picked marker
@@ -152,6 +271,10 @@ fn main(
 
     if keys.just_released(KeyCode::Escape) {
         e_sel.send(SelectEvt::Clear);
+    }
+
+    if keys.just_released(KeyCode::KeyA) {
+        e_sel.send(SelectEvt::All);
     }
 }
 

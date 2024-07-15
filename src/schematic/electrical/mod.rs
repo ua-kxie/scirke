@@ -338,6 +338,7 @@ fn selection(
     mut e_sel: EventReader<SelectEvt>,
     qes: Query<Entity, With<Selected>>,
     qep: Query<Entity, With<Picked>>,
+    q_valids: Query<Entity, With<PickableElement>>,
 ) {
     for selevt in e_sel.read().into_iter() {
         match selevt {
@@ -347,8 +348,18 @@ fn selection(
             }
             SelectEvt::Append => sel_append(&mut commands, &qep),
             SelectEvt::Clear => sel_clear(&mut commands, &qes),
+            SelectEvt::All => sel_all(&mut commands, &q_valids),
         }
     }
+}
+
+/// function to select all valid
+fn sel_all(commands: &mut Commands, q_valid_sel: &Query<Entity, With<PickableElement>>) {
+    let valids = q_valid_sel
+        .iter()
+        .map(|e| (e, Selected))
+        .collect::<Vec<(Entity, Selected)>>();
+    commands.insert_or_spawn_batch(valids.into_iter());
 }
 
 /// function to clear selected marker from all elements

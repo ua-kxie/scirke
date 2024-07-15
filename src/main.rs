@@ -4,8 +4,8 @@ use bevyon::BevyonPlugin;
 use schematic::SchematicPlugin;
 
 mod bevyon;
-mod schematic;
 mod input;
+mod schematic;
 pub use bevyon::{FillOptions, StrokeOptions};
 
 fn main() {
